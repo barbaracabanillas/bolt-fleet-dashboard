@@ -1954,7 +1954,7 @@ function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet) {
               const pct = ((ctx.parsed.y / total) * 100).toFixed(1);
               return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}h (${pct}%)`;
             },
-            footer: items => `  Total: ${items.reduce((s,i) => s+i.parsed.y, 0).toLocaleString()}h`,
+            footer: items => `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}h`,
           }
         },
         // ── Bar labels: show % inside segment (only if segment ≥ 8% of total) ──
