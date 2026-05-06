@@ -425,7 +425,11 @@
       <!-- Controls -->
       <div class="controls-bar">
         <div style="display:flex;align-items:center;gap:16px;">
-          <div style="font-size:11px;color:var(--muted);font-weight:500;" id="yoy-year-label">—</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--muted);">
+            Año: <select id="yoy-year-select" onchange="renderYoY()" style="font-size:11px;font-family:inherit;font-weight:600;color:#000;border:1px solid var(--border);border-radius:5px;padding:3px 8px;background:#fff;cursor:pointer;outline:none;"></select>
+            vs año anterior
+          </div>
+          <div style="font-size:11px;color:var(--muted);font-weight:500;" id="yoy-year-label"></div>
           <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);font-weight:500;">
             <span style="display:inline-block;width:24px;height:8px;background:#2A9C64;border-radius:2px;opacity:0.9;"></span>Current year
             <span style="display:inline-block;width:24px;height:8px;background:#2A9C64;border-radius:2px;opacity:0.25;margin-left:8px;"></span>Last year
@@ -1100,7 +1104,7 @@ function loadPreloadedData() {
         return {
           week:           (r.week_date || '').slice(0, 10),
           companyId:      String(r.company_id || ''),
-          companyName:    String(r.company_id || ''),   // no names in DB yet
+          companyName:    'Fleet #' + (r.company_id || ''),  // no names in DB yet
           onlineHours:    oh,
           eph:            oh > 0 ? eur / oh : 0,
           utilisation:    0,
@@ -1301,7 +1305,7 @@ function parseAgreementsCSV(text) {
     const cohort    = (agreement && agreement !== 'No Agreement') ? agreement : 'No Agreement';
     const fo        = (strategic === 'Strategic' && grouping && grouping !== companyName) ? grouping : null;
 
-    companyMap[companyId] = { fleetType, cohort, fo };
+    companyMap[companyId] = { fleetType, cohort, fo, name: companyName };
   }
   return { companyMap };
 }
@@ -1734,15 +1738,22 @@ function getCohort(id)    { return agreements.companyMap[id]?.cohort    || 'No A
 function getFO(id)        { return agreements.companyMap[id]?.fo        || null; }
 
 // ══ ENRICH ══
+function getCompanyName(companyId, fallback) {
+  // Priority: agreements CSV name → lookerRows companyName → 'Fleet #id'
+  const name = agreements.companyMap[companyId]?.name;
+  return (name && name.trim()) ? name.trim() : (fallback || ('Fleet #' + companyId));
+}
+
 function enrich() {
   return lookerRows
     .filter(r => isInRange(r.week))
     .map(r => ({
       ...r,
-      fleetType: getFleetType(r.companyId),
-      cohort:    getCohort(r.companyId),
-      foGroup:   getFO(r.companyId),
-      period:    getPeriodKey(r.week),
+      companyName: getCompanyName(r.companyId, r.companyName),
+      fleetType:   getFleetType(r.companyId),
+      cohort:      getCohort(r.companyId),
+      foGroup:     getFO(r.companyId),
+      period:      getPeriodKey(r.week),
     }));
 }
 
@@ -2157,8 +2168,31 @@ function _renderYoY() {
     foGroup:   getFO(r.companyId),
     period:    getPeriodKey(r.week),
   }));
-  const pairs    = getYoYPairs(enriched);
+  // Re-enrich with company name lookup (same logic as enrich() but without date filter)
+  const enrichedFull = lookerRows.map(r => ({
+    ...r,
+    companyName: getCompanyName(r.companyId, r.companyName),
+    fleetType:   getFleetType(r.companyId),
+    cohort:      getCohort(r.companyId),
+    foGroup:     getFO(r.companyId),
+    period:      getPeriodKey(r.week),
+  }));
+
+  const allPairs = getYoYPairs(enrichedFull);
   const el       = id => document.getElementById(id);
+
+  // ── Populate year selector with available CY years, default to latest ──
+  const availYears = [...new Set(allPairs.map(p => getPeriodYear(p.current)))].sort();
+  const sel = document.getElementById('yoy-year-select');
+  if (sel) {
+    const curVal = sel.value;
+    sel.innerHTML = availYears.map(y => `<option value="${y}">${y}</option>`).join('');
+    // Keep previous selection if still valid, else default to latest year
+    if (availYears.includes(curVal)) sel.value = curVal;
+    else sel.value = availYears[availYears.length - 1] || '';
+  }
+  const selYear = sel ? sel.value : (availYears[availYears.length - 1] || '');
+  const pairs   = allPairs.filter(p => getPeriodYear(p.current) === selYear);
 
   // ── No data state ──
   if (!pairs.length) {
@@ -2196,8 +2230,8 @@ function _renderYoY() {
   el('yoy-year-label').textContent = `${lyYear} vs ${cyYear}`;
 
   // ── KPIs (based on last matched pair) ──
-  const cyRows = enriched.filter(r => r.period === lastPair.current);
-  const lyRows = enriched.filter(r => r.period === lastPair.ly);
+  const cyRows = enrichedFull.filter(r => r.period === lastPair.current);
+  const lyRows = enrichedFull.filter(r => r.period === lastPair.ly);
   const ohCY = cyRows.reduce((s,r) => s+r.onlineHours, 0);
   const ohLY = lyRows.reduce((s,r) => s+r.onlineHours, 0);
   const ephCY = calcEPH(cyRows), ephLY = calcEPH(lyRows);
@@ -2219,8 +2253,8 @@ function _renderYoY() {
     for (const g of groups) { cy[g] = []; ly[g] = []; }
     for (const p of pairs) {
       for (const g of groups) {
-        cy[g].push(Math.round(enriched.filter(r => r.period === p.current && r[dim] === g).reduce((s,r) => s+r.onlineHours, 0)));
-        ly[g].push(Math.round(enriched.filter(r => r.period === p.ly      && r[dim] === g).reduce((s,r) => s+r.onlineHours, 0)));
+        cy[g].push(Math.round(enrichedFull.filter(r => r.period === p.current && r[dim] === g).reduce((s,r) => s+r.onlineHours, 0)));
+        ly[g].push(Math.round(enrichedFull.filter(r => r.period === p.ly      && r[dim] === g).reduce((s,r) => s+r.onlineHours, 0)));
       }
     }
     return { cy, ly };
@@ -2238,11 +2272,11 @@ function _renderYoY() {
   renderYoYStackedBars('yoyOhAgreementChart', shortLabels, cyA, lyA, AGREEMENT_TYPES,  A_COLORS, cyYear, lyYear);
 
   // ── EPH line charts ──
-  renderYoYEPHLines('yoyEphStrategicChart', shortLabels, pairs, enriched, STRATEGIC_GROUPS, S_COLORS, 'fleetType');
-  renderYoYEPHLines('yoyEphAgreementChart', shortLabels, pairs, enriched, AGREEMENT_TYPES,  A_COLORS, 'cohort');
+  renderYoYEPHLines('yoyEphStrategicChart', shortLabels, pairs, enrichedFull, STRATEGIC_GROUPS, S_COLORS, 'fleetType');
+  renderYoYEPHLines('yoyEphAgreementChart', shortLabels, pairs, enrichedFull, AGREEMENT_TYPES,  A_COLORS, 'cohort');
 
   // ── Table ──
-  renderYoYTable(enriched, pairs, cyYear, lyYear);
+  renderYoYTable(enrichedFull, pairs, cyYear, lyYear);
   el('yoy-table-label').textContent = `${lastPair.ly} vs ${lastPair.current}`;
 } // end _renderYoY
 
