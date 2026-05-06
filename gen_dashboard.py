@@ -23,9 +23,11 @@ HOST      = os.environ["DATABRICKS_HOST"]
 HTTP_PATH = os.environ["DATABRICKS_HTTP_PATH"]
 TOKEN     = os.environ["DATABRICKS_TOKEN"]
 
-MADRID_CITY_ID      = 150
-LOOKBACK_DAYS_PERF  = 730   # 2 years — needed for Year-over-Year tab
-LOOKBACK_DAYS_HOURLY = 90   # 90 days — hourly data is much denser
+MADRID_CITY_ID       = 150
+LOOKBACK_DAYS_PERF   = 730   # 2 years — needed for Year-over-Year tab
+LOOKBACK_DAYS_HOURLY = 90    # 90 days — hourly data is much denser
+LOOKBACK_DAYS_M30    = 90    # 90 days — driver/car performance data
+M30_REGION_ID        = 2185  # Region ID for M-30 zone in Madrid
 
 def run_query(query: str) -> pd.DataFrame:
     with sql.connect(
@@ -99,7 +101,39 @@ def fetch_hourly_car_data() -> pd.DataFrame:
     """)
 
 
-# ── Query 3 — Company snapshot (for company metadata + names if available) ───
+# ── Query 3 — Driver/car performance per region (M-30 + other) ───────────────
+# Source: ng_public_spark.etl_partner_data_order (one row per driver × car × hour × region)
+# Grouped to weekly level per driver + car + company + region.
+# Metrics derived from raw minute-level counters:
+#   online_hours  = (has_order + waiting_orders) / 60
+#   on_trip_hours = has_order / 60                       → used for utilisation
+#   acceptance_rate (computed in JS) = (order_count - nonresponses - rejections) / order_count
+#   utilisation    (computed in JS) = on_trip_hours / online_hours
+# M-30 zone is identified by region_id = 2185.
+def fetch_m30_data() -> pd.DataFrame:
+    return run_query(f"""
+        SELECT
+            DATE_TRUNC('week', created_date_local)              AS week_date,
+            CAST(driver_id      AS STRING)                      AS driver_id,
+            CAST(driver_car_id  AS STRING)                      AS car_id,
+            CAST(company_id     AS STRING)                      AS company_id,
+            region_id,
+            ROUND(SUM(has_order + waiting_orders) / 60.0, 4)   AS online_hours,
+            ROUND(SUM(has_order)                 / 60.0, 4)    AS on_trip_hours,
+            SUM(order_count)                                    AS order_count,
+            SUM(driver_nonresponses)                            AS driver_nonresponses,
+            SUM(driver_rejections)                              AS driver_rejections,
+            SUM(finished_rides)                                 AS finished_rides
+        FROM ng_public_spark.etl_partner_data_order
+        WHERE city_id = {MADRID_CITY_ID}
+          AND created_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+        GROUP BY 1, 2, 3, 4, 5
+        HAVING SUM(has_order + waiting_orders) > 0
+        ORDER BY week_date DESC
+    """)
+
+
+# ── Query 4 — Company snapshot (for company metadata + names if available) ───
 # TODO: company_name is not yet found in mart_models. When the source table
 # is identified, add a JOIN here. For now we expose company_id + city filters.
 def fetch_company_snapshot() -> pd.DataFrame:
@@ -151,6 +185,7 @@ def main():
     for name, fetch_fn in [
         ("fleet_performance", fetch_fleet_performance),
         ("hourly_car_data",   fetch_hourly_car_data),
+        ("m30_data",          fetch_m30_data),
         ("company_snapshot",  fetch_company_snapshot),
     ]:
         try:
