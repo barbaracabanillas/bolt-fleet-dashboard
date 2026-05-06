@@ -23,8 +23,9 @@ HOST      = os.environ["DATABRICKS_HOST"]
 HTTP_PATH = os.environ["DATABRICKS_HTTP_PATH"]
 TOKEN     = os.environ["DATABRICKS_TOKEN"]
 
-MADRID_CITY_ID = 150
-LOOKBACK_DAYS  = 90
+MADRID_CITY_ID      = 150
+LOOKBACK_DAYS_PERF  = 730   # 2 years — needed for Year-over-Year tab
+LOOKBACK_DAYS_HOURLY = 90   # 90 days — hourly data is much denser
 
 def run_query(query: str) -> pd.DataFrame:
     with sql.connect(server_hostname=HOST, http_path=HTTP_PATH, access_token=TOKEN) as conn:
@@ -57,7 +58,7 @@ def fetch_fleet_performance() -> pd.DataFrame:
         WHERE company_city_id = {MADRID_CITY_ID}
           AND is_fleet_company = true
           AND fleet_is_active  = true
-          AND calendar_date   >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS} DAYS
+          AND calendar_date   >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_PERF} DAYS
         GROUP BY 1, 2, 3, 4, 5
         ORDER BY week_date DESC, earnings_eur DESC
     """)
@@ -87,7 +88,7 @@ def fetch_hourly_car_data() -> pd.DataFrame:
             SUM(gmv_before_discounts_with_vat)                            AS gmv_eur
         FROM main.mart_models.mart_driver_car_city_hour_earnings_and_fees_eur_local
         WHERE city_name = 'Madrid'
-          AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS} DAYS
+          AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_HOURLY} DAYS
         GROUP BY 1, 2, 3, 4, 5, 6, 7
         ORDER BY date DESC, hour_of_day
     """)
