@@ -219,10 +219,6 @@
         <input type="file" accept=".csv" onchange="handlePeakHoursFile(this.files[0]);this.value=''">
       </label>
 
-      <label class="home-src-pill" title="Car-driver performance (M-30)">
-        <span class="data-dot" id="dot-carperf"></span> M-30
-        <input type="file" accept=".csv" onchange="handleCarPerfFile(this.files[0]);this.value=''">
-      </label>
     </div>
 
     <!-- ── Tab cards ── -->
@@ -270,8 +266,6 @@
       <input type="file" id="input-drivers-topbar" accept=".csv" style="display:none" onchange="handleDriversFile(this.files[0]);this.value=''">
       <button class="reload-btn" id="btn-upload-peak" onclick="document.getElementById('input-peak-topbar').click()" title="Peak hours calendar"><span class="data-dot" id="dot-peak"></span>Peak hours</button>
       <input type="file" id="input-peak-topbar" accept=".csv" style="display:none" onchange="handlePeakHoursFile(this.files[0]);this.value=''">
-      <button class="reload-btn" id="btn-upload-carperf" onclick="document.getElementById('input-carperf-topbar').click()" title="Car-driver performance (M-30)"><span class="data-dot" id="dot-carperf"></span>M-30</button>
-      <input type="file" id="input-carperf-topbar" accept=".csv" style="display:none" onchange="handleCarPerfFile(this.files[0]);this.value=''">
     </div>
   </div>
 
@@ -1176,7 +1170,43 @@ function loadPreloadedData() {
     }));
   }
 
-  // ── 4. Update topbar data-freshness label ──────────────────────────────────
+  // ── 4. m30_data → carPerfRows ─────────────────────────────────────────────
+  // Source: ng_public_spark.etl_partner_data_order, grouped weekly per driver+car+region.
+  // Each row has OH for that region; isM30 = true when region_id = 2185 (Madrid M-30).
+  // acceptanceRate and utilisation are stored as 0-100 percentages (same scale as CSV).
+  const M30_REGION_ID = 2185;
+  if (Array.isArray(d.m30_data) && d.m30_data.length) {
+    carPerfRows = d.m30_data.map(r => {
+      const oh       = Number(r.online_hours)  || 0;
+      const onTrip   = Number(r.on_trip_hours) || 0;
+      const orders   = Number(r.order_count)   || 0;
+      const nonResp  = Number(r.driver_nonresponses) || 0;
+      const rejections = Number(r.driver_rejections) || 0;
+      // Acceptance rate: (offered - nonresponse - rejection) / offered × 100
+      const acceptanceRate = orders > 0
+        ? (orders - nonResp - rejections) / orders * 100
+        : 0;
+      // Utilisation: time with passenger / total online time × 100
+      const utilisation = oh > 0 ? onTrip / oh * 100 : 0;
+      const isM30 = Number(r.region_id) === M30_REGION_ID;
+      return {
+        weekDate:       (r.week_date || '').slice(0, 10),
+        companyId:      String(r.company_id  || ''),
+        carId:          String(r.car_id      || ''),
+        driverId:       String(r.driver_id   || ''),
+        plate:          '',
+        driverName:     '',
+        oh,
+        acceptanceRate,
+        utilisation,
+        isM30,
+        zone:           isM30 ? 'M-30' : 'Other',
+        finishedRides:  Number(r.finished_rides) || 0,
+      };
+    });
+  }
+
+  // ── 5. Update topbar data-freshness label ──────────────────────────────────
   if (d.generated_at) {
     const el = document.getElementById('topbar-range');
     if (el) el.textContent = 'Databricks · ' + d.generated_at;
@@ -1187,6 +1217,7 @@ function loadPreloadedData() {
   console.log('[PreloadedData] fleet_performance rows:', lookerRows.length,
     '| activityRows:', activityRows.length,
     '| earningsRows (car×month):', earningsRows.length,
+    '| carPerfRows (M-30):', carPerfRows.length,
     '| companies in snapshot:', Object.keys(agreements.companyMap || {}).length);
   return lookerLoaded;
 }
@@ -2994,7 +3025,7 @@ function renderT1FleetPerf(fleetRows, m30Rows, earnRows, selectedFO) {
   if (!hasM30 && !hasEarn && !hasFleet) {
     thead.innerHTML = '';
     tbody.innerHTML = `<tr><td class="no-data" style="font-size:11px;padding:20px">
-      Load the <b>M-30</b> export (for OH / AR / Util) to see Fleet Performance. EPH is loaded automatically from Databricks.
+      All data is loaded automatically from Databricks. If you see this message, the data may not have been generated yet — wait for the nightly refresh or trigger the GitHub Action manually.
     </td></tr>`;
     return;
   }
@@ -3123,7 +3154,7 @@ function renderT2CarPerf(m30Cur, earnCur, period) {
   const tbody = document.getElementById('fr-t2-tbody');
 
   if (carPerfRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="no-data" style="font-size:12px;padding:28px;">No M-30 data loaded — upload the M-30 export from the top bar.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="no-data" style="font-size:12px;padding:28px;">No M-30 data available for the selected period.</td></tr>`;
     return;
   }
   if (!m30Cur.length) {
@@ -3233,7 +3264,7 @@ function renderT3DriverPerf(m30Cur, earnCur, period) {
   const tbody = document.getElementById('fr-t3-tbody');
 
   if (carPerfRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="no-data" style="font-size:12px;padding:28px;">No M-30 data loaded — upload the M-30 export from the top bar.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="no-data" style="font-size:12px;padding:28px;">No M-30 data available for the selected period.</td></tr>`;
     return;
   }
   if (!m30Cur.length) {
