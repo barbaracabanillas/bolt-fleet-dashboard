@@ -1933,9 +1933,10 @@ function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet) {
     backgroundColor: colors[g]+'EE', borderColor: colors[g], borderWidth:0, borderRadius:2,
   }));
 
-  // Pre-compute period totals for % calculations
+  // Pre-compute period totals using ALL groups in the data (not just visible ones)
+  // This ensures the total is always the true sum regardless of legend toggles
   const periodTotals = periods.map(p =>
-    active.reduce((s, g) => s + (byPeriod[p]?.[g] || 0), 0)
+    Object.values(byPeriod[p] || {}).reduce((s, v) => s + v, 0)
   );
 
   if (charts[id]) charts[id].destroy();
