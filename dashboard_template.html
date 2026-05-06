@@ -1734,7 +1734,12 @@ function findVal(obj, ...keys) {
 
 // ══ LOOKUPS ══
 function getFleetType(id) { return agreements.companyMap[id]?.fleetType || 'Free Floating'; }
-function getCohort(id)    { return agreements.companyMap[id]?.cohort    || 'No Agreement'; }
+function getCohort(id) {
+  const c = agreements.companyMap[id]?.cohort || 'No Agreement';
+  // Snap any value that doesn't match a known cohort type back to 'No Agreement'
+  // (guards against CSV parsing artefacts like `SL"` or `Strategic` leaking into cohort)
+  return AGREEMENT_TYPES.includes(c) ? c : 'No Agreement';
+}
 function getFO(id)        { return agreements.companyMap[id]?.fo        || null; }
 
 // ══ ENRICH ══
