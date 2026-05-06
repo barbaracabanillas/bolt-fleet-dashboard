@@ -2147,7 +2147,16 @@ function renderYoY() {
 }
 
 function _renderYoY() {
-  const enriched = enrich();
+  // YoY needs ALL data regardless of the rangeFrom/rangeTo filter —
+  // the date range picker controls "current year" selection, but we still
+  // need the previous year rows to be present for matching.
+  const enriched = lookerRows.map(r => ({
+    ...r,
+    fleetType: getFleetType(r.companyId),
+    cohort:    getCohort(r.companyId),
+    foGroup:   getFO(r.companyId),
+    period:    getPeriodKey(r.week),
+  }));
   const pairs    = getYoYPairs(enriched);
   const el       = id => document.getElementById(id);
 
