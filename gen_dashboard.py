@@ -28,7 +28,12 @@ LOOKBACK_DAYS_PERF  = 730   # 2 years — needed for Year-over-Year tab
 LOOKBACK_DAYS_HOURLY = 90   # 90 days — hourly data is much denser
 
 def run_query(query: str) -> pd.DataFrame:
-    with sql.connect(server_hostname=HOST, http_path=HTTP_PATH, access_token=TOKEN) as conn:
+    with sql.connect(
+        server_hostname=HOST,
+        http_path=HTTP_PATH,
+        access_token=TOKEN,
+        _socket_timeout=600,       # 10 min socket timeout
+    ) as conn:
         with conn.cursor() as cur:
             cur.execute(query)
             cols = [d[0] for d in cur.description]
@@ -57,9 +62,9 @@ def fetch_fleet_performance() -> pd.DataFrame:
         FROM main.mart_models.mart_fleet_company_daily_history
         WHERE company_city_id = {MADRID_CITY_ID}
           AND is_fleet_company = true
-          AND fleet_is_active  = true
           AND calendar_date   >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_PERF} DAYS
         GROUP BY 1, 2, 3, 4, 5
+        HAVING SUM(fleet_online_hours) > 0
         ORDER BY week_date DESC, earnings_eur DESC
     """)
 
