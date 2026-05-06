@@ -3058,13 +3058,15 @@ function renderT1FleetPerf(fleetRows, m30Rows, earnRows, selectedFO) {
     // Total OH from M-30
     const totalOH = mRows.reduce((s, r) => s + (r.oh || 0), 0);
 
-    // Acceptance Rate: average of rows that have AR > 0
-    const arRows  = mRows.filter(r => r.acceptanceRate > 0);
-    const accRate = arRows.length ? arRows.reduce((s, r) => s + r.acceptanceRate, 0) / arRows.length : null;
+    // Acceptance Rate: OH-weighted average (guards against multi-region rows doubling driver weight)
+    const arRows  = mRows.filter(r => r.acceptanceRate > 0 && r.oh > 0);
+    const arOH    = arRows.reduce((s, r) => s + r.oh, 0);
+    const accRate = arOH > 0 ? arRows.reduce((s, r) => s + r.acceptanceRate * r.oh, 0) / arOH : null;
 
-    // Utilisation: average of rows that have util > 0
-    const utRows  = mRows.filter(r => r.utilisation > 0);
-    const utilAvg = utRows.length ? utRows.reduce((s, r) => s + r.utilisation, 0) / utRows.length : null;
+    // Utilisation: OH-weighted average
+    const utRows  = mRows.filter(r => r.utilisation > 0 && r.oh > 0);
+    const utOH    = utRows.reduce((s, r) => s + r.oh, 0);
+    const utilAvg = utOH > 0 ? utRows.reduce((s, r) => s + r.utilisation * r.oh, 0) / utOH : null;
 
     // Active Drivers: per week, count distinct driverIds with weekly OH > 1; then average
     const ohByDriverByWeek = {};  // weekDate → { driverId → oh }
@@ -3183,14 +3185,15 @@ function renderT2CarPerf(m30Cur, earnCur, period) {
         carId: r.carId || '—', plate: r.plate || info.plate || '—',
         companyId: r.companyId, companyName: r.companyName || info.companyName || '—',
         oh: 0, ohM30: 0,
-        accSum: 0, accN: 0, utilSum: 0, utilN: 0,
+        accOHSum: 0, accOH: 0, utilOHSum: 0, utilOH: 0,
       };
     }
     const c = byCar[key];
     c.oh += (r.oh || 0);
     if (r.isM30) c.ohM30 += (r.oh || 0);
-    if (r.acceptanceRate > 0) { c.accSum += r.acceptanceRate; c.accN++; }
-    if (r.utilisation    > 0) { c.utilSum += r.utilisation;   c.utilN++; }
+    // OH-weighted sums for AR and utilisation (handles multi-region rows correctly)
+    if (r.acceptanceRate > 0) { c.accOHSum  += (r.oh || 0) * r.acceptanceRate; c.accOH  += (r.oh || 0); }
+    if (r.utilisation    > 0) { c.utilOHSum += (r.oh || 0) * r.utilisation;    c.utilOH += (r.oh || 0); }
   }
 
   let tableRows = Object.values(byCar).map(c => {
@@ -3198,8 +3201,8 @@ function renderT2CarPerf(m30Cur, earnCur, period) {
     const e = earnByCar[c.carId];
     return {
       ...c,
-      accAvg:  c.accN  > 0 ? c.accSum  / c.accN  : 0,
-      utilAvg: c.utilN > 0 ? c.utilSum / c.utilN : 0,
+      accAvg:  c.accOH  > 0 ? c.accOHSum  / c.accOH  : 0,
+      utilAvg: c.utilOH > 0 ? c.utilOHSum / c.utilOH : 0,
       netEph:  e && e.ephOH > 0 ? e.ephSum / e.ephOH : 0,
       pctM30:  c.oh    > 0 ? c.ohM30   / c.oh * 100 : 0,
     };
@@ -3295,15 +3298,16 @@ function renderT3DriverPerf(m30Cur, earnCur, period) {
         companyId:   r.companyId,
         companyName: r.companyName || info.companyName || '—',
         oh: 0, ohM30: 0, carIds: new Set(),
-        accSum: 0, accN: 0, utilSum: 0, utilN: 0,
+        accOHSum: 0, accOH: 0, utilOHSum: 0, utilOH: 0,
       };
     }
     const d = byDriver[key];
     d.oh += (r.oh || 0);
     if (r.isM30) d.ohM30 += (r.oh || 0);
     if (r.carId) d.carIds.add(r.carId);
-    if (r.acceptanceRate > 0) { d.accSum += r.acceptanceRate; d.accN++; }
-    if (r.utilisation    > 0) { d.utilSum += r.utilisation;   d.utilN++; }
+    // OH-weighted sums for AR and utilisation
+    if (r.acceptanceRate > 0) { d.accOHSum  += (r.oh || 0) * r.acceptanceRate; d.accOH  += (r.oh || 0); }
+    if (r.utilisation    > 0) { d.utilOHSum += (r.oh || 0) * r.utilisation;    d.utilOH += (r.oh || 0); }
   }
 
   const hasEPH  = earnCur.length > 0;
@@ -3318,8 +3322,8 @@ function renderT3DriverPerf(m30Cur, earnCur, period) {
     }
     return {
       ...d,
-      accAvg:  d.accN  > 0 ? d.accSum  / d.accN  : 0,
-      utilAvg: d.utilN > 0 ? d.utilSum / d.utilN : 0,
+      accAvg:  d.accOH  > 0 ? d.accOHSum  / d.accOH  : 0,
+      utilAvg: d.utilOH > 0 ? d.utilOHSum / d.utilOH : 0,
       netEph:  ephOH   > 0 ? ephSum    / ephOH   : 0,
       pctM30:  d.oh    > 0 ? d.ohM30   / d.oh * 100 : 0,
     };
