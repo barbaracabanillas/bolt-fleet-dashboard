@@ -219,11 +219,6 @@
         <input type="file" accept=".csv" onchange="handlePeakHoursFile(this.files[0]);this.value=''">
       </label>
 
-      <label class="home-src-pill" title="Fleet Owner Earnings Report">
-        <span class="data-dot" id="dot-earnings"></span> Earnings
-        <input type="file" accept=".csv" onchange="handleEarningsFile(this.files[0]);this.value=''">
-      </label>
-
       <label class="home-src-pill" title="Cars & Drivers Activity by Created Hour">
         <span class="data-dot" id="dot-activity"></span> Hourly performance
         <input type="file" accept=".csv" onchange="handleActivityFile(this.files[0]);this.value=''">
@@ -280,8 +275,6 @@
       <input type="file" id="input-drivers-topbar" accept=".csv" style="display:none" onchange="handleDriversFile(this.files[0]);this.value=''">
       <button class="reload-btn" id="btn-upload-peak" onclick="document.getElementById('input-peak-topbar').click()" title="Peak hours calendar"><span class="data-dot" id="dot-peak"></span>Peak hours</button>
       <input type="file" id="input-peak-topbar" accept=".csv" style="display:none" onchange="handlePeakHoursFile(this.files[0]);this.value=''">
-      <button class="reload-btn" id="btn-upload-earnings" onclick="document.getElementById('input-earnings-topbar').click()" title="Fleet Owner Earnings Report"><span class="data-dot" id="dot-earnings"></span>Earnings</button>
-      <input type="file" id="input-earnings-topbar" accept=".csv" style="display:none" onchange="handleEarningsFile(this.files[0]);this.value=''">
       <button class="reload-btn" id="btn-upload-activity" onclick="document.getElementById('input-activity-topbar').click()" title="Cars & Drivers Activity by Created Hour"><span class="data-dot" id="dot-activity"></span>Hourly performance</button>
       <input type="file" id="input-activity-topbar" accept=".csv" style="display:none" onchange="handleActivityFile(this.files[0]);this.value=''">
       <button class="reload-btn" id="btn-upload-carperf" onclick="document.getElementById('input-carperf-topbar').click()" title="Car-driver performance (M-30)"><span class="data-dot" id="dot-carperf"></span>M-30</button>
@@ -1132,7 +1125,7 @@ function loadPreloadedData() {
     agreementsLoaded = true;
   }
 
-  // ── 3. hourly_car_data → activityRows ─────────────────────────────────────
+  // ── 3. hourly_car_data → activityRows + earningsRows ──────────────────────
   // Databricks: { date, hour_of_day, day_of_week_spark, company_id, car_id,
   //               online_hours, finished_orders, earnings_eur, gmv_eur }
   if (Array.isArray(d.hourly_car_data) && d.hourly_car_data.length) {
@@ -1159,6 +1152,35 @@ function loadPreloadedData() {
         isM30:          false,
       };
     });
+
+    // ── 3b. earningsRows from hourly data — aggregate per car + month ──────────
+    // This replaces the manual Earnings CSV upload.
+    // earningsRows is the source of EPH for Fleet Review T1 (company) and T2 (car).
+    // Group by car_id + YYYY-MM, sum OH and earnings, then compute EPH.
+    const earnMap = {};
+    for (const r of d.hourly_car_data) {
+      const month = (r.date || '').slice(0, 7);  // YYYY-MM
+      if (!month) continue;
+      const key = String(r.car_id || '') + '__' + month;
+      if (!earnMap[key]) {
+        earnMap[key] = {
+          weekDate:  month,
+          carId:     String(r.car_id     || ''),
+          companyId: String(r.company_id || ''),
+          oh: 0, eur: 0,
+        };
+      }
+      earnMap[key].oh  += Number(r.online_hours) || 0;
+      earnMap[key].eur += Number(r.earnings_eur) || 0;
+    }
+    earningsRows = Object.values(earnMap).map(e => ({
+      weekDate:  e.weekDate,
+      carId:     e.carId,
+      companyId: e.companyId,
+      oh:        e.oh,
+      ridePrice: e.eur,
+      netEph:    e.oh > 0 ? e.eur / e.oh : 0,
+    }));
   }
 
   // ── 4. Update topbar data-freshness label ──────────────────────────────────
@@ -1171,6 +1193,7 @@ function loadPreloadedData() {
 
   console.log('[PreloadedData] fleet_performance rows:', lookerRows.length,
     '| activityRows:', activityRows.length,
+    '| earningsRows (car×month):', earningsRows.length,
     '| companies in snapshot:', Object.keys(agreements.companyMap || {}).length);
   return lookerLoaded;
 }
@@ -2978,7 +3001,7 @@ function renderT1FleetPerf(fleetRows, m30Rows, earnRows, selectedFO) {
   if (!hasM30 && !hasEarn && !hasFleet) {
     thead.innerHTML = '';
     tbody.innerHTML = `<tr><td class="no-data" style="font-size:11px;padding:20px">
-      Load the <b>M-30</b> export (for OH / AR / Util) and <b>Earnings</b> export (for EPH) to see Fleet Performance.
+      Load the <b>M-30</b> export (for OH / AR / Util) to see Fleet Performance. EPH is loaded automatically from Databricks.
     </td></tr>`;
     return;
   }
