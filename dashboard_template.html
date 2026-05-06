@@ -199,17 +199,12 @@
     <div class="home-sources">
       <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;align-self:center;margin-right:4px;">Data sources</div>
 
-      <!-- Fleet performance — primary export (drag or click) -->
-      <label class="home-src-pill home-src-pill--primary" id="home-export-zone" title="Looker Fleet Performance export · drop or click"
-             ondragover="event.preventDefault();this.classList.add('drag-over')"
-             ondragleave="this.classList.remove('drag-over')"
-             ondrop="event.preventDefault();this.classList.remove('drag-over');handleLookerFiles(event.dataTransfer.files)">
-        <span class="data-dot" id="dot-looker-home"></span>
+      <!-- Fleet performance — now automated via Databricks (no upload needed) -->
+      <span class="home-src-pill" style="cursor:default;" title="Fleet performance · se actualiza automáticamente cada noche desde Databricks">
+        <span class="data-dot loaded" id="dot-looker-home"></span>
         <span id="home-export-title">Fleet performance</span>
-        <span id="home-export-sub" style="display:none;"></span>
-        <input type="file" id="input-looker" accept=".csv" multiple onchange="handleLookerFiles(this.files);this.value=''">
-        <input type="file" id="input-looker-replace" accept=".csv" multiple style="display:none" onchange="clearLookerCache();handleLookerFiles(this.files)">
-      </label>
+        <span style="font-size:10px;color:var(--green);font-weight:600;margin-left:3px;">· Databricks</span>
+      </span>
 
       <label class="home-src-pill" title="Fleet cohorts / Agreements CSV">
         <span class="data-dot loaded" id="dot-agreements"></span> Fleet cohorts
@@ -289,7 +284,7 @@
     </div>
     <div class="topbar-right">
       <button class="reload-btn" onclick="goHome()">← Home</button>
-      <button class="reload-btn" onclick="resetUpload()"><span class="data-dot" id="dot-export"></span>Fleet performance</button>
+      <span class="reload-btn" style="cursor:default;opacity:0.7;" title="Fleet performance · actualizado automáticamente desde Databricks"><span class="data-dot loaded" id="dot-export"></span>Fleet performance · auto</span>
       <button class="reload-btn" onclick="document.getElementById('input-agreements-topbar').click()"><span class="data-dot loaded" id="dot-agreements"></span>Fleet cohorts</button>
       <input type="file" id="input-agreements-topbar" accept=".csv" style="display:none" onchange="handleAgreementsFile(this.files[0]);this.value=''">
       <button class="reload-btn" id="btn-upload-cars" onclick="document.getElementById('input-cars-topbar').click()" title="Admin · Cars CSV"><span class="data-dot" id="dot-cars"></span>Cars</button>
