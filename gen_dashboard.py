@@ -240,11 +240,11 @@ def fetch_company_snapshot() -> pd.DataFrame:
         company_name,
         invoicing_strategy_corrected AS fleet_type
     FROM main.mart_models.mart_fleet_company_daily_history
-    WHERE city_id = 150
+    WHERE company_city_id = 150
       AND calendar_date = (
           SELECT MAX(calendar_date)
           FROM main.mart_models.mart_fleet_company_daily_history
-          WHERE city_id = 150
+          WHERE company_city_id = 150
       )
     """
     df = run_query(sql)
