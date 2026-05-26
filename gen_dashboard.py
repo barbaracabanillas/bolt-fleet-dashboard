@@ -420,7 +420,8 @@ def main():
     html = generate_html(data)
 
     # 7. Write output
-    output_path = Path("index.html")
+    output_path = Path("docs/index.html")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html, encoding="utf-8")
     print(f"\n✅  Dashboard written to {output_path} ({len(html):,} bytes)")
     print("=" * 60)
