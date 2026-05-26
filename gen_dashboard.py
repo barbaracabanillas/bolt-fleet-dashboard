@@ -180,6 +180,9 @@ def fetch_car_weekly_data() -> pd.DataFrame:
     Also flags each car as branding if search_category_name = 'Branding'
     for any hour in that week.
 
+    Cars without company_id (null) are assigned company_id = -1 so their
+    hours are not lost — they will be classified as Free-Floating / No Agreement.
+
     Returns columns:
         week_start, company_id, car_id, is_branding_car,
         online_hours, earnings_eur, gmv_eur
@@ -187,7 +190,7 @@ def fetch_car_weekly_data() -> pd.DataFrame:
     sql = f"""
     SELECT
         DATE_TRUNC('week', calendar_date_local)      AS week_start,
-        company_id,
+        COALESCE(company_id, -1)                      AS company_id,
         car_id,
         MAX(CASE
             WHEN LOWER(search_category_name) = 'branding' THEN 1
@@ -197,12 +200,16 @@ def fetch_car_weekly_data() -> pd.DataFrame:
         SUM(driver_total_earnings_with_vat)           AS earnings_eur,
         SUM(gmv_before_discounts_with_vat)            AS gmv_eur
     FROM main.mart_models.mart_driver_car_city_hour_earnings_and_fees_eur_local
-    WHERE city_name = 'Madrid'
+    WHERE city_id = 150
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
     GROUP BY 1, 2, 3
     """
     df = run_query(sql)
-    print(f"[car_weekly] Fetched {len(df):,} car-week rows")
+    # Cars with no company (id=-1) get Free-Floating / No Agreement by default
+    null_cars = len(df[df["company_id"] == -1])
+    if null_cars > 0:
+        print(f"[car_weekly] ⚠️  {null_cars:,} car-week rows had no company_id → assigned to Free-Floating")
+    print(f"[car_weekly] Fetched {len(df):,} car-week rows total")
     return df
 
 
@@ -210,13 +217,13 @@ def fetch_m30_data() -> pd.DataFrame:
     """M30 performance data – unchanged from original."""
     sql = f"""
     SELECT
-        calendar_date_local          AS date,
-        company_id,
+        calendar_date_local                  AS date,
+        COALESCE(company_id, -1)              AS company_id,
         SUM(driver_total_earnings_with_vat)  AS earnings_eur,
         SUM(gmv_before_discounts_with_vat)   AS gmv_eur,
         COUNT(DISTINCT car_id)               AS active_cars
     FROM main.mart_models.mart_driver_car_city_hour_earnings_and_fees_eur_local
-    WHERE city_name = 'Madrid'
+    WHERE city_id = 150
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
     GROUP BY 1, 2
     """
