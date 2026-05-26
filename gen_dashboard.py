@@ -237,8 +237,7 @@ def fetch_company_snapshot() -> pd.DataFrame:
     sql = """
     SELECT
         company_id,
-        company_name,
-        invoicing_strategy_corrected AS fleet_type
+        company_billing_type AS fleet_type
     FROM main.mart_models.mart_fleet_company_daily_history
     WHERE company_city_id = 150
       AND calendar_date = (
