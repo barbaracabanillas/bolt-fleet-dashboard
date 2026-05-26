@@ -237,7 +237,7 @@ def fetch_company_snapshot() -> pd.DataFrame:
     sql = """
     SELECT
         company_id,
-        company_billing_type AS fleet_type
+        company_billing_type AS invoicing_strategy
     FROM main.mart_models.mart_fleet_company_daily_history
     WHERE company_city_id = 150
       AND calendar_date = (
@@ -336,10 +336,10 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
         if ag is None:
             continue
         rows.append({
-            "week_start":   row["week_start"],
+            "week_date":    row["week_start"],
             "company_id":   cid,
             "cohort":       ag["c"],
-            "fleet_type":   ag["f"],
+            "invoicing_strategy": ag["f"],
             "online_hours": row["online_hours"],
             "earnings_eur": row["earnings_eur"],
             "gmv_eur":      row["gmv_eur"],
@@ -351,7 +351,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
 
     result = (
         result
-        .groupby(["week_start", "company_id", "cohort", "fleet_type"], as_index=False)
+        .groupby(["week_date", "company_id", "cohort", "invoicing_strategy"], as_index=False)
         .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum"})
     )
     print(f"[aggregate] {len(result):,} company-week-cohort rows")
@@ -409,11 +409,12 @@ def main():
 
     # 5. Convert dataframes to JSON-serialisable dicts
     data = {
-        "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
-        "agreements":   agreements,
-        "weekly":       weekly_df.to_dict(orient="records"),
-        "m30":          m30_df.to_dict(orient="records"),
-        "snapshot":     snapshot_df.to_dict(orient="records"),
+        "generated_at":      datetime.datetime.utcnow().isoformat() + "Z",
+        "agreements":        agreements,
+        "fleet_performance": weekly_df.to_dict(orient="records"),
+        "company_snapshot":  snapshot_df.to_dict(orient="records"),
+        "hourly_car_data":   [],   # car-level hourly data not yet wired up
+        "m30":               m30_df.to_dict(orient="records"),
     }
 
     # 6. Generate HTML
