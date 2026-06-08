@@ -329,21 +329,30 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     Returns columns: week_start, company_id, cohort, fleet_type,
                      online_hours, earnings_eur, gmv_eur
     """
+    total_oh_input = car_df["online_hours"].sum()
+    print(f"[aggregate] Total OH in car_df before aggregation: {total_oh_input:,.0f}")
+
     rows = []
+    dropped_oh = 0
     for _, row in car_df.iterrows():
-        cid     = str(row["company_id"])
-        ag      = agreements.get(cid)
+        cid = str(row["company_id"])
+        ag  = agreements.get(cid)
         if ag is None:
-            continue
+            # Should not happen — assign default instead of dropping
+            dropped_oh += row["online_hours"]
+            ag = {"c": "No Agreement", "f": "Free-Floating"}
         rows.append({
-            "week_date":    row["week_start"],
-            "company_id":   cid,
-            "cohort":       ag["c"],
+            "week_date":          row["week_start"],
+            "company_id":         cid,
+            "cohort":             ag["c"],
             "invoicing_strategy": ag["f"],
-            "online_hours": row["online_hours"],
-            "earnings_eur": row["earnings_eur"],
-            "gmv_eur":      row["gmv_eur"],
+            "online_hours":       row["online_hours"],
+            "earnings_eur":       row["earnings_eur"],
+            "gmv_eur":            row["gmv_eur"],
         })
+
+    if dropped_oh > 0:
+        print(f"[aggregate] ⚠️  {dropped_oh:,.0f} OH had no agreement entry → assigned No Agreement")
 
     result = pd.DataFrame(rows)
     if result.empty:
@@ -354,7 +363,8 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
         .groupby(["week_date", "company_id", "cohort", "invoicing_strategy"], as_index=False)
         .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum"})
     )
-    print(f"[aggregate] {len(result):,} company-week-cohort rows")
+    total_oh_output = result["online_hours"].sum()
+    print(f"[aggregate] {len(result):,} company-week-cohort rows | Total OH after aggregation: {total_oh_output:,.0f}")
     return result
 
 
