@@ -30,7 +30,8 @@ from databricks import sql as databricks_sql
 MADRID_CITY_ID       = 150
 LOOKBACK_DAYS_WEEKLY = 365   # how many days back to fetch car-level weekly data
 LOOKBACK_DAYS_M30    = 30    # for M30 section
-COHORTS_CSV          = "cohorts.csv"   # path relative to repo root
+COHORTS_CSV          = "cohorts.csv"         # path relative to repo root
+FO_GROUPS_CSV        = "fo_groups.csv"       # company_id → FO group name
 
 VALID_COHORTS   = ["Fleet Agreement", "Locked Supply", "Branding", "No Agreement"]
 FIXED_COHORTS   = {"Fleet Agreement", "Locked Supply"}   # Google Sheet always wins
@@ -57,6 +58,32 @@ def run_query(sql: str) -> pd.DataFrame:
             result = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
     return pd.DataFrame(result, columns=columns)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# FO GROUP MAP  (from fo_groups.csv = Admin Madrid sheet)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def load_fo_group_map(csv_path: str = FO_GROUPS_CSV) -> dict:
+    """
+    Read fo_groups.csv and return a dict:
+        { "company_id_str": "FO group name" }
+
+    Expected columns: Company, Company ID, FO, Fleet Type, Cohort
+    """
+    fo_map = {}
+    try:
+        with open(csv_path, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                cid = str(row.get("Company ID", "")).strip()
+                fo  = str(row.get("FO", "")).strip()
+                if cid and fo:
+                    fo_map[cid] = fo
+        print(f"[fo_groups] Loaded {len(fo_map)} company→FO mappings from {csv_path}")
+    except FileNotFoundError:
+        print(f"[fo_groups] ⚠️  {csv_path} not found — FO groups will be empty")
+    return fo_map
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -255,7 +282,7 @@ def fetch_company_snapshot() -> pd.DataFrame:
 # BUILD EMBEDDED_AGREEMENTS  (injected into the dashboard template)
 # ──────────────────────────────────────────────────────────────────────────────
 
-def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict) -> dict:
+def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: dict = None) -> dict:
     """
     For every company that appears in the car-level data, determine its cohort
     by applying classify_car() across all its cars, then return the
@@ -285,13 +312,16 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict) -> dict:
             "cohort":    "No Agreement",
         })
 
+        # FO group: use fo_map (Admin Madrid sheet) as source of truth
+        fo_group = (fo_map or {}).get(cid_str) or info.get("grouping") or None
+
         # If fixed cohort (Fleet Agreement / Locked Supply) → done immediately
         if info["cohort"] in FIXED_COHORTS:
             agreements[cid_str] = {
                 "n": info["name"],
                 "f": info["fleet_type"],
                 "c": info["cohort"],
-                "g": info["grouping"] or None,
+                "g": fo_group,
             }
             continue
 
@@ -309,7 +339,7 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict) -> dict:
             "n": info["name"],
             "f": fleet_type,
             "c": cohort,
-            "g": info["grouping"] or None,
+            "g": fo_group,
         }
 
     print(f"[agreements] Built {len(agreements)} company entries")
@@ -403,8 +433,9 @@ def main():
     print(f"Dashboard build started at {datetime.datetime.utcnow().isoformat()}Z")
     print("=" * 60)
 
-    # 1. Load cohort classification from CSV
+    # 1. Load cohort classification and FO group mapping
     cohort_map = load_cohort_map(COHORTS_CSV)
+    fo_map     = load_fo_group_map(FO_GROUPS_CSV)
 
     # 2. Fetch data from Databricks
     car_df      = fetch_car_weekly_data()
@@ -412,7 +443,7 @@ def main():
     snapshot_df = fetch_company_snapshot()
 
     # 3. Build EMBEDDED_AGREEMENTS (one entry per company)
-    agreements = build_embedded_agreements(car_df, cohort_map)
+    agreements = build_embedded_agreements(car_df, cohort_map, fo_map)
 
     # 4. Aggregate weekly OH by company+cohort (for dashboard charts)
     weekly_df = aggregate_weekly_by_cohort(car_df, agreements)
