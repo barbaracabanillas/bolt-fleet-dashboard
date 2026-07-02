@@ -2,6 +2,13 @@ name: 🔄 Generar Dashboard
 
 on:
   schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+on:
+  schedule:
     - cron: '0 5 * * *'   # 5:00 UTC = 6:00 CET / 7:00 CEST (cada noche)
   workflow_dispatch:        # permite lanzarlo manualmente desde GitHub
 
