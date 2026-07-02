@@ -223,10 +223,10 @@ def fetch_car_weekly_data() -> pd.DataFrame:
             WHEN LOWER(search_category_name) = 'branding' THEN 1
             ELSE 0
         END)                                          AS is_branding_car,
-        COUNT(DISTINCT date_hour_ts_local)            AS online_hours,
-        SUM(driver_total_earnings_with_vat)           AS earnings_eur,
-        SUM(gmv_before_discounts_with_vat)            AS gmv_eur
-    FROM main.mart_models.mart_driver_car_city_hour_earnings_and_fees_eur_local
+        COUNT(DISTINCT date_hour_ts_local)                        AS online_hours,
+        SUM(rides_driver_total_earnings_with_vat_eur_local)       AS earnings_eur,
+        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur
+    FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
     WHERE city_id = 150
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
     GROUP BY 1, 2, 3
@@ -246,10 +246,10 @@ def fetch_m30_data() -> pd.DataFrame:
     SELECT
         calendar_date_local                  AS date,
         COALESCE(company_id, -1)              AS company_id,
-        SUM(driver_total_earnings_with_vat)  AS earnings_eur,
-        SUM(gmv_before_discounts_with_vat)   AS gmv_eur,
-        COUNT(DISTINCT car_id)               AS active_cars
-    FROM main.mart_models.mart_driver_car_city_hour_earnings_and_fees_eur_local
+        SUM(rides_driver_total_earnings_with_vat_eur_local)        AS earnings_eur,
+        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur,
+        COUNT(DISTINCT car_id)                                     AS active_cars
+    FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
     WHERE city_id = 150
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
     GROUP BY 1, 2
