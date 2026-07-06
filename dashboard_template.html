@@ -379,6 +379,7 @@
             <th>Agreement</th>
             <th class="r">Companies</th>
             <th class="r">Online Hours</th>
+            <th class="r" id="th-period-change">WoW</th>
             <th class="r">Avg. EPH</th>
             <th class="r">Partners</th>
             <th class="r">GMV</th>
@@ -2098,6 +2099,19 @@ function populatePeriodSelector(periods) {
   sel.value = (cur && periods.includes(cur)) ? cur : periods[periods.length-1];
 }
 
+function periodChangeLabel() {
+  if (granularity === 'day')   return 'DoD';
+  if (granularity === 'week')  return 'WoW';
+  if (granularity === 'month') return 'MoM';
+  return 'QoQ';
+}
+function fmtChange(pct) {
+  if (pct === null || pct === undefined || isNaN(pct)) return '<span style="color:#ccc">—</span>';
+  const sign = pct >= 0 ? '+' : '';
+  const color = pct >= 0 ? '#2A9C64' : '#E53E3E';
+  return `<span style="color:${color};font-weight:600">${sign}${pct.toFixed(1)}%</span>`;
+}
+
 function renderTableFromSelector() {
   const enriched = enrich();
   const periods  = sortPeriods([...new Set(enriched.map(r => r.period))]);
@@ -2111,18 +2125,37 @@ function renderTable(enriched, periods) {
   const rows = enriched.filter(r => r.period === selPeriod);
 
   const tbody = document.getElementById('company-tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" class="no-data">Sin datos</td></tr>'; return; }
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" class="no-data">Sin datos</td></tr>'; return; }
 
+  // Update column header label
+  const thPc = document.getElementById('th-period-change');
+  if (thPc) thPc.textContent = periodChangeLabel();
+
+  // Current period aggregation
   const foMap = {};
   for (const r of rows) {
     const key = r.foGroup || ('__'+r.companyId);
-    if (!foMap[key]) foMap[key] = { name: r.foGroup||r.companyName, isFO:!!r.foGroup, fleetType:r.fleetType, cohort:r.cohort, n:0, oh:0, partners:0, gmv:0, sumOH:0, sumWt:0 };
+    if (!foMap[key]) foMap[key] = { key, name: r.foGroup||r.companyName, isFO:!!r.foGroup, fleetType:r.fleetType, cohort:r.cohort, n:0, oh:0, partners:0, gmv:0, sumOH:0, sumWt:0 };
     const g = foMap[key];
     g.n++; g.oh+=r.onlineHours; g.partners+=r.activePartners; g.gmv+=r.gmv;
     if (r.eph>0) { g.sumOH+=r.onlineHours; g.sumWt+=r.onlineHours*r.eph; }
   }
 
+  // Previous period aggregation (for WoW / MoM / DoD)
+  const periodIdx = periods.indexOf(selPeriod);
+  const prevPeriod = periodIdx > 0 ? periods[periodIdx - 1] : null;
+  const prevFoMap = {};
+  if (prevPeriod) {
+    for (const r of enriched.filter(r => r.period === prevPeriod)) {
+      const key = r.foGroup || ('__'+r.companyId);
+      if (!prevFoMap[key]) prevFoMap[key] = { oh: 0 };
+      prevFoMap[key].oh += r.onlineHours;
+    }
+  }
+
   tbody.innerHTML = Object.values(foMap).sort((a,b)=>b.oh-a.oh).map((g,i) => {
+    const prevG = prevFoMap[g.key];
+    const wowPct = (prevG && prevG.oh > 0) ? (g.oh - prevG.oh) / prevG.oh * 100 : null;
     const sb = S_BADGES[g.fleetType] || S_BADGES['Free Floating'];
     const ab = A_BADGES[g.cohort]    || A_BADGES['No Agreement'];
     const eph = g.sumOH>0 ? g.sumWt/g.sumOH : 0;
@@ -2133,6 +2166,7 @@ function renderTable(enriched, periods) {
       <td><span class="badge" style="background:${ab.bg};color:${ab.color}">${g.cohort}</span></td>
       <td class="r muted">${g.n}</td>
       <td class="r">${g.oh.toLocaleString('es',{maximumFractionDigits:1})}h</td>
+      <td class="r">${fmtChange(wowPct)}</td>
       <td class="r">${eph>0?'€'+eph.toFixed(2):'—'}</td>
       <td class="r">${g.partners}</td>
       <td class="r">€${g.gmv.toLocaleString('es',{maximumFractionDigits:0})}</td>
