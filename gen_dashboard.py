@@ -30,8 +30,8 @@ from databricks import sql as databricks_sql
 MADRID_CITY_ID       = 150
 LOOKBACK_DAYS_WEEKLY = 365   # how many days back to fetch car-level weekly data
 LOOKBACK_DAYS_M30    = 30    # for M30 section
-COHORTS_CSV          = "cohorts.csv"         # path relative to repo root
-FO_GROUPS_CSV        = "fo_groups.csv"       # company_id → FO group name
+COHORTS_CSV          = "fo_groups.csv"       # single source of truth (Company, Company ID, FO, Fleet Type, Cohort)
+FO_GROUPS_CSV        = "fo_groups.csv"       # same file — Company ID → FO group name
 
 VALID_COHORTS   = ["Fleet Agreement", "Locked Supply", "Branding", "No Agreement"]
 FIXED_COHORTS   = {"Fleet Agreement", "Locked Supply"}   # Google Sheet always wins
@@ -92,18 +92,19 @@ def load_fo_group_map(csv_path: str = FO_GROUPS_CSV) -> dict:
 
 def load_cohort_map(csv_path: str = COHORTS_CSV) -> dict:
     """
-    Read the exported Google Sheet CSV and return a dict:
+    Read the Admin Madrid Google Sheet CSV and return a dict:
         { "company_id_str": {"name": ..., "fleet_type": ..., "cohort": ..., "grouping": ...} }
 
-    The CSV must have these columns (exact names):
-        Company ID | Company name | Grouping | Strategic | No Agreement
+    Supports two column layouts (auto-detected):
 
-    'Strategic' stores fleet type  → e.g. "Free-Floating" / "Strategic"
-    'No Agreement' column stores the cohort label  → "Fleet Agreement" /
-        "Locked Supply" / "Branding" / "No Agreement"
+    NEW format (fo_groups.csv):
+        Company | Company ID | FO | Fleet Type | Cohort
 
-    If the file has a different structure (multi-market tab), the function
-    falls back to looking for columns: company_id, fleet_type, cohort.
+    OLD format (legacy cohorts.csv):
+        Company name | Company ID | Grouping | Strategic | No Agreement
+
+    Multi-market tab (lowercase):
+        company_id | company_name | grouping | fleet_type | cohort
     """
     cohort_map = {}
 
@@ -112,8 +113,15 @@ def load_cohort_map(csv_path: str = COHORTS_CSV) -> dict:
         headers = reader.fieldnames or []
 
         # ── Detect which header format we have ──────────────────────────────
-        if "Company ID" in headers:
-            # Madrid tab format
+        if "Company ID" in headers and "FO" in headers and "Fleet Type" in headers and "Cohort" in headers:
+            # NEW format: Company, Company ID, FO, Fleet Type, Cohort
+            id_col       = "Company ID"
+            name_col     = "Company"
+            grouping_col = "FO"             # FO group stored here
+            type_col     = "Fleet Type"
+            cohort_col   = "Cohort"
+        elif "Company ID" in headers:
+            # OLD Madrid tab format: Company name, Company ID, Grouping, Strategic, No Agreement
             id_col       = "Company ID"
             name_col     = "Company name"
             grouping_col = "Grouping"
@@ -129,7 +137,7 @@ def load_cohort_map(csv_path: str = COHORTS_CSV) -> dict:
         else:
             raise ValueError(
                 f"Unrecognised CSV columns: {headers}\n"
-                "Expected 'Company ID' or 'company_id' column."
+                "Expected 'Company ID', 'FO', 'Fleet Type', 'Cohort' columns."
             )
 
         for row in reader:
@@ -139,11 +147,17 @@ def load_cohort_map(csv_path: str = COHORTS_CSV) -> dict:
             cohort_raw = row.get(cohort_col, "").strip()
             # Normalise cohort label (handle minor typos / case differences)
             cohort = _normalise_cohort(cohort_raw)
+            grouping = row.get(grouping_col, "").strip()
+            # Reject suspicious grouping values (CSV-formatted multi-company blobs)
+            # Allow single commas in company names like "Agencia Negociadora, S.L."
+            if grouping and (grouping.count(",") >= 3 or len(grouping) > 100):
+                print(f"[cohort_map] ⚠️  Skipping suspicious grouping for company {raw_id}: {grouping[:60]}...")
+                grouping = ""
             cohort_map[raw_id] = {
-                "name":      row.get(name_col, "").strip(),
-                "grouping":  row.get(grouping_col, "").strip(),
+                "name":       row.get(name_col, "").strip(),
+                "grouping":   grouping,
                 "fleet_type": row.get(type_col, "Free-Floating").strip(),
-                "cohort":    cohort,
+                "cohort":     cohort,
             }
 
     print(f"[cohort_map] Loaded {len(cohort_map)} companies from {csv_path}")
@@ -241,14 +255,16 @@ def fetch_car_weekly_data() -> pd.DataFrame:
 
 
 def fetch_m30_data() -> pd.DataFrame:
-    """M30 performance data – unchanged from original."""
+    """Daily company-level data for the last 30 days (M30 section + Daily granularity view)."""
     sql = f"""
     SELECT
-        calendar_date_local                  AS date,
-        COALESCE(company_id, -1)              AS company_id,
-        SUM(rides_driver_total_earnings_with_vat_eur_local)        AS earnings_eur,
-        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur,
-        COUNT(DISTINCT car_id)                                     AS active_cars
+        calendar_date_local                                                    AS date,
+        COALESCE(company_id, -1)                                               AS company_id,
+        COUNT(DISTINCT CONCAT(CAST(car_id AS STRING), '|',
+              CAST(date_hour_ts_local AS STRING)))                             AS online_hours,
+        SUM(rides_driver_total_earnings_with_vat_eur_local)                    AS earnings_eur,
+        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local)             AS gmv_eur,
+        COUNT(DISTINCT car_id)                                                 AS active_cars
     FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
     WHERE city_id = 150
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
@@ -257,6 +273,39 @@ def fetch_m30_data() -> pd.DataFrame:
     df = run_query(sql)
     print(f"[m30] Fetched {len(df):,} rows")
     return df
+
+
+def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.DataFrame:
+    """
+    Convert daily company-level M30 data into the same shape as fleet_performance
+    (cohort-tagged), but keyed by day_date instead of week_date.
+    Used by the 'Day' granularity button in the dashboard.
+    """
+    if m30_df.empty:
+        return pd.DataFrame()
+
+    rows = []
+    for _, row in m30_df.iterrows():
+        cid = str(row["company_id"])
+        ag  = agreements.get(cid, {"c": "No Agreement", "f": "Free-Floating"})
+        rows.append({
+            "day_date":           str(row["date"]),
+            "company_id":         cid,
+            "cohort":             ag["c"],
+            "invoicing_strategy": ag["f"],
+            "online_hours":       row["online_hours"],
+            "earnings_eur":       row["earnings_eur"],
+            "gmv_eur":            row["gmv_eur"],
+        })
+
+    result = pd.DataFrame(rows)
+    result = (
+        result
+        .groupby(["day_date", "company_id", "cohort", "invoicing_strategy"], as_index=False)
+        .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum"})
+    )
+    print(f"[daily] {len(result):,} company-day rows for 'Day' granularity view")
+    return result
 
 
 def fetch_company_snapshot() -> pd.DataFrame:
@@ -312,8 +361,12 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: di
             "cohort":    "No Agreement",
         })
 
-        # FO group: use fo_map (Admin Madrid sheet) as source of truth
+        # FO group: fo_map is the primary source; cohort_map.grouping is fallback
         fo_group = (fo_map or {}).get(cid_str) or info.get("grouping") or None
+        # Sanity check: reject any value that looks like raw CSV content
+        if fo_group and (fo_group.count(",") >= 3 or len(fo_group) > 100):
+            print(f"[agreements] ⚠️  Rejected suspicious fo_group for company {cid_str}: {str(fo_group)[:60]}...")
+            fo_group = None
 
         # If fixed cohort (Fleet Agreement / Locked Supply) → done immediately
         if info["cohort"] in FIXED_COHORTS:
@@ -448,11 +501,15 @@ def main():
     # 4. Aggregate weekly OH by company+cohort (for dashboard charts)
     weekly_df = aggregate_weekly_by_cohort(car_df, agreements)
 
+    # 4b. Aggregate daily OH by company+cohort (for 'Day' granularity button)
+    daily_df = aggregate_daily_by_cohort(m30_df, agreements)
+
     # 5. Convert dataframes to JSON-serialisable dicts
     data = {
         "generated_at":      datetime.datetime.utcnow().isoformat() + "Z",
         "agreements":        agreements,
         "fleet_performance": weekly_df.to_dict(orient="records"),
+        "daily_performance": daily_df.to_dict(orient="records"),
         "company_snapshot":  snapshot_df.to_dict(orient="records"),
         "hourly_car_data":   [],   # car-level hourly data not yet wired up
         "m30":               m30_df.to_dict(orient="records"),
