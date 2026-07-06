@@ -471,7 +471,7 @@ def generate_html(data: dict) -> str:
     agreements_json = json.dumps(data["agreements"], ensure_ascii=False)
     html = html.replace(
         "/* __EMBEDDED_AGREEMENTS__ */",
-        f"window.EMBEDDED_AGREEMENTS = {agreements_json};",
+        f"const EMBEDDED_AGREEMENTS = {agreements_json};",
     )
 
     return html
