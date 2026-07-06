@@ -1017,23 +1017,26 @@ function flashBtn(id, msg, ms) {
   }, ms || 3000);
 }
 
-// ── Load agreements (localStorage override → embedded) ──
+// ── Load agreements (embedded always wins; localStorage only as fallback) ──
 function loadSavedAgreements() {
-  try {
-    const csv = localStorage.getItem('bolt_fleet_agreements_csv_v1');
-    if (csv) {
-      agreements = parseAgreementsCSV(csv);
-      agreementsLoaded = true;
-      return;
-    }
-  } catch(e) {}
-  if (EMBEDDED_AGREEMENTS) {
+  // EMBEDDED_AGREEMENTS (injected fresh at build time from fo_groups.csv) has priority.
+  // localStorage can hold stale manual-upload data — always ignore it when embedded exists.
+  if (typeof EMBEDDED_AGREEMENTS !== 'undefined' && EMBEDDED_AGREEMENTS && Object.keys(EMBEDDED_AGREEMENTS).length > 0) {
     agreements.companyMap = {};
     for (const [id, d] of Object.entries(EMBEDDED_AGREEMENTS)) {
       agreements.companyMap[id] = { fleetType: d.f, cohort: d.c, fo: d.g };
     }
     agreementsLoaded = true;
+    return;
   }
+  // Fallback: manual CSV upload saved in localStorage
+  try {
+    const csv = localStorage.getItem('bolt_fleet_agreements_csv_v1');
+    if (csv) {
+      agreements = parseAgreementsCSV(csv);
+      agreementsLoaded = true;
+    }
+  } catch(e) {}
 }
 
 function showAgreementsUpload() {}  // no-op (kept for compat)
@@ -1911,7 +1914,9 @@ function goToTab(name) {
 }
 
 function renderAll() {
-  const enriched = enrich();
+  // Filter to only the strategic FO groups defined in STRATEGIC_FO_LIST
+  // so KPIs, charts and table all show the same universe of data
+  const enriched = enrich().filter(r => r.foGroup && STRATEGIC_FO_LIST.has(r.foGroup));
   const periods  = sortPeriods([...new Set(enriched.map(r => r.period))]);
 
   updateKPIs(enriched, periods);
@@ -2114,7 +2119,7 @@ function fmtChange(delta) {
 }
 
 function renderTableFromSelector() {
-  const enriched = enrich();
+  const enriched = enrich().filter(r => r.foGroup && STRATEGIC_FO_LIST.has(r.foGroup));
   const periods  = sortPeriods([...new Set(enriched.map(r => r.period))]);
   renderTable(enriched, periods);
 }
@@ -2154,7 +2159,7 @@ function renderTable(enriched, periods) {
     }
   }
 
-  tbody.innerHTML = Object.values(foMap).sort((a,b)=>b.oh-a.oh).map((g,i) => {
+  tbody.innerHTML = Object.values(foMap).filter(g => g.isFO).sort((a,b)=>b.oh-a.oh).map((g,i) => {
     const prevG = prevFoMap[g.key];
     const wowPct = prevG ? (g.oh - prevG.oh) : null;
     const sb = S_BADGES[g.fleetType] || S_BADGES['Free Floating'];
@@ -2577,11 +2582,49 @@ function renderYoYTable(enriched, pairs, cyYear, lyYear) {
 //  FLEET REVIEW — Helpers
 // ══════════════════════════════════════════════════════════════════
 
+// ── Strategic FO groups shown in Fleet Review ─────────────────────────────
+const STRATEGIC_FO_LIST = new Set([
+  'DOUBLECAB',
+  'BCM Dinamica Y Gestion',
+  'VTC Plus',
+  'David Delfa',
+  'Jose Luis Funes',
+  'OTTOCABS SL',
+  'Rarotonga',
+  'Servicios Mobility',
+  'TECNITEL CARS SLU',
+  'Agencia Negociadora Transfers, S.L.',
+  'TORROCO MOBILITY S.L.',
+  'ALSA (Miguel) - Flota ALSA',
+  'ALSA (Broncotrans)',
+  'Global Transport',
+  'Moober Class',
+  'Madmobility',
+  'SERVICAR 25',
+  'DOUBLEDIGIT',
+  'DOUBLECAB (SPV)',
+  'Daniel León',
+  'Campofis',
+  'ALSA (directo)',
+  'Nueva Cooperativa',
+  'Eduardo González',
+  'Francisco Javier (Ferlina)',
+  'Jose Ivan',
+  'Jose Luis Corbalan',
+  'Madrid Autónomos',
+  'TIBUS',
+  'Manuel Peña',
+  'Javier Martinez Velayos',
+  'Jose Luis Moober',
+  'Preservealco',
+  'Roberto Heras',
+]);
+
 function populateFleetSelector() {
   const sel = document.getElementById('fleet-selector');
   const cur = sel.value;
   const foGroups = [...new Set(
-    Object.values(agreements.companyMap).map(v => v.fo).filter(Boolean)
+    Object.values(agreements.companyMap).map(v => v.fo).filter(fo => fo && STRATEGIC_FO_LIST.has(fo))
   )].sort();
   sel.innerHTML = [
     '<option value="__all__">All fleets (overview)</option>',
