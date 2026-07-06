@@ -298,6 +298,7 @@
     <div class="controls-bar">
       <div style="font-size:11px;color:var(--muted);font-weight:500;">Charts and table update based on selected granularity</div>
       <div class="gran-toggle">
+        <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
         <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
         <button class="gran-btn" onclick="setGranularity('month',this)">Month</button>
         <button class="gran-btn" onclick="setGranularity('quarter',this)">Quarter</button>
@@ -416,6 +417,7 @@
           </div>
         </div>
         <div class="gran-toggle">
+          <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
           <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
           <button class="gran-btn" onclick="setGranularity('month',this)">Month</button>
           <button class="gran-btn" onclick="setGranularity('quarter',this)">Quarter</button>
@@ -652,6 +654,8 @@ const EMBEDDED_AGREEMENTS_DATE = "30/04/2026";
 
 // ══ STATE ══
 let lookerRows      = [];
+let dailyRows       = [];   // Daily granularity data (last 30 days)
+let _weeklyRows     = [];   // Reference to weekly rows (for toggling back from day view)
 let agreements      = { companyMap: {} };
 let granularity     = 'week';
 
@@ -1093,6 +1097,28 @@ function loadPreloadedData() {
         };
       });
     lookerLoaded = lookerRows.length > 0;
+    _weeklyRows  = lookerRows.slice();   // keep reference for day ↔ week toggling
+  }
+
+  // ── 1b. daily_performance → dailyRows ─────────────────────────────────────
+  if (Array.isArray(d.daily_performance) && d.daily_performance.length) {
+    dailyRows = d.daily_performance
+      .filter(r => Number(r.online_hours) > 0)
+      .map(r => {
+        const oh  = Number(r.online_hours)  || 0;
+        const eur = Number(r.earnings_eur)  || 0;
+        return {
+          week:           (r.day_date || '').slice(0, 10),
+          companyId:      String(r.company_id || ''),
+          companyName:    'Fleet #' + (r.company_id || ''),
+          onlineHours:    oh,
+          eph:            oh > 0 ? eur / oh : 0,
+          utilisation:    0,
+          activePartners: 0,
+          gmv:            eur,
+        };
+      });
+    console.log('[PreloadedData] daily_performance rows:', dailyRows.length);
   }
 
   // ── 2. company_snapshot → agreements ──────────────────────────────────────
@@ -1837,6 +1863,7 @@ function aggregateEPHBy(enriched, dim) {
 }
 
 function getPeriodKey(weekStr) {
+  if (granularity === 'day')     return weekStr;
   const d = new Date(weekStr);
   if (granularity === 'week')    return weekStr;
   if (granularity === 'month')   { const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${m[d.getMonth()]} ${d.getFullYear()}`; }
@@ -1846,7 +1873,7 @@ function getPeriodKey(weekStr) {
 // Sort periods chronologically regardless of display format
 const MONTH_IDX = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
 function sortPeriods(arr) {
-  if (granularity === 'week' || granularity === 'quarter') return [...arr].sort();
+  if (granularity === 'week' || granularity === 'quarter' || granularity === 'day') return [...arr].sort();
   // month: "Jan 2026" → sort by year then month
   return [...arr].sort((a, b) => {
     const [ma, ya] = a.split(' '), [mb, yb] = b.split(' ');
@@ -2116,6 +2143,11 @@ function renderTable(enriched, periods) {
 // ══ CONTROLS ══
 function setGranularity(g, btn) {
   granularity = g;
+  if (g === 'day' && dailyRows.length > 0) {
+    lookerRows = dailyRows;
+  } else if (g !== 'day' && _weeklyRows.length > 0) {
+    lookerRows = _weeklyRows;
+  }
   document.querySelectorAll('.gran-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderAll();
