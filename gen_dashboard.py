@@ -266,7 +266,8 @@ def fetch_m30_data() -> pd.DataFrame:
               CAST(date_hour_ts_local AS STRING)))                             AS online_hours,
         SUM(rides_driver_total_earnings_with_vat_eur_local)                    AS earnings_eur,
         SUM(rides_gmv_before_discounts_billing_with_vat_eur_local)             AS gmv_eur,
-        COUNT(DISTINCT car_id)                                                 AS active_cars
+        COUNT(DISTINCT car_id)                                                 AS active_cars,
+        COUNT(DISTINCT driver_id)                                              AS active_drivers
     FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
     WHERE country_id = 67   -- Spain (all cities)
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
@@ -275,6 +276,24 @@ def fetch_m30_data() -> pd.DataFrame:
     """
     df = run_query(sql)
     print(f"[m30] Fetched {len(df):,} rows")
+    return df
+
+
+def fetch_drivers_weekly() -> pd.DataFrame:
+    """Distinct active drivers per company-week (for the 'Active drivers' metric)."""
+    sql = f"""
+    SELECT
+        DATE_TRUNC('week', calendar_date_local)  AS week_start,
+        COALESCE(company_id, -1)                 AS company_id,
+        COUNT(DISTINCT driver_id)                AS active_drivers
+    FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
+    WHERE country_id = 67   -- Spain (all cities)
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    print(f"[drivers_weekly] Fetched {len(df):,} company-week rows")
     return df
 
 
@@ -299,13 +318,14 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
             "online_hours":       row["online_hours"],
             "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
+            "active_drivers":     row.get("active_drivers", 0),
         })
 
     result = pd.DataFrame(rows)
     result = (
         result
         .groupby(["day_date", "company_id", "cohort", "invoicing_strategy"], as_index=False)
-        .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum"})
+        .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum", "active_drivers": "sum"})
     )
     print(f"[daily] {len(result):,} company-day rows for 'Day' granularity view")
     return result
@@ -504,6 +524,7 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "ci": str(d["company_id"]),
             "oh": round(float(d.get("online_hours") or 0)),
             "e":  round(float(d.get("earnings_eur") or 0)),
+            "d":  int(d.get("active_drivers") or 0),
         })
     return out
 
@@ -526,6 +547,18 @@ def main():
 
     # 4. Aggregate weekly OH by company+cohort (for dashboard charts)
     weekly_df = aggregate_weekly_by_cohort(car_df, agreements)
+
+    # 4a. Merge distinct active-drivers per company-week (for the metric selector)
+    drivers_weekly = fetch_drivers_weekly()
+    dw_lookup = {
+        (str(r.week_start)[:10], str(r.company_id)): int(r.active_drivers)
+        for r in drivers_weekly.itertuples(index=False)
+    }
+    if not weekly_df.empty:
+        weekly_df["active_drivers"] = [
+            dw_lookup.get((str(w)[:10], str(c)), 0)
+            for w, c in zip(weekly_df["week_date"], weekly_df["company_id"])
+        ]
 
     # 4b. Aggregate daily OH by company+cohort (for 'Day' granularity button)
     daily_df = aggregate_daily_by_cohort(m30_df, agreements)

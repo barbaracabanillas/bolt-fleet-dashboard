@@ -294,6 +294,11 @@
     <!-- Granularity -->
     <div class="controls-bar">
       <div style="font-size:11px;color:var(--muted);font-weight:500;">Charts and table update based on selected granularity</div>
+      <div class="gran-toggle" style="margin-right:8px;">
+        <button class="gran-btn active" onclick="setMetric('oh',this)">Online Hours</button>
+        <button class="gran-btn" onclick="setMetric('drivers',this)">Active Drivers</button>
+        <button class="gran-btn" onclick="setMetric('hpd',this)">Hours / Driver</button>
+      </div>
       <div class="gran-toggle">
         <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
         <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
@@ -313,8 +318,8 @@
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <span class="chart-title">Online Hours</span>
-            <span class="chart-subtitle">Total hours · stacked bars</span>
+            <span class="chart-title" id="ohStrategicTitle">Online Hours</span>
+            <span class="chart-subtitle" id="ohStrategicSub">Total hours · stacked bars</span>
           </div>
           <div class="legend-row" id="legend-strategic"></div>
           <div style="position:relative;width:100%;height:220px;">
@@ -340,8 +345,8 @@
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <span class="chart-title">Online Hours</span>
-            <span class="chart-subtitle">Total hours · stacked bars</span>
+            <span class="chart-title" id="ohAgreementTitle">Online Hours</span>
+            <span class="chart-subtitle" id="ohAgreementSub">Total hours · stacked bars</span>
           </div>
           <div class="legend-row" id="legend-agreement"></div>
           <div style="position:relative;width:100%;height:220px;">
@@ -676,6 +681,7 @@ let rangeFrom = null;  // 'YYYY-MM-DD' or null (no lower bound)
 let rangeTo   = null;  // 'YYYY-MM-DD' or null (no upper bound)
 let selectedCity = 'Madrid';  // default city; '__all' = all Spain
 let selectedFO   = '__all';   // '__all' = every FO group
+let selectedMetric = 'oh';    // bar-chart metric: 'oh' | 'drivers' | 'hpd'
 
 function isInRange(dateStr) {
   if (!rangeFrom && !rangeTo) return true;
@@ -1129,6 +1135,7 @@ function loadPreloadedData() {
           eph:            oh > 0 ? eur / oh : 0,
           utilisation:    0,
           activePartners: 0,
+          activeDrivers:  Number(r.d) || 0,
           gmv:            eur,
         };
       });
@@ -1151,6 +1158,7 @@ function loadPreloadedData() {
           eph:            oh > 0 ? eur / oh : 0,
           utilisation:    0,
           activePartners: 0,
+          activeDrivers:  Number(r.d) || 0,
           gmv:            eur,
         };
       });
@@ -2035,30 +2043,71 @@ function buildLegend(containerId, groups, colors, hiddenSet) {
 
 // ══ CHARTS ══
 function renderCharts(enriched, periods) {
-  const ohByS   = aggregateOHBy(enriched, 'fleetType');
-  const ohByA   = aggregateOHBy(enriched, 'cohort');
+  const stacked = selectedMetric !== 'hpd';   // ratios (hours/driver) don't stack
+  const barByS  = aggregateMetricBy(enriched, 'fleetType', selectedMetric);
+  const barByA  = aggregateMetricBy(enriched, 'cohort',    selectedMetric);
   const ephByS  = aggregateEPHBy(enriched, 'fleetType');
   const ephByA  = aggregateEPHBy(enriched, 'cohort');
 
-  renderStackedBar('ohStrategicChart',  periods, ohByS.byPeriod,  STRATEGIC_GROUPS, S_COLORS, hiddenStrategic);
-  renderStackedBar('ohAgreementChart',  periods, ohByA.byPeriod,  AGREEMENT_TYPES,  A_COLORS, hiddenAgreement);
+  renderStackedBar('ohStrategicChart', periods, barByS.byPeriod, STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, stacked);
+  renderStackedBar('ohAgreementChart', periods, barByA.byPeriod, AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, stacked);
   renderLines('ephStrategicChart', periods, ephByS,  STRATEGIC_GROUPS, S_COLORS, hiddenStrategic);
   renderLines('ephAgreementChart', periods, ephByA,  AGREEMENT_TYPES,  A_COLORS, hiddenAgreement);
+  updateMetricLabels();
 }
 
-function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet) {
+// Aggregate the selected metric by period+dimension: sum online hours / active
+// drivers, or compute hours-per-driver (a ratio: total OH / total drivers).
+function aggregateMetricBy(enriched, dim, metric) {
+  const bp = {};
+  for (const r of enriched) {
+    if (!bp[r.period]) bp[r.period] = {};
+    if (!bp[r.period][r[dim]]) bp[r.period][r[dim]] = { oh:0, drivers:0 };
+    bp[r.period][r[dim]].oh      += r.onlineHours   || 0;
+    bp[r.period][r[dim]].drivers += r.activeDrivers || 0;
+  }
+  const out = {};
+  for (const [p, gs] of Object.entries(bp)) {
+    out[p] = {};
+    for (const [g, v] of Object.entries(gs)) {
+      out[p][g] = metric === 'drivers' ? v.drivers
+                : metric === 'hpd'     ? (v.drivers > 0 ? v.oh / v.drivers : 0)
+                : v.oh;
+    }
+  }
+  return { periods: sortPeriods(Object.keys(bp)), byPeriod: out };
+}
+
+// ── Metric selector helpers ──
+function metricTitle()    { return selectedMetric==='drivers' ? 'Active Drivers' : selectedMetric==='hpd' ? 'Hours / Driver' : 'Online Hours'; }
+function metricSubtitle() { return selectedMetric==='drivers' ? 'Distinct active drivers · stacked bars' : selectedMetric==='hpd' ? 'Online hours ÷ active drivers · grouped bars' : 'Total hours · stacked bars'; }
+function metricUnit()     { return selectedMetric==='drivers' ? ' drivers' : selectedMetric==='hpd' ? ' h/driver' : 'h'; }
+function metricAxisTick(v){ return selectedMetric==='oh' ? (v/1000).toFixed(0)+'k' : selectedMetric==='hpd' ? v.toFixed(0) : v.toLocaleString(); }
+function updateMetricLabels() {
+  const t = metricTitle(), s = metricSubtitle();
+  ['ohStrategicTitle','ohAgreementTitle'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=t; });
+  ['ohStrategicSub','ohAgreementSub'].forEach(id  => { const el=document.getElementById(id); if(el) el.textContent=s; });
+}
+function setMetric(m, btn) {
+  selectedMetric = m;
+  if (btn) { btn.parentElement.querySelectorAll('.gran-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  rerenderActive();
+}
+
+function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet, stacked = true) {
   const active = groups.filter(g => !hiddenSet.has(g));
+  const round1 = v => selectedMetric === 'hpd' ? Math.round(v*10)/10 : Math.round(v);
   const datasets = active.map(g => ({
     label: g,
-    data: periods.map(p => Math.round(byPeriod[p]?.[g]||0)),
+    data: periods.map(p => round1(byPeriod[p]?.[g]||0)),
     backgroundColor: colors[g]+'EE', borderColor: colors[g], borderWidth:0, borderRadius:2,
   }));
 
-  // Pre-compute period totals using ALL groups in the data (not just visible ones)
-  // This ensures the total is always the true sum regardless of legend toggles
+  // Period totals across ALL groups (used for the % share on stacked metrics).
   const periodTotals = periods.map(p =>
     Object.values(byPeriod[p] || {}).reduce((s, v) => s + v, 0)
   );
+  const unit = metricUnit();
 
   if (charts[id]) charts[id].destroy();
   charts[id] = new Chart(document.getElementById(id), {
@@ -2068,24 +2117,25 @@ function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        // ── Hover tooltip: show hours + % ──
+        // ── Hover tooltip: value (+ % of total when the metric is a sum) ──
         tooltip: {
           callbacks: {
             label: ctx => {
+              const val = ctx.parsed.y;
+              if (!stacked) return ` ${ctx.dataset.label}: ${val.toLocaleString()}${unit}`;
               const total = periodTotals[ctx.dataIndex] || 1;
-              const pct = ((ctx.parsed.y / total) * 100).toFixed(1);
-              return ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}h (${pct}%)`;
+              const pct = ((val / total) * 100).toFixed(1);
+              return ` ${ctx.dataset.label}: ${val.toLocaleString()}${unit} (${pct}%)`;
             },
-            footer: items => `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}h`,
+            footer: items => stacked ? `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}${unit}` : '',
           }
         },
-        // ── Bar labels: show % inside segment (only if segment ≥ 8% of total) ──
+        // ── Bar labels: show % inside segment (sum metrics only, ≥8% of total) ──
         datalabels: {
           display: ctx => {
-            if (granularity === 'week') return false;
+            if (!stacked || granularity === 'week') return false;
             const total = periodTotals[ctx.dataIndex] || 1;
-            const pct = (ctx.dataset.data[ctx.dataIndex] / total) * 100;
-            return pct >= 8;
+            return (ctx.dataset.data[ctx.dataIndex] / total) * 100 >= 8;
           },
           formatter: (value, ctx) => {
             const total = periodTotals[ctx.dataIndex] || 1;
@@ -2098,8 +2148,8 @@ function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet) {
         },
       },
       scales: {
-        x: { stacked:true, grid:{display:false}, border:{display:false}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16} },
-        y: { stacked:true, border:{display:false}, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>(v/1000).toFixed(0)+'k'} },
+        x: { stacked, grid:{display:false}, border:{display:false}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16} },
+        y: { stacked, border:{display:false}, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:metricAxisTick} },
       }
     }
   });
@@ -2223,7 +2273,7 @@ function setGranularity(g, btn) {
   } else if (g !== 'day' && _weeklyRows.length > 0) {
     lookerRows = _weeklyRows;
   }
-  document.querySelectorAll('.gran-btn').forEach(b => b.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.gran-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderAll();
 }
