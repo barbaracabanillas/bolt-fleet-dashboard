@@ -228,7 +228,7 @@
       <button class="home-card" id="card-performance" onclick="goToTab('performance')" disabled>
         <div class="home-card-icon">📊</div>
         <div class="home-card-title">Performance</div>
-        <div class="home-card-desc">Online Hours and EPH by cohort over time. Strategic vs Free Floating and agreement type breakdowns.</div>
+        <div class="home-card-desc">Online Hours and EPH by cohort over time. Strategic vs Non strategic and agreement type breakdowns.</div>
         <div class="home-card-arrow">→</div>
       </button>
 
@@ -294,11 +294,6 @@
     <!-- Granularity -->
     <div class="controls-bar">
       <div style="font-size:11px;color:var(--muted);font-weight:500;">Charts and table update based on selected granularity</div>
-      <div class="gran-toggle" style="margin-right:8px;">
-        <button class="gran-btn active" onclick="setMetric('oh',this)">Online Hours</button>
-        <button class="gran-btn" onclick="setMetric('drivers',this)">Active Drivers</button>
-        <button class="gran-btn" onclick="setMetric('hpd',this)">Hours / Driver</button>
-      </div>
       <div class="gran-toggle">
         <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
         <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
@@ -310,61 +305,126 @@
     <!-- 2-column chart grid -->
     <div class="charts-2col">
 
-      <!-- LEFT: Strategic vs Free Floating -->
-      <div>
-        <div class="chart-col-header">
-          Strategic vs Free Floating
-          <div class="chart-col-header-divider"></div>
+      <!-- Cards are interleaved (left,right,left,right…) so the CSS grid keeps
+           each row's two cards the same height and both columns end together. -->
+
+      <!-- Row: column headers -->
+      <div class="chart-col-header">
+        Strategic vs Non strategic
+        <div class="chart-col-header-divider"></div>
+      </div>
+      <div class="chart-col-header">
+        Cohort
+        <div class="chart-col-header-divider"></div>
+      </div>
+
+      <!-- Row: Online Hours -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title" id="ohStrategicTitle">Online Hours</span>
+          <span class="chart-subtitle" id="ohStrategicSub">Total hours · stacked bars</span>
         </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <span class="chart-title" id="ohStrategicTitle">Online Hours</span>
-            <span class="chart-subtitle" id="ohStrategicSub">Total hours · stacked bars</span>
-          </div>
-          <div class="legend-row" id="legend-strategic"></div>
-          <div style="position:relative;width:100%;height:220px;">
-            <canvas id="ohStrategicChart" role="img" aria-label="OH por Strategic vs Free Floating"></canvas>
-          </div>
+        <div class="legend-row" id="legend-strategic"></div>
+        <div style="position:relative;width:100%;height:220px;">
+          <canvas id="ohStrategicChart" role="img" aria-label="Online hours by Strategic vs Non strategic"></canvas>
         </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <span class="chart-title">Avg. EPH</span>
-            <span class="chart-subtitle">Weighted average · €/hour</span>
-          </div>
-          <div style="position:relative;width:100%;height:180px;">
-            <canvas id="ephStrategicChart" role="img" aria-label="EPH por Strategic vs Free Floating"></canvas>
-          </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title" id="ohAgreementTitle">Online Hours</span>
+          <span class="chart-subtitle" id="ohAgreementSub">Total hours · stacked bars</span>
+        </div>
+        <div class="legend-row" id="legend-agreement"></div>
+        <div style="position:relative;width:100%;height:220px;">
+          <canvas id="ohAgreementChart" role="img" aria-label="Online hours by cohort"></canvas>
         </div>
       </div>
 
-      <!-- RIGHT: Agreement type -->
-      <div>
-        <div class="chart-col-header">
-          Agreement type
-          <div class="chart-col-header-divider"></div>
+      <!-- Row: Active Drivers -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Active Drivers</span>
+          <span class="chart-subtitle">Distinct active drivers · stacked bars</span>
         </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <span class="chart-title" id="ohAgreementTitle">Online Hours</span>
-            <span class="chart-subtitle" id="ohAgreementSub">Total hours · stacked bars</span>
-          </div>
-          <div class="legend-row" id="legend-agreement"></div>
-          <div style="position:relative;width:100%;height:220px;">
-            <canvas id="ohAgreementChart" role="img" aria-label="OH por tipo de agreement"></canvas>
-          </div>
+        <div style="position:relative;width:100%;height:200px;">
+          <canvas id="driversStrategicChart" role="img" aria-label="Active drivers by Strategic vs Non strategic"></canvas>
         </div>
-        <div class="chart-card">
-          <div class="chart-header">
-            <span class="chart-title">Avg. EPH</span>
-            <span class="chart-subtitle">Weighted average · €/hour</span>
-          </div>
-          <div style="position:relative;width:100%;height:180px;">
-            <canvas id="ephAgreementChart" role="img" aria-label="EPH por tipo de agreement"></canvas>
-          </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Active Drivers</span>
+          <span class="chart-subtitle">Distinct active drivers · stacked bars</span>
+        </div>
+        <div style="position:relative;width:100%;height:200px;">
+          <canvas id="driversAgreementChart" role="img" aria-label="Active drivers by cohort"></canvas>
+        </div>
+      </div>
+
+      <!-- Row: Hours / Driver -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Hours / Driver</span>
+          <span class="chart-subtitle">Online hours ÷ active drivers · grouped bars</span>
+        </div>
+        <div style="position:relative;width:100%;height:200px;">
+          <canvas id="hpdStrategicChart" role="img" aria-label="Hours per driver by Strategic vs Non strategic"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Hours / Driver</span>
+          <span class="chart-subtitle">Online hours ÷ active drivers · grouped bars</span>
+        </div>
+        <div style="position:relative;width:100%;height:200px;">
+          <canvas id="hpdAgreementChart" role="img" aria-label="Hours per driver by cohort"></canvas>
+        </div>
+      </div>
+
+      <!-- Row: Avg. EPH -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Avg. EPH</span>
+          <span class="chart-subtitle">Weighted average · €/hour</span>
+        </div>
+        <div style="position:relative;width:100%;height:180px;">
+          <canvas id="ephStrategicChart" role="img" aria-label="EPH by Strategic vs Non strategic"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Avg. EPH</span>
+          <span class="chart-subtitle">Weighted average · €/hour</span>
+        </div>
+        <div style="position:relative;width:100%;height:180px;">
+          <canvas id="ephAgreementChart" role="img" aria-label="EPH by cohort"></canvas>
         </div>
       </div>
 
     </div><!-- /charts-2col -->
+
+    <!-- Taxi vs VTC widget -->
+    <div class="chart-col-header" style="margin-top:6px;">
+      Taxi vs VTC · GMV
+      <div class="chart-col-header-divider"></div>
+    </div>
+    <div class="kpi-row" style="margin-bottom:12px;">
+      <div class="kpi-card"><div class="kpi-lbl">Taxi GMV · last period</div><div class="kpi-val" id="kpi-taxi-gmv">—</div><div class="kpi-sub" id="kpi-taxi-share">—</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">VTC GMV · last period</div><div class="kpi-val" id="kpi-vtc-gmv">—</div><div class="kpi-sub" id="kpi-vtc-share">—</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">Taxi share of GMV</div><div class="kpi-val" id="kpi-taxi-pct">—</div><div class="kpi-sub">taxi ÷ (taxi + VTC)</div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Taxi vs VTC · GMV over time</span>
+        <span class="chart-subtitle">Weekly GMV (€) · stacked</span>
+      </div>
+      <div class="legend-row">
+        <div class="legend-item"><span class="legend-dot" style="background:#0C2C1C"></span>VTC</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#2A9C64"></span>Taxi</div>
+      </div>
+      <div style="position:relative;width:100%;height:220px;">
+        <canvas id="taxiChart" role="img" aria-label="Taxi vs VTC GMV over time"></canvas>
+      </div>
+    </div>
 
     <!-- Table -->
     <div class="table-card">
@@ -378,12 +438,12 @@
             <th>#</th>
             <th>FO Group</th>
             <th>Fleet type</th>
-            <th>Agreement</th>
+            <th>Cohort</th>
             <th class="r">Companies</th>
             <th class="r">Online Hours</th>
             <th class="r" id="th-period-change">WoW</th>
             <th class="r">Avg. EPH</th>
-            <th class="r">Partners</th>
+            <th class="r">Drivers</th>
             <th class="r">GMV</th>
           </tr>
         </thead>
@@ -430,39 +490,39 @@
       <!-- 2-column charts (same layout as Performance) -->
       <div class="charts-2col">
         <div>
-          <div class="chart-col-header">Strategic vs Free Floating<div class="chart-col-header-divider"></div></div>
+          <div class="chart-col-header">Strategic vs Non strategic<div class="chart-col-header-divider"></div></div>
           <div class="chart-card">
             <div class="chart-header">
               <span class="chart-title">Online Hours</span>
               <span class="chart-subtitle">Stacked bars · two bars per period: LY (light) and CY (solid)</span>
             </div>
             <div class="legend-row" id="yoy-legend-strategic"></div>
-            <div style="position:relative;width:100%;height:240px;"><canvas id="yoyOhStrategicChart" role="img" aria-label="YoY OH Strategic vs Free Floating"></canvas></div>
+            <div style="position:relative;width:100%;height:240px;"><canvas id="yoyOhStrategicChart" role="img" aria-label="YoY OH Strategic vs Non strategic"></canvas></div>
           </div>
           <div class="chart-card">
             <div class="chart-header">
               <span class="chart-title">Avg. EPH</span>
               <span class="chart-subtitle">Solid line = CY · dashed line = LY</span>
             </div>
-            <div style="position:relative;width:100%;height:200px;"><canvas id="yoyEphStrategicChart" role="img" aria-label="YoY EPH Strategic vs Free Floating"></canvas></div>
+            <div style="position:relative;width:100%;height:200px;"><canvas id="yoyEphStrategicChart" role="img" aria-label="YoY EPH Strategic vs Non strategic"></canvas></div>
           </div>
         </div>
         <div>
-          <div class="chart-col-header">Agreement type<div class="chart-col-header-divider"></div></div>
+          <div class="chart-col-header">Cohort<div class="chart-col-header-divider"></div></div>
           <div class="chart-card">
             <div class="chart-header">
               <span class="chart-title">Online Hours</span>
               <span class="chart-subtitle">Stacked bars · two bars per period: LY (light) and CY (solid)</span>
             </div>
             <div class="legend-row" id="yoy-legend-agreement"></div>
-            <div style="position:relative;width:100%;height:240px;"><canvas id="yoyOhAgreementChart" role="img" aria-label="YoY OH Agreement type"></canvas></div>
+            <div style="position:relative;width:100%;height:240px;"><canvas id="yoyOhAgreementChart" role="img" aria-label="YoY OH Cohort"></canvas></div>
           </div>
           <div class="chart-card">
             <div class="chart-header">
               <span class="chart-title">Avg. EPH</span>
               <span class="chart-subtitle">Solid line = CY · dashed line = LY</span>
             </div>
-            <div style="position:relative;width:100%;height:200px;"><canvas id="yoyEphAgreementChart" role="img" aria-label="YoY EPH Agreement type"></canvas></div>
+            <div style="position:relative;width:100%;height:200px;"><canvas id="yoyEphAgreementChart" role="img" aria-label="YoY EPH Cohort"></canvas></div>
           </div>
         </div>
       </div>
@@ -770,17 +830,22 @@ let lookerLoaded    = false, agreementsLoaded = false;
 
 // ══ DIMENSIONS ══
 const STRATEGIC_GROUPS = ['Strategic', 'Free Floating'];
-const AGREEMENT_TYPES  = ['Fleet Agreement', 'Branding', 'Locked', 'No Agreement'];
+const AGREEMENT_TYPES  = ['Strategic - Fleet Agreement', 'Strategic - Branded', 'Strategic - Locked', 'Strategic - No agreement', 'Free floating - Branded', 'Free floating - Not branded'];
 
+// Left chart data keys stay 'Strategic'/'Free Floating'; 'Free Floating' is
+// DISPLAYED as 'Non strategic' via DISPLAY_NAMES below.
 const S_COLORS = {
   'Strategic':    '#0C2C1C',
   'Free Floating':'#2A9C64',
 };
+const DISPLAY_NAMES = { 'Free Floating': 'Non strategic' };
 const A_COLORS = {
-  'Fleet Agreement': '#0C2C1C',
-  'Branding':        '#2A9C64',
-  'Locked':          '#888888',
-  'No Agreement':    '#CCCCCC',
+  'Strategic - Fleet Agreement': '#0C2C1C',
+  'Strategic - Branded':         '#2A9C64',
+  'Strategic - Locked':          '#6FA88C',
+  'Strategic - No agreement':    '#AAB4AE',
+  'Free floating - Branded':     '#3E7CA8',
+  'Free floating - Not branded': '#C7D2DC',
 };
 
 const S_BADGES = {
@@ -788,10 +853,12 @@ const S_BADGES = {
   'Free Floating':{ bg:'#E0F5EC', color:'#1A6B42' },
 };
 const A_BADGES = {
-  'Fleet Agreement':{ bg:'#E8F5EF', color:'#0C2C1C' },
-  'Branding':       { bg:'#E0F5EC', color:'#1A6B42' },
-  'Locked':         { bg:'#EBEBEB', color:'#555' },
-  'No Agreement':   { bg:'#F5F5F5', color:'#999' },
+  'Strategic - Fleet Agreement':{ bg:'#E8F5EF', color:'#0C2C1C' },
+  'Strategic - Branded':        { bg:'#E0F5EC', color:'#1A6B42' },
+  'Strategic - Locked':         { bg:'#E7F0EC', color:'#3B6B55' },
+  'Strategic - No agreement':   { bg:'#EFF1F0', color:'#5A655F' },
+  'Free floating - Branded':    { bg:'#E7F0F6', color:'#2C5A78' },
+  'Free floating - Not branded':{ bg:'#F2F5F8', color:'#6B7A88' },
 };
 
 // ══ FILE HANDLING ══
@@ -1114,9 +1181,11 @@ function idbLoad(key) {
 // Called once at startup when gen_dashboard.py has injected window.PRELOADED_DATA.
 // Converts Databricks row format to the internal globals the dashboard expects,
 // so no manual CSV upload is required.
+let taxiVtcRows = [];
 function loadPreloadedData() {
   const d = window.PRELOADED_DATA;
   if (!d) return false;
+  taxiVtcRows = Array.isArray(d.taxi_vtc) ? d.taxi_vtc : [];
 
   // ── 1. fleet_performance → lookerRows ──────────────────────────────────────
   // Databricks: { week_date, company_id, invoicing_strategy, online_hours,
@@ -1294,7 +1363,7 @@ function loadPreloadedData() {
 }
 
 // ── Page init: load embedded data (Performance is opened at the end of the script,
-//    once every const/function — e.g. STRATEGIC_FO_LIST — has been defined) ──
+//    once every const/function (e.g. AGREEMENT_TYPES) has been defined) ──
 loadPreloadedData();        // ← Databricks data (no-op when no PRELOADED_DATA)
 loadSavedAgreements();
 const cachedDate = loadCachedLookerData();
@@ -1857,7 +1926,7 @@ function getCohort(id) {
   const c = agreements.companyMap[id]?.cohort || 'No Agreement';
   // Snap any value that doesn't match a known cohort type back to 'No Agreement'
   // (guards against CSV parsing artefacts like `SL"` or `Strategic` leaking into cohort)
-  return AGREEMENT_TYPES.includes(c) ? c : 'No Agreement';
+  return AGREEMENT_TYPES.includes(c) ? c : 'Free floating - Not branded';
 }
 function getFO(id)        { return agreements.companyMap[id]?.fo        || null; }
 function getCity(id)      { return agreements.companyMap[id]?.city      || null; }
@@ -1967,6 +2036,7 @@ function renderAll() {
   updateKPIs(enriched, periods);
   buildLegends();
   renderCharts(enriched, periods);
+  renderTaxiWidget();
   populatePeriodSelector(periods);
   renderTable(enriched, periods);
 
@@ -2006,13 +2076,13 @@ function updateKPIs(enriched, periods) {
 
   // Respect the active City/FO filters → count from `enriched`, not raw lookerRows.
   document.getElementById('kpi-companies').textContent = new Set(lastE.map(r=>r.companyId)).size;
-  document.getElementById('kpi-weeks').textContent = `${new Set(enriched.map(r=>r.week)).size} week(s) loaded`;
+  document.getElementById('kpi-weeks').textContent = last ? `active in ${last}` : '';
 
   const stratOH = lastE.filter(r=>r.fleetType==='Strategic').reduce((s,r)=>s+r.onlineHours,0);
   document.getElementById('kpi-strategic').textContent = fmtH(stratOH);
   document.getElementById('kpi-strategic-pct').textContent = ohLast>0?`${((stratOH/ohLast)*100).toFixed(1)}% of total`:'—';
 
-  const noAgN = lastE.filter(r=>r.cohort==='No Agreement').length;
+  const noAgN = lastE.filter(r=>r.cohort==='Strategic - No agreement').length;
   document.getElementById('kpi-noag').textContent = noAgN;
   document.getElementById('kpi-noag-sub').textContent = noAgN===0?'all with agreement ✓':'companies without agreement';
 }
@@ -2029,7 +2099,7 @@ function buildLegend(containerId, groups, colors, hiddenSet) {
   groups.forEach(g => {
     const el = document.createElement('div');
     el.className = 'legend-item' + (hiddenSet.has(g)?' hidden':'');
-    el.innerHTML = `<span class="legend-dot" style="background:${colors[g]}"></span>${g}`;
+    el.innerHTML = `<span class="legend-dot" style="background:${colors[g]}"></span>${DISPLAY_NAMES[g] || g}`;
     el.onclick = () => {
       hiddenSet.has(g) ? hiddenSet.delete(g) : hiddenSet.add(g);
       el.classList.toggle('hidden');
@@ -2043,21 +2113,19 @@ function buildLegend(containerId, groups, colors, hiddenSet) {
 
 // ══ CHARTS ══
 function renderCharts(enriched, periods) {
-  const stacked = selectedMetric !== 'hpd';   // ratios (hours/driver) don't stack
-  const barByS  = aggregateMetricBy(enriched, 'fleetType', selectedMetric);
-  const barByA  = aggregateMetricBy(enriched, 'cohort',    selectedMetric);
-  const ephByS  = aggregateEPHBy(enriched, 'fleetType');
-  const ephByA  = aggregateEPHBy(enriched, 'cohort');
-
-  renderStackedBar('ohStrategicChart', periods, barByS.byPeriod, STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, stacked);
-  renderStackedBar('ohAgreementChart', periods, barByA.byPeriod, AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, stacked);
-  renderLines('ephStrategicChart', periods, ephByS,  STRATEGIC_GROUPS, S_COLORS, hiddenStrategic);
-  renderLines('ephAgreementChart', periods, ephByA,  AGREEMENT_TYPES,  A_COLORS, hiddenAgreement);
-  updateMetricLabels();
+  const bar = (dim, metric) => aggregateMetricBy(enriched, dim, metric).byPeriod;
+  renderMetricBar('ohStrategicChart',      periods, bar('fleetType','oh'),      STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'oh');
+  renderMetricBar('ohAgreementChart',      periods, bar('cohort','oh'),         AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'oh');
+  renderMetricBar('driversStrategicChart', periods, bar('fleetType','drivers'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'drivers');
+  renderMetricBar('driversAgreementChart', periods, bar('cohort','drivers'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'drivers');
+  renderMetricBar('hpdStrategicChart',     periods, bar('fleetType','hpd'),     STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'hpd');
+  renderMetricBar('hpdAgreementChart',     periods, bar('cohort','hpd'),        AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'hpd');
+  renderLines('ephStrategicChart', periods, aggregateEPHBy(enriched,'fleetType'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic);
+  renderLines('ephAgreementChart', periods, aggregateEPHBy(enriched,'cohort'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement);
 }
 
-// Aggregate the selected metric by period+dimension: sum online hours / active
-// drivers, or compute hours-per-driver (a ratio: total OH / total drivers).
+// Aggregate a metric by period+dimension: sum online hours / active drivers,
+// or compute hours-per-driver (a ratio: total OH / total drivers).
 function aggregateMetricBy(enriched, dim, metric) {
   const bp = {};
   for (const r of enriched) {
@@ -2078,25 +2146,55 @@ function aggregateMetricBy(enriched, dim, metric) {
   return { periods: sortPeriods(Object.keys(bp)), byPeriod: out };
 }
 
-// ── Metric selector helpers ──
-function metricTitle()    { return selectedMetric==='drivers' ? 'Active Drivers' : selectedMetric==='hpd' ? 'Hours / Driver' : 'Online Hours'; }
-function metricSubtitle() { return selectedMetric==='drivers' ? 'Distinct active drivers · stacked bars' : selectedMetric==='hpd' ? 'Online hours ÷ active drivers · grouped bars' : 'Total hours · stacked bars'; }
-function metricUnit()     { return selectedMetric==='drivers' ? ' drivers' : selectedMetric==='hpd' ? ' h/driver' : 'h'; }
-function metricAxisTick(v){ return selectedMetric==='oh' ? (v/1000).toFixed(0)+'k' : selectedMetric==='hpd' ? v.toFixed(0) : v.toLocaleString(); }
-function updateMetricLabels() {
-  const t = metricTitle(), s = metricSubtitle();
-  ['ohStrategicTitle','ohAgreementTitle'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=t; });
-  ['ohStrategicSub','ohAgreementSub'].forEach(id  => { const el=document.getElementById(id); if(el) el.textContent=s; });
-}
-function setMetric(m, btn) {
-  selectedMetric = m;
-  if (btn) { btn.parentElement.querySelectorAll('.gran-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-  rerenderActive();
+// ── Per-metric units / axis formatting ──
+function metricUnit(m)       { return m==='drivers' ? ' drivers' : m==='hpd' ? ' h/driver' : 'h'; }
+function metricAxisTick(m,v) { return m==='oh' ? (v/1000).toFixed(0)+'k' : m==='hpd' ? v.toFixed(0) : v.toLocaleString(); }
+
+// ── Taxi vs VTC widget (GMV split; respects the City + date-range filters) ──
+function renderTaxiWidget() {
+  const rows = taxiVtcRows.filter(r => isInRange(r.w) && (selectedCity === '__all' || r.city === selectedCity));
+  const bp = {};
+  for (const r of rows) {
+    const p = getPeriodKey(r.w);
+    if (!bp[p]) bp[p] = { t:0, v:0 };
+    bp[p].t += r.t || 0; bp[p].v += r.v || 0;
+  }
+  const periods = sortPeriods(Object.keys(bp));
+  const last = periods[periods.length-1];
+  const lt = last ? bp[last].t : 0, lv = last ? bp[last].v : 0, tot = lt + lv;
+  const eur = v => '€' + Math.round(v).toLocaleString();
+  const setTxt = (id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
+  setTxt('kpi-taxi-gmv', eur(lt));
+  setTxt('kpi-vtc-gmv',  eur(lv));
+  setTxt('kpi-taxi-pct', tot>0 ? ((lt/tot)*100).toFixed(1)+'%' : '—');
+  setTxt('kpi-taxi-share', tot>0 ? ((lt/tot)*100).toFixed(1)+'% of GMV' : '');
+  setTxt('kpi-vtc-share',  tot>0 ? ((lv/tot)*100).toFixed(1)+'% of GMV' : '');
+
+  const datasets = [
+    { label:'VTC',  data: periods.map(p=>Math.round(bp[p].v)), backgroundColor:'#0C2C1CEE', borderRadius:2 },
+    { label:'Taxi', data: periods.map(p=>Math.round(bp[p].t)), backgroundColor:'#2A9C64EE', borderRadius:2 },
+  ];
+  if (charts['taxiChart']) charts['taxiChart'].destroy();
+  charts['taxiChart'] = new Chart(document.getElementById('taxiChart'), {
+    type:'bar', data:{labels:periods, datasets},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, datalabels:{display:false},
+        tooltip:{ callbacks:{
+          label: ctx => ` ${ctx.dataset.label}: €${ctx.parsed.y.toLocaleString()}`,
+          footer: items => { const i=items[0]?.dataIndex; const p=periods[i]; const tt=(bp[p].t+bp[p].v)||1; return `  Taxi share: ${((bp[p].t/tt)*100).toFixed(1)}%`; },
+        } } },
+      scales:{
+        x:{stacked:true,grid:{display:false},border:{display:false},ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16}},
+        y:{stacked:true,border:{display:false},grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>'€'+(v/1000).toFixed(0)+'k'}},
+      }
+    }
+  });
 }
 
-function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet, stacked = true) {
+function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metric) {
+  const stacked = metric !== 'hpd';   // hours-per-driver is a ratio → grouped, not stacked
   const active = groups.filter(g => !hiddenSet.has(g));
-  const round1 = v => selectedMetric === 'hpd' ? Math.round(v*10)/10 : Math.round(v);
+  const round1 = v => metric === 'hpd' ? Math.round(v*10)/10 : Math.round(v);
   const datasets = active.map(g => ({
     label: g,
     data: periods.map(p => round1(byPeriod[p]?.[g]||0)),
@@ -2107,7 +2205,7 @@ function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet, stac
   const periodTotals = periods.map(p =>
     Object.values(byPeriod[p] || {}).reduce((s, v) => s + v, 0)
   );
-  const unit = metricUnit();
+  const unit = metricUnit(metric);
 
   if (charts[id]) charts[id].destroy();
   charts[id] = new Chart(document.getElementById(id), {
@@ -2149,7 +2247,7 @@ function renderStackedBar(id, periods, byPeriod, groups, colors, hiddenSet, stac
       },
       scales: {
         x: { stacked, grid:{display:false}, border:{display:false}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16} },
-        y: { stacked, border:{display:false}, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:metricAxisTick} },
+        y: { stacked, border:{display:false}, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>metricAxisTick(metric,v)} },
       }
     }
   });
@@ -2216,7 +2314,7 @@ function renderTable(enriched, periods) {
   const rows = enriched.filter(r => r.period === selPeriod);
 
   const tbody = document.getElementById('company-tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" class="no-data">Sin datos</td></tr>'; return; }
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" class="no-data">No data</td></tr>'; return; }
 
   // Update column header label
   const thPc = document.getElementById('th-period-change');
@@ -2228,7 +2326,7 @@ function renderTable(enriched, periods) {
     const key = r.foGroup || ('__'+r.companyId);
     if (!foMap[key]) foMap[key] = { key, name: r.foGroup||r.companyName, isFO:!!r.foGroup, fleetType:r.fleetType, cohort:r.cohort, n:0, oh:0, partners:0, gmv:0, sumOH:0, sumWt:0 };
     const g = foMap[key];
-    g.n++; g.oh+=r.onlineHours; g.partners+=r.activePartners; g.gmv+=r.gmv;
+    g.n++; g.oh+=r.onlineHours; g.partners+=(r.activeDrivers||0); g.gmv+=r.gmv;
     if (r.eph>0) { g.sumOH+=r.onlineHours; g.sumWt+=r.onlineHours*r.eph; }
   }
 
@@ -2248,7 +2346,7 @@ function renderTable(enriched, periods) {
     const prevG = prevFoMap[g.key];
     const wowPct = prevG ? (g.oh - prevG.oh) : null;
     const sb = S_BADGES[g.fleetType] || S_BADGES['Free Floating'];
-    const ab = A_BADGES[g.cohort]    || A_BADGES['No Agreement'];
+    const ab = A_BADGES[g.cohort]    || A_BADGES['Free floating - Not branded'];
     const eph = g.sumOH>0 ? g.sumWt/g.sumOH : 0;
     return `<tr>
       <td class="muted" style="font-size:10px">${i+1}</td>
@@ -2259,7 +2357,7 @@ function renderTable(enriched, periods) {
       <td class="r">${g.oh.toLocaleString('es',{maximumFractionDigits:1})}h</td>
       <td class="r">${fmtChange(wowPct)}</td>
       <td class="r">${eph>0?'€'+eph.toFixed(2):'—'}</td>
-      <td class="r">${g.partners}</td>
+      <td class="r">${Math.round(g.partners).toLocaleString('es')}</td>
       <td class="r">€${g.gmv.toLocaleString('es',{maximumFractionDigits:0})}</td>
     </tr>`;
   }).join('');
@@ -2642,7 +2740,7 @@ function renderYoYTable(enriched, pairs, cyYear, lyYear) {
 
   tbody.innerHTML = Object.values(foMap).sort((a,b)=>b.cyOH-a.cyOH).map((g,i) => {
     const sb = S_BADGES[g.fleetType]||S_BADGES['Free Floating'];
-    const ab = A_BADGES[g.cohort]||A_BADGES['No Agreement'];
+    const ab = A_BADGES[g.cohort]||A_BADGES['Free floating - Not branded'];
     const ohG  = g.lyOH>0 ? ((g.cyOH-g.lyOH)/g.lyOH*100) : null;
     const eCY  = calcEPH(g.cyRows), eLY = calcEPH(g.lyRows);
     const ephG = eLY>0&&eCY>0 ? ((eCY-eLY)/eLY*100) : null;
@@ -2667,49 +2765,16 @@ function renderYoYTable(enriched, pairs, cyYear, lyYear) {
 //  FLEET REVIEW — Helpers
 // ══════════════════════════════════════════════════════════════════
 
-// ── Strategic FO groups shown in Fleet Review ─────────────────────────────
-const STRATEGIC_FO_LIST = new Set([
-  'DOUBLECAB',
-  'BCM Dinamica Y Gestion',
-  'VTC Plus',
-  'David Delfa',
-  'Jose Luis Funes',
-  'OTTOCABS SL',
-  'Rarotonga',
-  'Servicios Mobility',
-  'TECNITEL CARS SLU',
-  'Agencia Negociadora Transfers, S.L.',
-  'TORROCO MOBILITY S.L.',
-  'ALSA (Miguel) - Flota ALSA',
-  'ALSA (Broncotrans)',
-  'Global Transport',
-  'Moober Class',
-  'Madmobility',
-  'SERVICAR 25',
-  'DOUBLEDIGIT',
-  'DOUBLECAB (SPV)',
-  'Daniel León',
-  'Campofis',
-  'ALSA (directo)',
-  'Nueva Cooperativa',
-  'Eduardo González',
-  'Francisco Javier (Ferlina)',
-  'Jose Ivan',
-  'Jose Luis Corbalan',
-  'Madrid Autónomos',
-  'TIBUS',
-  'Manuel Peña',
-  'Javier Martinez Velayos',
-  'Jose Luis Moober',
-  'Preservealco',
-  'Roberto Heras',
-]);
-
+// The strategic FO groups shown in Fleet Review are derived from the Sheet
+// (companies whose Fleet Type = Strategic), NOT a hardcoded list — so updating
+// the Sheet automatically updates which FO groups appear here.
 function populateFleetSelector() {
   const sel = document.getElementById('fleet-selector');
   const cur = sel.value;
   const foGroups = [...new Set(
-    Object.values(agreements.companyMap).map(v => v.fo).filter(fo => fo && STRATEGIC_FO_LIST.has(fo))
+    Object.values(agreements.companyMap)
+      .filter(v => v.fleetType === 'Strategic' && v.fo)
+      .map(v => v.fo)
   )].sort();
   sel.innerHTML = [
     '<option value="__all__">All fleets (overview)</option>',
@@ -3657,7 +3722,7 @@ function renderHeatmapEPH(actCur, period) {
     <table style="border-collapse:collapse;width:100%;font-size:11px;">
       <thead>
         <tr>
-          <th style="background:var(--dark);color:#fff;padding:6px 14px;text-align:center;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;">Hora</th>
+          <th style="background:var(--dark);color:#fff;padding:6px 14px;text-align:center;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;">Hour</th>
           ${headerCells}
         </tr>
       </thead>
@@ -3666,7 +3731,7 @@ function renderHeatmapEPH(actCur, period) {
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:10px;color:#888;">
       <span style="display:inline-block;width:70px;height:10px;background:linear-gradient(to right,hsl(0,40%,58%),hsl(38,46%,46%),hsl(120,52%,34%));border-radius:3px;"></span>
       <span>Menor EPH → Mayor EPH &nbsp;·&nbsp; Valores = €/hora media · rango €${minVal.toFixed(2)}–€${maxVal.toFixed(2)}${peakLegendEPH}</span>
-    </div>${peakHoursData ? `<div style="margin-top:5px;font-size:9px;color:#aaa;">Picos detectados · Sáb: horas ${satPeakHoursEPH.length ? satPeakHoursEPH.join(',') : '(ninguna)'}</div>` : ''}`;
+    </div>${peakHoursData ? `<div style="margin-top:5px;font-size:9px;color:#aaa;">Peaks detected · Sáb: horas ${satPeakHoursEPH.length ? satPeakHoursEPH.join(',') : '(ninguna)'}</div>` : ''}`;
 }
 
 // ── HEATMAP: Online Hours by hour of day × day of week ──
@@ -3744,13 +3809,13 @@ function renderHeatmap(actCur, period, diag) {
 
   const satPeakHours = peakHoursData ? peakHoursData[5].map((v,i)=>v?i:null).filter(v=>v!==null) : [];
   const peakLegend = peakHoursData ? `&nbsp;·&nbsp; <span style="display:inline-flex;align-items:center;gap:4px;"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#000;opacity:0.55;"></span> Peak hour</span>` : '';
-  const peakDiag = peakHoursData ? `<div style="margin-top:5px;font-size:9px;color:#aaa;">Picos detectados · Sáb: horas ${satPeakHours.length ? satPeakHours.join(',') : '(ninguna)'}</div>` : '';
+  const peakDiag = peakHoursData ? `<div style="margin-top:5px;font-size:9px;color:#aaa;">Peaks detected · Sáb: horas ${satPeakHours.length ? satPeakHours.join(',') : '(ninguna)'}</div>` : '';
 
   body.innerHTML = `
     <table style="border-collapse:collapse;width:100%;font-size:11px;">
       <thead>
         <tr>
-          <th style="background:var(--dark);color:#fff;padding:6px 14px;text-align:center;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;">Hora</th>
+          <th style="background:var(--dark);color:#fff;padding:6px 14px;text-align:center;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;">Hour</th>
           ${headerCells}
         </tr>
       </thead>
@@ -3758,12 +3823,12 @@ function renderHeatmap(actCur, period, diag) {
     </table>
     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:10px;color:#888;">
       <span style="display:inline-block;width:70px;height:10px;background:linear-gradient(to right,hsl(0,40%,58%),hsl(38,46%,46%),hsl(120,52%,34%));border-radius:3px;"></span>
-      <span>Menor OH → Mayor OH &nbsp;·&nbsp; Valores = suma total de Online Hours${peakLegend}</span>
+      <span>Lower OH → Higher OH &nbsp;·&nbsp; Values = total Online Hours${peakLegend}</span>
     </div>${peakDiag}`;
 }
 
 // ── Skip the landing page — open the dashboard on Performance directly.
-//    Runs last, so STRATEGIC_FO_LIST and all render helpers are already defined.
+//    Runs last, so all consts (AGREEMENT_TYPES, colours…) and render helpers exist.
 populateFilters();
 goToTab('performance');
 
