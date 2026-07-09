@@ -6,11 +6,14 @@ Reads cohort classifications from cohorts.csv (exported from Google Sheet
 "ES MAD Fleets cohort") and car-level online-hours from Databricks, then
 injects the result into dashboard_template.html → index.html (GitHub Pages).
 
-CLASSIFICATION RULE (per car):
-  - If the company is Fleet Agreement or Locked Supply  →  Google Sheet wins
-  - Otherwise (No Agreement / Branding companies)       →  car decides:
-        car has search_category_name = 'Branding'  →  Branding
-        otherwise                                  →  No Agreement
+CLASSIFICATION RULE (per company):
+  The Google Sheet "Cohorts by Grouping" is the source of truth for grouping,
+  fleet type and cohort.
+  - Company IN the Sheet with Fleet Type == "Strategic"  →  STRATEGIC,
+        cohort taken straight from the Sheet (Branding / Fleet Agreement /
+        Locked Supply / No Agreement).
+  - Any other company (different fleet type, or absent from the Sheet)  →
+        NON-STRATEGIC, cohort "All Free floating (Branded TBD)".
 """
 
 import os
@@ -33,8 +36,33 @@ LOOKBACK_DAYS_M30    = 30    # for M30 section
 COHORTS_CSV          = "fo_groups.csv"       # single source of truth (Company, Company ID, FO, Fleet Type, Cohort)
 FO_GROUPS_CSV        = "fo_groups.csv"       # same file — Company ID → FO group name
 
-VALID_COHORTS   = ["Fleet Agreement", "Locked Supply", "Branding", "No Agreement"]
-FIXED_COHORTS   = {"Fleet Agreement", "Locked Supply"}   # Google Sheet always wins
+# Optional data cut-off date (YYYY-MM-DD). When set, only data up to and
+# including this date is fetched — useful to lock the dashboard to the last
+# complete week. If empty, data goes up to today (original behaviour).
+DATA_CUTOFF          = os.environ.get("DATA_CUTOFF", "").strip()
+if not DATA_CUTOFF:
+    # Default: cut off at the most recent COMPLETED week (last Sunday), so the
+    # "last period" KPI never compares against a half-finished current week.
+    _today  = datetime.datetime.utcnow().date()
+    _offset = (_today.weekday() + 1) % 7 or 7   # days back to the previous Sunday
+    DATA_CUTOFF = (_today - datetime.timedelta(days=_offset)).isoformat()
+_CUTOFF_CLAUSE       = f"AND calendar_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+
+# The Google Sheet ("Cohorts by Grouping") is the SOURCE OF TRUTH for grouping,
+# fleet type and cohort. A company is STRATEGIC only if it appears in the Sheet
+# with Fleet Type == "Strategic"; every other company (incl. those absent from
+# the Sheet) is NON-STRATEGIC and gets the catch-all cohort below.
+STRATEGIC_LABEL     = "Strategic"
+# NOTE: kept as "Free Floating" (not "Non-strategic") so the existing dashboard
+# charts keep working without JS changes. The classification logic is the new one
+# (strategic only if the Sheet says so); only the DISPLAY term is deferred to a
+# later "title-level" rename to Non-strategic.
+NONSTRATEGIC_LABEL  = "Free Floating"
+NONSTRATEGIC_COHORT = "All Free floating (Branded TBD)"
+
+# Cohorts that can come from the Sheet (for strategic companies), plus the
+# catch-all used for every non-strategic company.
+VALID_COHORTS   = ["Fleet Agreement", "Locked Supply", "Branding", "No Agreement", NONSTRATEGIC_COHORT]
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -181,34 +209,9 @@ def _normalise_cohort(raw: str) -> str:
 # CLASSIFICATION RULE
 # ──────────────────────────────────────────────────────────────────────────────
 
-def classify_car(company_id: str, is_branding_car: bool, cohort_map: dict) -> tuple:
-    """
-    Return (cohort, fleet_type) for a given car.
-
-    Rules:
-      1. If company is Fleet Agreement or Locked Supply  →  always keep that cohort
-      2. Otherwise (Branding / No Agreement company, or unknown company):
-           - car has branding vinyl (is_branding_car=True)  →  "Branding"
-           - car has no vinyl                               →  "No Agreement"
-    """
-    info = cohort_map.get(str(company_id), {
-        "fleet_type": "Free-Floating",
-        "cohort":     "No Agreement",
-        "name":       "",
-        "grouping":   "",
-    })
-    cohort     = info["cohort"]
-    fleet_type = info["fleet_type"]
-
-    if cohort in FIXED_COHORTS:
-        # Google Sheet wins – fleet agreement and locked supply are never overridden
-        return cohort, fleet_type
-
-    # For Branding / No Agreement companies: let the car decide
-    if is_branding_car:
-        return "Branding", fleet_type
-    else:
-        return "No Agreement", fleet_type
+def is_strategic(info: dict) -> bool:
+    """A company is strategic only if the Sheet lists it with Fleet Type 'Strategic'."""
+    return bool(info) and str(info.get("fleet_type", "")).strip().lower() == "strategic"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -233,17 +236,16 @@ def fetch_car_weekly_data() -> pd.DataFrame:
         DATE_TRUNC('week', calendar_date_local)      AS week_start,
         COALESCE(company_id, -1)                      AS company_id,
         car_id,
-        MAX(CASE
-            WHEN LOWER(search_category_name) = 'branding' THEN 1
-            ELSE 0
-        END)                                          AS is_branding_car,
+        city_id,
+        city_name,
         COUNT(DISTINCT date_hour_ts_local)                        AS online_hours,
         SUM(rides_driver_total_earnings_with_vat_eur_local)       AS earnings_eur,
         SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur
     FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
-    WHERE city_id = 150
+    WHERE country_id = 67   -- Spain (all cities)
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
-    GROUP BY 1, 2, 3
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2, 3, 4, 5
     """
     df = run_query(sql)
     # Cars with no company (id=-1) get Free-Floating / No Agreement by default
@@ -266,8 +268,9 @@ def fetch_m30_data() -> pd.DataFrame:
         SUM(rides_gmv_before_discounts_billing_with_vat_eur_local)             AS gmv_eur,
         COUNT(DISTINCT car_id)                                                 AS active_cars
     FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
-    WHERE city_id = 150
+    WHERE country_id = 67   -- Spain (all cities)
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+      {_CUTOFF_CLAUSE}
     GROUP BY 1, 2
     """
     df = run_query(sql)
@@ -287,7 +290,7 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
     rows = []
     for _, row in m30_df.iterrows():
         cid = str(row["company_id"])
-        ag  = agreements.get(cid, {"c": "No Agreement", "f": "Free-Floating"})
+        ag  = agreements.get(cid, {"c": NONSTRATEGIC_COHORT, "f": NONSTRATEGIC_LABEL})
         rows.append({
             "day_date":           str(row["date"]),
             "company_id":         cid,
@@ -351,51 +354,53 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: di
     (or fixed if the company is Fleet Agreement / Locked Supply).
     """
     agreements = {}
+    n_strategic = 0
 
-    for company_id, group in car_df.groupby("company_id"):
+    # Each company operates in a single city — attach it so the dashboard can
+    # filter by city. Take the first city seen for the company in the car data.
+    city_by_company = {}
+    if "city_name" in car_df.columns:
+        city_by_company = {
+            str(k): v for k, v in
+            car_df.drop_duplicates("company_id").set_index("company_id")["city_name"].to_dict().items()
+        }
+
+    for company_id in car_df["company_id"].unique():
         cid_str = str(company_id)
-        info    = cohort_map.get(cid_str, {
-            "name":      "",
-            "grouping":  None,
-            "fleet_type": "Free-Floating",
-            "cohort":    "No Agreement",
-        })
+        info    = cohort_map.get(cid_str)   # None if the company is not in the Sheet
+        city    = city_by_company.get(cid_str)
 
         # FO group: fo_map is the primary source; cohort_map.grouping is fallback
-        fo_group = (fo_map or {}).get(cid_str) or info.get("grouping") or None
+        fo_group = (fo_map or {}).get(cid_str) or (info or {}).get("grouping") or None
         # Sanity check: reject any value that looks like raw CSV content
         if fo_group and (fo_group.count(",") >= 3 or len(fo_group) > 100):
             print(f"[agreements] ⚠️  Rejected suspicious fo_group for company {cid_str}: {str(fo_group)[:60]}...")
             fo_group = None
 
-        # If fixed cohort (Fleet Agreement / Locked Supply) → done immediately
-        if info["cohort"] in FIXED_COHORTS:
+        if is_strategic(info):
+            # Strategic → trust the Sheet's cohort (this is where Branding,
+            # Fleet Agreement, Locked Supply and No Agreement come from)
             agreements[cid_str] = {
-                "n": info["name"],
-                "f": info["fleet_type"],
-                "c": info["cohort"],
+                "n": info.get("name", ""),
+                "f": STRATEGIC_LABEL,
+                "c": info.get("cohort") or "No Agreement",
                 "g": fo_group,
+                "city": city,
             }
-            continue
+            n_strategic += 1
+        else:
+            # Everything else (incl. companies absent from the Sheet) → Non-strategic.
+            # We can't yet tell branded from non-branded here, so use the catch-all.
+            agreements[cid_str] = {
+                "n": (info or {}).get("name", ""),
+                "f": NONSTRATEGIC_LABEL,
+                "c": NONSTRATEGIC_COHORT,
+                "g": fo_group,
+                "city": city,
+            }
 
-        # Otherwise count branding cars vs non-branding cars
-        branding_cars = int(group["is_branding_car"].sum())
-        total_cars    = len(group["car_id"].unique())
-
-        # Classify the company by majority of its cars
-        # (even one branding car classifies as Branding if company is not fixed)
-        is_branding_company = branding_cars > 0
-
-        cohort, fleet_type = classify_car(cid_str, is_branding_company, cohort_map)
-
-        agreements[cid_str] = {
-            "n": info["name"],
-            "f": fleet_type,
-            "c": cohort,
-            "g": fo_group,
-        }
-
-    print(f"[agreements] Built {len(agreements)} company entries")
+    print(f"[agreements] Built {len(agreements)} company entries "
+          f"({n_strategic} strategic, {len(agreements) - n_strategic} non-strategic)")
     return agreements
 
 
@@ -423,7 +428,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
         if ag is None:
             # Should not happen — assign default instead of dropping
             dropped_oh += row["online_hours"]
-            ag = {"c": "No Agreement", "f": "Free-Floating"}
+            ag = {"c": NONSTRATEGIC_COHORT, "f": NONSTRATEGIC_LABEL}
         rows.append({
             "week_date":          row["week_start"],
             "company_id":         cid,
@@ -481,6 +486,28 @@ def generate_html(data: dict) -> str:
 # MAIN
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
+    """
+    Compact a performance DataFrame into the minimal rows the dashboard needs:
+        {"w": date, "ci": company_id, "oh": online_hours, "e": earnings_eur}
+    Cohort / fleet type / FO / city are derived client-side from EMBEDDED_AGREEMENTS,
+    so they are NOT repeated per row. Short keys + rounded numbers keep the embedded
+    JSON small (this is what got the page from ~55 MB down to a few MB).
+    """
+    if df is None or df.empty:
+        return []
+    out = []
+    for row in df.itertuples(index=False):
+        d = row._asdict()
+        out.append({
+            "w":  str(d[date_col])[:10],
+            "ci": str(d["company_id"]),
+            "oh": round(float(d.get("online_hours") or 0)),
+            "e":  round(float(d.get("earnings_eur") or 0)),
+        })
+    return out
+
+
 def main():
     print("=" * 60)
     print(f"Dashboard build started at {datetime.datetime.utcnow().isoformat()}Z")
@@ -493,7 +520,6 @@ def main():
     # 2. Fetch data from Databricks
     car_df      = fetch_car_weekly_data()
     m30_df      = fetch_m30_data()
-    snapshot_df = fetch_company_snapshot()
 
     # 3. Build EMBEDDED_AGREEMENTS (one entry per company)
     agreements = build_embedded_agreements(car_df, cohort_map, fo_map)
@@ -508,11 +534,9 @@ def main():
     data = {
         "generated_at":      datetime.datetime.utcnow().isoformat() + "Z",
         "agreements":        agreements,
-        "fleet_performance": weekly_df.to_dict(orient="records"),
-        "daily_performance": daily_df.to_dict(orient="records"),
-        "company_snapshot":  snapshot_df.to_dict(orient="records"),
+        "fleet_performance": _compact_perf(weekly_df, "week_date"),
+        "daily_performance": _compact_perf(daily_df,  "day_date"),
         "hourly_car_data":   [],   # car-level hourly data not yet wired up
-        "m30":               m30_df.to_dict(orient="records"),
     }
 
     # 6. Generate HTML

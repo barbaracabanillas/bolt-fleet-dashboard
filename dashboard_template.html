@@ -116,6 +116,8 @@
   .date-range-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.06em; }
   .date-range-sep { font-size: 11px; color: rgba(255,255,255,0.3); }
   .date-range-input { font-size: 11px; font-family: inherit; font-weight: 500; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #fff; padding: 4px 8px; cursor: pointer; outline: none; width: 118px; }
+  .filter-select { font-size: 11px; font-family: inherit; font-weight: 500; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #fff; padding: 4px 8px; cursor: pointer; outline: none; max-width: 170px; }
+  .filter-select option { color: #111; }
   .date-range-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.5); cursor: pointer; }
   .date-range-clear { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); background: none; border: none; cursor: pointer; padding: 2px 4px; font-family: inherit; }
   .date-range-clear:hover { color: rgba(255,255,255,0.7); }
@@ -253,19 +255,10 @@
   <div class="topbar">
     <div class="topbar-left">
       <span class="topbar-bolt">Bolt</span>
-      <span class="topbar-title">Supply Fleet · Madrid</span>
-      <span class="topbar-range" id="topbar-range"></span>
+      <span class="topbar-title">Supply · Spain</span>
     </div>
     <div class="topbar-right">
-      <button class="reload-btn" onclick="goHome()">← Home</button>
-      <button class="reload-btn" onclick="document.getElementById('input-agreements-topbar').click()"><span class="data-dot loaded" id="dot-agreements"></span>Fleet cohorts</button>
-      <input type="file" id="input-agreements-topbar" accept=".csv" style="display:none" onchange="handleAgreementsFile(this.files[0]);this.value=''">
-      <button class="reload-btn" id="btn-upload-cars" onclick="document.getElementById('input-cars-topbar').click()" title="Admin · Cars CSV"><span class="data-dot" id="dot-cars"></span>Cars</button>
-      <input type="file" id="input-cars-topbar" accept=".csv" style="display:none" onchange="handleCarsFile(this.files[0]);this.value=''">
-      <button class="reload-btn" id="btn-upload-drivers" onclick="document.getElementById('input-drivers-topbar').click()" title="Admin · Drivers CSV"><span class="data-dot" id="dot-drivers"></span>Drivers</button>
-      <input type="file" id="input-drivers-topbar" accept=".csv" style="display:none" onchange="handleDriversFile(this.files[0]);this.value=''">
-      <button class="reload-btn" id="btn-upload-peak" onclick="document.getElementById('input-peak-topbar').click()" title="Peak hours calendar"><span class="data-dot" id="dot-peak"></span>Peak hours</button>
-      <input type="file" id="input-peak-topbar" accept=".csv" style="display:none" onchange="handlePeakHoursFile(this.files[0]);this.value=''">
+      <!-- Data comes from Databricks + the Google Sheet at build time; no manual uploads. -->
     </div>
   </div>
 
@@ -274,11 +267,15 @@
     <button class="tab-btn" onclick="switchTab('yoy',this)">Year-over-Year</button>
     <button class="tab-btn" onclick="switchTab('fleet',this)">Fleet Review</button>
     <div class="date-range-wrap">
-      <span class="date-range-label">Rango</span>
-      <input type="date" id="range-from" class="date-range-input" placeholder="Desde" onchange="applyDateRange()">
+      <span class="date-range-label">City</span>
+      <select id="filter-city" class="filter-select" onchange="applyCityFilter(this.value)"></select>
+      <span class="date-range-label">FO</span>
+      <select id="filter-fo" class="filter-select" onchange="applyFOFilter(this.value)"></select>
+      <span class="date-range-label">Range</span>
+      <input type="date" id="range-from" class="date-range-input" placeholder="From" onchange="applyDateRange()">
       <span class="date-range-sep">→</span>
-      <input type="date" id="range-to" class="date-range-input" placeholder="Hasta" onchange="applyDateRange()">
-      <button class="date-range-clear" onclick="clearDateRange()" title="Quitar filtro">✕</button>
+      <input type="date" id="range-to" class="date-range-input" placeholder="To" onchange="applyDateRange()">
+      <button class="date-range-clear" onclick="clearDateRange()" title="Clear filter">✕</button>
     </div>
   </div>
 
@@ -674,9 +671,11 @@ let _t3Rows = [], _t3Expanded = false;
 const _diagHeaders = { earnings: null, activity: null, carperf: null };
 let frSortState    = { t1: { key:'oh', dir:-1 }, t2: { key:'oh', dir:-1 }, t3: { key:'oh', dir:-1 } };
 
-// ── DATE RANGE FILTER ─────────────────────────────────────────────
+// ── DATE RANGE + CITY + FO FILTERS ─────────────────────────────────
 let rangeFrom = null;  // 'YYYY-MM-DD' or null (no lower bound)
 let rangeTo   = null;  // 'YYYY-MM-DD' or null (no upper bound)
+let selectedCity = 'Madrid';  // default city; '__all' = all Spain
+let selectedFO   = '__all';   // '__all' = every FO group
 
 function isInRange(dateStr) {
   if (!rangeFrom && !rangeTo) return true;
@@ -708,6 +707,39 @@ function rerenderActive() {
   if (pane.id === 'tab-performance') renderAll();
   else if (pane.id === 'tab-yoy')    renderYoY();
   else if (pane.id === 'tab-fleet')  renderFleetReview();
+}
+
+// ── CITY / FO FILTERS ─────────────────────────────────────────────
+function applyCityFilter(v) { selectedCity = v; refreshFODropdown(); rerenderActive(); }
+function applyFOFilter(v)   { selectedFO   = v; rerenderActive(); }
+
+// Fill the City dropdown from the companies present in the data.
+function populateFilters() {
+  const map = agreements.companyMap || {};
+  const cities = [...new Set(Object.values(map).map(c => c.city).filter(Boolean))].sort();
+  const citySel = document.getElementById('filter-city');
+  if (citySel) {
+    citySel.innerHTML = '<option value="__all">All Spain</option>' +
+      cities.map(c => `<option value="${c}">${c}</option>`).join('');
+    citySel.value = cities.includes(selectedCity) ? selectedCity : '__all';
+    selectedCity = citySel.value;
+  }
+  refreshFODropdown();
+}
+
+// FO options depend on the selected city (only FOs present in that city).
+function refreshFODropdown() {
+  const foSel = document.getElementById('filter-fo');
+  if (!foSel) return;
+  const map = agreements.companyMap || {};
+  const fos = [...new Set(Object.values(map)
+      .filter(c => selectedCity === '__all' || c.city === selectedCity)
+      .map(c => c.fo).filter(Boolean))].sort();
+  const prev = selectedFO;
+  foSel.innerHTML = '<option value="__all">All FOs</option>' +
+    fos.map(f => `<option value="${f}">${f}</option>`).join('');
+  foSel.value = fos.includes(prev) ? prev : '__all';
+  selectedFO = foSel.value;
 }
 
 // ── DATA STATUS DOTS ─────────────────────────────────────────────
@@ -1024,7 +1056,7 @@ function loadSavedAgreements() {
   if (typeof EMBEDDED_AGREEMENTS !== 'undefined' && EMBEDDED_AGREEMENTS && Object.keys(EMBEDDED_AGREEMENTS).length > 0) {
     agreements.companyMap = {};
     for (const [id, d] of Object.entries(EMBEDDED_AGREEMENTS)) {
-      agreements.companyMap[id] = { fleetType: d.f, cohort: d.c, fo: d.g };
+      agreements.companyMap[id] = { fleetType: d.f, cohort: d.c, fo: d.g, city: d.city };
     }
     agreementsLoaded = true;
     return;
@@ -1085,18 +1117,18 @@ function loadPreloadedData() {
   //               earnings_eur, finished_rides, avg_active_drivers, eph_rank }
   if (Array.isArray(d.fleet_performance) && d.fleet_performance.length) {
     lookerRows = d.fleet_performance
-      .filter(r => Number(r.online_hours) > 0)
+      .filter(r => Number(r.oh) > 0)
       .map(r => {
-        const oh  = Number(r.online_hours)  || 0;
-        const eur = Number(r.earnings_eur)  || 0;
+        const oh  = Number(r.oh) || 0;
+        const eur = Number(r.e)  || 0;
         return {
-          week:           (r.week_date || '').slice(0, 10),
-          companyId:      String(r.company_id || ''),
-          companyName:    'Fleet #' + (r.company_id || ''),  // no names in DB yet
+          week:           (r.w || '').slice(0, 10),
+          companyId:      String(r.ci || ''),
+          companyName:    'Fleet #' + (r.ci || ''),  // no names in DB yet
           onlineHours:    oh,
           eph:            oh > 0 ? eur / oh : 0,
           utilisation:    0,
-          activePartners: Number(r.avg_active_drivers) || 0,
+          activePartners: 0,
           gmv:            eur,
         };
       });
@@ -1107,14 +1139,14 @@ function loadPreloadedData() {
   // ── 1b. daily_performance → dailyRows ─────────────────────────────────────
   if (Array.isArray(d.daily_performance) && d.daily_performance.length) {
     dailyRows = d.daily_performance
-      .filter(r => Number(r.online_hours) > 0)
+      .filter(r => Number(r.oh) > 0)
       .map(r => {
-        const oh  = Number(r.online_hours)  || 0;
-        const eur = Number(r.earnings_eur)  || 0;
+        const oh  = Number(r.oh) || 0;
+        const eur = Number(r.e)  || 0;
         return {
-          week:           (r.day_date || '').slice(0, 10),
-          companyId:      String(r.company_id || ''),
-          companyName:    'Fleet #' + (r.company_id || ''),
+          week:           (r.w || '').slice(0, 10),
+          companyId:      String(r.ci || ''),
+          companyName:    'Fleet #' + (r.ci || ''),
           onlineHours:    oh,
           eph:            oh > 0 ? eur / oh : 0,
           utilisation:    0,
@@ -1253,7 +1285,8 @@ function loadPreloadedData() {
   return lookerLoaded;
 }
 
-// ── Page init: always show home screen ──
+// ── Page init: load embedded data (Performance is opened at the end of the script,
+//    once every const/function — e.g. STRATEGIC_FO_LIST — has been defined) ──
 loadPreloadedData();        // ← Databricks data (no-op when no PRELOADED_DATA)
 loadSavedAgreements();
 const cachedDate = loadCachedLookerData();
@@ -1819,6 +1852,7 @@ function getCohort(id) {
   return AGREEMENT_TYPES.includes(c) ? c : 'No Agreement';
 }
 function getFO(id)        { return agreements.companyMap[id]?.fo        || null; }
+function getCity(id)      { return agreements.companyMap[id]?.city      || null; }
 
 // ══ ENRICH ══
 function getCompanyName(companyId, fallback) {
@@ -1836,8 +1870,11 @@ function enrich() {
       fleetType:   getFleetType(r.companyId),
       cohort:      getCohort(r.companyId),
       foGroup:     getFO(r.companyId),
+      city:        getCity(r.companyId),
       period:      getPeriodKey(r.week),
-    }));
+    }))
+    .filter(r => (selectedCity === '__all' || r.city === selectedCity)
+              && (selectedFO   === '__all' || r.foGroup === selectedFO));
 }
 
 // ══ AGGREGATIONS ══
@@ -1914,9 +1951,9 @@ function goToTab(name) {
 }
 
 function renderAll() {
-  // Filter to only the strategic FO groups defined in STRATEGIC_FO_LIST
-  // so KPIs, charts and table all show the same universe of data
-  const enriched = enrich().filter(r => r.foGroup && STRATEGIC_FO_LIST.has(r.foGroup));
+  // Include ALL companies that had rides in the selected period (Strategic +
+  // Free Floating). Any company not listed as Strategic in the Sheet is Free Floating.
+  const enriched = enrich();
   const periods  = sortPeriods([...new Set(enriched.map(r => r.period))]);
 
   updateKPIs(enriched, periods);
@@ -1925,9 +1962,7 @@ function renderAll() {
   populatePeriodSelector(periods);
   renderTable(enriched, periods);
 
-  const weeks = [...new Set(lookerRows.map(r => r.week))].sort();
-  document.getElementById('topbar-range').textContent =
-    weeks.length > 1 ? `${weeks[0]} → ${weeks[weeks.length-1]}` : `Wk. ${weeks[0]}`;
+  // (Top-left shows only the title now; the confusing data-range label was removed.)
 
   // Also refresh YoY if that tab is active
   if (document.getElementById('tab-yoy').classList.contains('active')) renderYoY();
@@ -1961,9 +1996,9 @@ function updateKPIs(enriched, periods) {
     if(pEPH>0){ const d=avgEPH-pEPH,p=((d/pEPH)*100).toFixed(1); const el=document.getElementById('kpi-eph-wow'); el.textContent=`${d>=0?'+':''}€${Math.abs(d).toFixed(2)} PoP (${p}%)`; el.className='kpi-sub '+(d>=0?'up':'down'); }
   }
 
-  const lastWeek = [...new Set(lookerRows.map(r=>r.week))].sort().pop();
-  document.getElementById('kpi-companies').textContent = lookerRows.filter(r=>r.week===lastWeek).length;
-  document.getElementById('kpi-weeks').textContent = `${[...new Set(lookerRows.map(r=>r.week))].length} week(s) loaded`;
+  // Respect the active City/FO filters → count from `enriched`, not raw lookerRows.
+  document.getElementById('kpi-companies').textContent = new Set(lastE.map(r=>r.companyId)).size;
+  document.getElementById('kpi-weeks').textContent = `${new Set(enriched.map(r=>r.week)).size} week(s) loaded`;
 
   const stratOH = lastE.filter(r=>r.fleetType==='Strategic').reduce((s,r)=>s+r.onlineHours,0);
   document.getElementById('kpi-strategic').textContent = fmtH(stratOH);
@@ -2119,7 +2154,7 @@ function fmtChange(delta) {
 }
 
 function renderTableFromSelector() {
-  const enriched = enrich().filter(r => r.foGroup && STRATEGIC_FO_LIST.has(r.foGroup));
+  const enriched = enrich();
   const periods  = sortPeriods([...new Set(enriched.map(r => r.period))]);
   renderTable(enriched, periods);
 }
@@ -3676,6 +3711,11 @@ function renderHeatmap(actCur, period, diag) {
       <span>Menor OH → Mayor OH &nbsp;·&nbsp; Valores = suma total de Online Hours${peakLegend}</span>
     </div>${peakDiag}`;
 }
+
+// ── Skip the landing page — open the dashboard on Performance directly.
+//    Runs last, so STRATEGIC_FO_LIST and all render helpers are already defined.
+populateFilters();
+goToTab('performance');
 
 </script>
 </body>

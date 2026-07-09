@@ -1,0 +1,11 @@
+# Entorno Python local
+.venv/
+__pycache__/
+*.pyc
+
+# Credenciales locales — NUNCA se suben al repo
+.env.local
+
+# Salida generada en local
+docs/
+.claude/
