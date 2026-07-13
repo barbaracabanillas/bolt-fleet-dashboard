@@ -106,12 +106,19 @@ def sync_grouping_from_sheet() -> None:
     build always uses the latest grouping. If unset, the committed fo_groups.csv
     is used as-is (manual sync). Failures fall back to the committed CSV.
     """
-    url = os.environ.get("SHEET_CSV_URL", "").strip()
+    # Default to the published CSV of the Sheet's "Cohorts by Grouping" tab
+    # (public "Publish to web" link — overridable via the SHEET_CSV_URL env var).
+    _default = ("https://docs.google.com/spreadsheets/d/e/2PACX-1vS4ktNlCZUwdqI05J_5c8jYk9j"
+                "-tSu2uSGnsxE3Nxq8DY9gTpQoBqbNWA39IG2rjI2Bp5GMRX6j4zH2/pub"
+                "?gid=490803376&single=true&output=csv")
+    url = os.environ.get("SHEET_CSV_URL", _default).strip()
     if not url:
-        print("[sheet] SHEET_CSV_URL not set — using committed fo_groups.csv")
+        print("[sheet] SHEET_CSV_URL empty — using committed fo_groups.csv")
         return
     try:
-        df = pd.read_csv(url)
+        # Read Company ID as text so it stays "59137" (not float "59137.0"),
+        # otherwise it won't match the Databricks company_id.
+        df = pd.read_csv(url, dtype={"Company ID": str})
         expected = {"Company", "Company ID", "FO", "Fleet Type", "Cohort"}
         if not expected.issubset(set(df.columns)):
             print(f"[sheet] ⚠️  URL columns {list(df.columns)} != expected — keeping committed CSV")

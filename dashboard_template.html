@@ -118,6 +118,8 @@
   .date-range-input { font-size: 11px; font-family: inherit; font-weight: 500; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #fff; padding: 4px 8px; cursor: pointer; outline: none; width: 118px; }
   .filter-select { font-size: 11px; font-family: inherit; font-weight: 500; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #fff; padding: 4px 8px; cursor: pointer; outline: none; max-width: 170px; }
   .filter-select option { color: #111; }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { opacity: 0.75; }
   .date-range-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.5); cursor: pointer; }
   .date-range-clear { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35); background: none; border: none; cursor: pointer; padding: 2px 4px; font-family: inherit; }
   .date-range-clear:hover { color: rgba(255,255,255,0.7); }
@@ -362,15 +364,16 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>FO Group</th>
+            <th id="th-fo" class="sortable" onclick="sortTable('name')">FO Group</th>
             <th>Fleet type</th>
             <th>Cohort</th>
-            <th class="r">Companies</th>
-            <th class="r">Online Hours</th>
-            <th class="r" id="th-period-change">WoW</th>
-            <th class="r">Avg. EPH</th>
-            <th class="r">Drivers</th>
-            <th class="r">GMV</th>
+            <th class="r sortable" id="th-companies" onclick="sortTable('n')">Companies</th>
+            <th class="r sortable" id="th-oh" onclick="sortTable('oh')">Online Hours</th>
+            <th class="r sortable" id="th-period-change" onclick="sortTable('wowAbs')">WoW</th>
+            <th class="r sortable" id="th-period-change-pct" onclick="sortTable('wowPct')">WoW %</th>
+            <th class="r sortable" id="th-eph" onclick="sortTable('eph')">Avg. EPH</th>
+            <th class="r sortable" id="th-drivers" onclick="sortTable('partners')">Drivers</th>
+            <th class="r sortable" id="th-gmv" onclick="sortTable('gmv')">GMV</th>
           </tr>
         </thead>
         <tbody id="company-tbody"></tbody>
@@ -1142,6 +1145,18 @@ function renderTableFromSelector() {
   renderTable(enriched, periods);
 }
 
+let tableSort = { key: 'oh', dir: -1 };   // -1 = high→low, 1 = low→high
+function sortTable(key) {
+  if (tableSort.key === key) tableSort.dir *= -1;
+  else tableSort = { key, dir: key === 'name' ? 1 : -1 };
+  renderTableFromSelector();
+}
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return '<span style="color:#ccc">—</span>';
+  const c = v >= 0 ? '#2A9C64' : '#E53E3E';
+  return `<span style="color:${c};font-weight:600">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
+}
+
 function renderTable(enriched, periods) {
   if (!periods.length) return;
   const sel = document.getElementById('period-selector');
@@ -1149,7 +1164,7 @@ function renderTable(enriched, periods) {
   const rows = enriched.filter(r => r.period === selPeriod);
 
   const tbody = document.getElementById('company-tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" class="no-data">No data</td></tr>'; return; }
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="11" class="no-data">No data</td></tr>'; return; }
 
   // Update column header label
   const thPc = document.getElementById('th-period-change');
@@ -1177,21 +1192,50 @@ function renderTable(enriched, periods) {
     }
   }
 
-  tbody.innerHTML = Object.values(foMap).filter(g => g.isFO).sort((a,b)=>b.oh-a.oh).map((g,i) => {
-    const prevG = prevFoMap[g.key];
-    const wowPct = prevG ? (g.oh - prevG.oh) : null;
+  // Build FO rows with all metrics
+  const list = Object.values(foMap).filter(g => g.isFO).map(g => {
+    const prevG  = prevFoMap[g.key];
+    const wowAbs = prevG ? (g.oh - prevG.oh) : null;
+    const wowPct = (prevG && prevG.oh > 0) ? ((g.oh - prevG.oh) / prevG.oh * 100) : null;
+    const eph    = g.sumOH > 0 ? g.sumWt / g.sumOH : 0;
+    return { ...g, wowAbs, wowPct, eph };
+  });
+
+  // Sort by the clicked column
+  const { key, dir } = tableSort;
+  list.sort((a, b) => {
+    if (key === 'name') return dir * String(a.name).localeCompare(String(b.name));
+    const av = (a[key] == null || isNaN(a[key])) ? -Infinity : a[key];
+    const bv = (b[key] == null || isNaN(b[key])) ? -Infinity : b[key];
+    return dir * (av - bv);
+  });
+
+  // Header labels + sort arrows
+  const pcl = periodChangeLabel();
+  const arr = k => k === key ? (dir < 0 ? ' ↓' : ' ↑') : '';
+  const setHdr = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  setHdr('th-fo',               'FO Group'     + arr('name'));
+  setHdr('th-companies',        'Companies'    + arr('n'));
+  setHdr('th-oh',               'Online Hours' + arr('oh'));
+  setHdr('th-period-change',     pcl           + arr('wowAbs'));
+  setHdr('th-period-change-pct', pcl + ' %'    + arr('wowPct'));
+  setHdr('th-eph',              'Avg. EPH'     + arr('eph'));
+  setHdr('th-drivers',          'Drivers'      + arr('partners'));
+  setHdr('th-gmv',              'GMV'          + arr('gmv'));
+
+  tbody.innerHTML = list.map((g, i) => {
     const sb = S_BADGES[g.fleetType] || S_BADGES['Free Floating'];
     const ab = A_BADGES[g.cohort]    || A_BADGES['Free floating - Not branded'];
-    const eph = g.sumOH>0 ? g.sumWt/g.sumOH : 0;
     return `<tr>
       <td class="muted" style="font-size:10px">${i+1}</td>
-      <td style="font-weight:${g.isFO?'600':'500'};color:${g.isFO?'#000':'#999'}">${g.name}</td>
+      <td style="font-weight:600">${g.name}</td>
       <td><span class="badge" style="background:${sb.bg};color:${sb.color}">${g.fleetType}</span></td>
       <td><span class="badge" style="background:${ab.bg};color:${ab.color}">${g.cohort}</span></td>
       <td class="r muted">${g.n}</td>
       <td class="r">${g.oh.toLocaleString('es',{maximumFractionDigits:1})}h</td>
-      <td class="r">${fmtChange(wowPct)}</td>
-      <td class="r">${eph>0?'€'+eph.toFixed(2):'—'}</td>
+      <td class="r">${fmtChange(g.wowAbs)}</td>
+      <td class="r">${fmtPct(g.wowPct)}</td>
+      <td class="r">${g.eph>0?'€'+g.eph.toFixed(2):'—'}</td>
       <td class="r">${Math.round(g.partners).toLocaleString('es')}</td>
       <td class="r">€${g.gmv.toLocaleString('es',{maximumFractionDigits:0})}</td>
     </tr>`;

@@ -39,7 +39,6 @@ jobs:
           DATABRICKS_HOST:        ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_HTTP_PATH:   ${{ secrets.DATABRICKS_HTTP_PATH }}
           DATABRICKS_TOKEN:       ${{ secrets.DATABRICKS_TOKEN }}
-          SHEET_CSV_URL:          ${{ secrets.SHEET_CSV_URL }}
         run: python gen_dashboard.py
 
       - name: Configure GitHub Pages
