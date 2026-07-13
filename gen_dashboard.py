@@ -428,21 +428,23 @@ def fetch_company_snapshot() -> pd.DataFrame:
 
 def fetch_branded_cars() -> set:
     """
-    Distinct car_ids flagged as branded by the admin tag (is_car_branded) within
-    the analysis window (source: main.int_models.int_car_month_activity_metrics).
+    Distinct car_ids that are currently branded, matching the Looker "Branded Tag"
+    definition: a branding tag in state 'approved' whose period is active right now
+    (start_date <= today <= end_date).
+    Source: main.stg_models.stg_car_branding_periods_car_branding_periods.
     Used to split the non-strategic fleet into Branded vs Not-branded PER CAR.
     """
-    sql = f"""
+    sql = """
     SELECT DISTINCT car_id
-    FROM main.int_models.int_car_month_activity_metrics
-    WHERE is_car_branded = 1
-      AND period_local_month >= DATE_TRUNC('MONTH', DATE_SUB(CURRENT_DATE, {LOOKBACK_DAYS_WEEKLY}))
-      AND period_local_month <= DATE '{DATA_CUTOFF}'
+    FROM main.stg_models.stg_car_branding_periods_car_branding_periods
+    WHERE car_branding_state = 'approved'
+      AND car_branding_start_date <= CURRENT_DATE
+      AND car_branding_end_date   >= CURRENT_DATE
     """
     df = run_query(sql)
     cars = (set(pd.to_numeric(df["car_id"], errors="coerce").dropna().astype("int64").tolist())
             if not df.empty else set())
-    print(f"[branded] {len(cars):,} distinct branded cars (is_car_branded) in window")
+    print(f"[branded] {len(cars):,} cars with an active approved branding tag")
     return cars
 
 
