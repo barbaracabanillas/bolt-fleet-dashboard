@@ -69,6 +69,16 @@ COHORT_STRATEGIC = {
 FF_BRANDED     = "Free floating - Branded"
 FF_NOT_BRANDED = "Free floating - Not branded"
 
+# Compact 1-char codes for the per-row cohort in the payload (keeps JSON small).
+COHORT_CODE = {
+    "Strategic - Fleet Agreement": "A",
+    "Strategic - Branded":         "B",
+    "Strategic - Locked":          "L",
+    "Strategic - No agreement":    "N",
+    FF_BRANDED:                    "F",
+    FF_NOT_BRANDED:                "X",
+}
+
 VALID_COHORTS = list(COHORT_STRATEGIC.values()) + [FF_BRANDED, FF_NOT_BRANDED]
 
 
@@ -418,21 +428,21 @@ def fetch_company_snapshot() -> pd.DataFrame:
 
 def fetch_branded_cars() -> set:
     """
-    Distinct car_ids that were vinyl-branded at any point within the analysis
-    window (source: main.core_models.fact_car_branding_periods, direct branding).
-    Used to split the non-strategic fleet into Branded vs Not-branded.
+    Distinct car_ids flagged as branded by the admin tag (is_car_branded) within
+    the analysis window (source: main.int_models.int_car_month_activity_metrics).
+    Used to split the non-strategic fleet into Branded vs Not-branded PER CAR.
     """
     sql = f"""
     SELECT DISTINCT car_id
-    FROM main.core_models.fact_car_branding_periods
-    WHERE is_branded_directly = TRUE
-      AND car_branding_start_date <= DATE '{DATA_CUTOFF}'
-      AND car_branding_end_date   >= DATE_SUB(CURRENT_DATE, {LOOKBACK_DAYS_WEEKLY})
+    FROM main.int_models.int_car_month_activity_metrics
+    WHERE is_car_branded = 1
+      AND period_local_month >= DATE_TRUNC('MONTH', DATE_SUB(CURRENT_DATE, {LOOKBACK_DAYS_WEEKLY}))
+      AND period_local_month <= DATE '{DATA_CUTOFF}'
     """
     df = run_query(sql)
     cars = (set(pd.to_numeric(df["car_id"], errors="coerce").dropna().astype("int64").tolist())
             if not df.empty else set())
-    print(f"[branded] {len(cars):,} distinct branded cars in window")
+    print(f"[branded] {len(cars):,} distinct branded cars (is_car_branded) in window")
     return cars
 
 
@@ -517,38 +527,44 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: di
 # ──────────────────────────────────────────────────────────────────────────────
 
 def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
-                                agreements: dict) -> pd.DataFrame:
+                                agreements: dict,
+                                branded_cars: set = None) -> pd.DataFrame:
     """
-    Roll up car-level weekly data to company+cohort level so the dashboard
-    charts work the same way they did before (just now cohort-aware at car level).
+    Roll up car-level weekly data to company+cohort level. Cohort is assigned
+    PER CAR: strategic companies use the Sheet cohort; non-strategic (free
+    floating) cars are split into Branded vs Not-branded by the admin
+    is_car_branded tag (branded_cars). So a free-floating company can appear in
+    both 'Free floating - Branded' and 'Free floating - Not branded'.
 
-    Returns columns: week_start, company_id, cohort, fleet_type,
+    Returns columns: week_date, company_id, cohort, invoicing_strategy,
                      online_hours, earnings_eur, gmv_eur
     """
+    branded_cars = branded_cars or set()
     total_oh_input = car_df["online_hours"].sum()
     print(f"[aggregate] Total OH in car_df before aggregation: {total_oh_input:,.0f}")
 
     rows = []
-    dropped_oh = 0
     for _, row in car_df.iterrows():
         cid = str(row["company_id"])
-        ag  = agreements.get(cid)
-        if ag is None:
-            # Should not happen — assign default instead of dropping
-            dropped_oh += row["online_hours"]
-            ag = {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL}
+        ag  = agreements.get(cid) or {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL}
+        if ag["f"] == STRATEGIC_LABEL:
+            cohort = ag["c"]
+        else:
+            # Free floating → split by the car's admin branded tag
+            try:
+                car_id = int(row["car_id"])
+            except (ValueError, TypeError):
+                car_id = None
+            cohort = FF_BRANDED if car_id in branded_cars else FF_NOT_BRANDED
         rows.append({
             "week_date":          row["week_start"],
             "company_id":         cid,
-            "cohort":             ag["c"],
+            "cohort":             cohort,
             "invoicing_strategy": ag["f"],
             "online_hours":       row["online_hours"],
             "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
         })
-
-    if dropped_oh > 0:
-        print(f"[aggregate] ⚠️  {dropped_oh:,.0f} OH had no agreement entry → assigned No Agreement")
 
     result = pd.DataFrame(rows)
     if result.empty:
@@ -610,6 +626,7 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
         out.append({
             "w":  str(d[date_col])[:10],
             "ci": str(d["company_id"]),
+            "co": COHORT_CODE.get(d.get("cohort"), "X"),
             "oh": round(float(d.get("online_hours") or 0)),
             "e":  round(float(d.get("earnings_eur") or 0)),
             "d":  int(d.get("active_drivers") or 0),
@@ -642,8 +659,8 @@ def main():
     print(f"[branded] {len(branded_companies):,} companies with >=1 branded car")
     agreements = build_embedded_agreements(car_df, cohort_map, fo_map, branded_companies)
 
-    # 4. Aggregate weekly OH by company+cohort (for dashboard charts)
-    weekly_df = aggregate_weekly_by_cohort(car_df, agreements)
+    # 4. Aggregate weekly OH by company+cohort (per-car cohort split for free floating)
+    weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars)
 
     # 4a. Merge distinct active-drivers per company-week (for the metric selector)
     drivers_weekly = fetch_drivers_weekly()

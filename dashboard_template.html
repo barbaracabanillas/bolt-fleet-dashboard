@@ -627,6 +627,8 @@ let lookerLoaded    = false, agreementsLoaded = false;
 // ══ DIMENSIONS ══
 const STRATEGIC_GROUPS = ['Strategic', 'Free Floating'];
 const AGREEMENT_TYPES  = ['Strategic - Fleet Agreement', 'Strategic - Branded', 'Strategic - Locked', 'Strategic - No agreement', 'Free floating - Branded', 'Free floating - Not branded'];
+// Per-row cohort codes emitted by gen_dashboard.py (kept short to shrink the payload).
+const COHORT_BY_CODE = { A:'Strategic - Fleet Agreement', B:'Strategic - Branded', L:'Strategic - Locked', N:'Strategic - No agreement', F:'Free floating - Branded', X:'Free floating - Not branded' };
 
 // Left chart data keys stay 'Strategic'/'Free Floating'; 'Free Floating' is
 // DISPLAYED as 'Non strategic' via DISPLAY_NAMES below.
@@ -699,6 +701,7 @@ function loadPreloadedData() {
           utilisation:    0,
           activePartners: 0,
           activeDrivers:  Number(r.d) || 0,
+          rowCohort:      COHORT_BY_CODE[r.co] || null,
           gmv:            eur,
         };
       });
@@ -722,6 +725,7 @@ function loadPreloadedData() {
           utilisation:    0,
           activePartners: 0,
           activeDrivers:  Number(r.d) || 0,
+          rowCohort:      COHORT_BY_CODE[r.co] || null,
           gmv:            eur,
         };
       });
@@ -791,7 +795,7 @@ function enrich() {
       ...r,
       companyName: getCompanyName(r.companyId, r.companyName),
       fleetType:   getFleetType(r.companyId),
-      cohort:      getCohort(r.companyId),
+      cohort:      r.rowCohort || getCohort(r.companyId),
       foGroup:     getFO(r.companyId),
       city:        getCity(r.companyId),
       period:      getPeriodKey(r.week),
