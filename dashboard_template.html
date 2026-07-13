@@ -46,6 +46,7 @@
   .topbar-right { display: flex; align-items: center; gap: 3px; margin-left: auto; }
   .topbar-bolt  { font-size: 17px; font-weight: 800; color: #fff; }
   .topbar-title { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55); }
+  .topbar-updated { font-size: 11px; color: rgba(255,255,255,0.5); margin-left: 8px; white-space: nowrap; }
   .topbar-range { font-size: 11px; color: rgba(255,255,255,0.35); }
   .reload-btn { font-size: 11px; padding: 4px 9px; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; background: transparent; cursor: pointer; color: rgba(255,255,255,0.65); font-family: inherit; font-weight: 500; display:inline-flex; align-items:center; gap:4px; white-space: nowrap; }
   .reload-btn:hover { background: rgba(255,255,255,0.1); }
@@ -184,6 +185,7 @@
     <div class="topbar-left">
       <span class="topbar-bolt">Bolt</span>
       <span class="topbar-title">Supply · Spain</span>
+      <span class="topbar-updated" id="topbar-updated" title="Data last refreshed from Databricks"></span>
     </div>
     <div class="topbar-right">
       <!-- Data comes from Databricks + the Google Sheet at build time; no manual uploads. -->
@@ -292,7 +294,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <span class="chart-title">Hours / Driver</span>
-          <span class="chart-subtitle">Online hours ÷ active drivers · grouped bars</span>
+          <span class="chart-subtitle">Online hours ÷ active drivers · line</span>
         </div>
         <div style="position:relative;width:100%;height:200px;">
           <canvas id="hpdStrategicChart" role="img" aria-label="Hours per driver by Strategic vs Non strategic"></canvas>
@@ -301,7 +303,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <span class="chart-title">Hours / Driver</span>
-          <span class="chart-subtitle">Online hours ÷ active drivers · grouped bars</span>
+          <span class="chart-subtitle">Online hours ÷ active drivers · line</span>
         </div>
         <div style="position:relative;width:100%;height:200px;">
           <canvas id="hpdAgreementChart" role="img" aria-label="Hours per driver by cohort"></canvas>
@@ -342,12 +344,12 @@
     </div>
     <div class="chart-card">
       <div class="chart-header">
-        <span class="chart-title">Taxi vs VTC · GMV over time</span>
-        <span class="chart-subtitle">Weekly GMV (€) · stacked</span>
+        <span class="chart-title">Taxi vs VTC · GMV</span>
+        <span class="chart-subtitle">Bars: Taxi GMV (€) · Line: Taxi share of GMV (%)</span>
       </div>
       <div class="legend-row">
-        <div class="legend-item"><span class="legend-dot" style="background:#0C2C1C"></span>VTC</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#2A9C64"></span>Taxi</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#2A9C64"></span>Taxi GMV (€)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#0C2C1C"></span>Taxi % of GMV</div>
       </div>
       <div style="position:relative;width:100%;height:220px;">
         <canvas id="taxiChart" role="img" aria-label="Taxi vs VTC GMV over time"></canvas>
@@ -626,37 +628,40 @@ let lookerLoaded    = false, agreementsLoaded = false;
 
 // ══ DIMENSIONS ══
 const STRATEGIC_GROUPS = ['Strategic', 'Free Floating'];
-const AGREEMENT_TYPES  = ['Strategic - Fleet Agreement', 'Strategic - Branded', 'Strategic - Locked', 'Strategic - No agreement', 'Free floating - Branded', 'Free floating - Not branded'];
+const AGREEMENT_TYPES  = ['Strategic - Fleet Agreement', 'Strategic - Branded', 'Strategic - No agreement', 'Strategic - Locked', 'Free floating - Branded', 'Free floating - Not branded'];
 // Per-row cohort codes emitted by gen_dashboard.py (kept short to shrink the payload).
 const COHORT_BY_CODE = { A:'Strategic - Fleet Agreement', B:'Strategic - Branded', L:'Strategic - Locked', N:'Strategic - No agreement', F:'Free floating - Branded', X:'Free floating - Not branded' };
 
 // Left chart data keys stay 'Strategic'/'Free Floating'; 'Free Floating' is
 // DISPLAYED as 'Non strategic' via DISPLAY_NAMES below.
+// Colour logic (Bolt palette + neutral greys for secondary families):
+//   Strategic (with agreement) → GREEN family;  Strategic-Locked (captive) → slate, apart;
+//   Free floating → GREY family, apart, with an internal light/dark split.
 const S_COLORS = {
-  'Strategic':    '#0C2C1C',
-  'Free Floating':'#2A9C64',
+  'Strategic':    '#2A9C64',   // Bolt main green — our strategic fleet
+  'Free Floating':'#C2C8CE',   // grey — non-strategic (commodity supply)
 };
 const DISPLAY_NAMES = { 'Free Floating': 'Non strategic' };
 const A_COLORS = {
-  'Strategic - Fleet Agreement': '#0C2C1C',
-  'Strategic - Branded':         '#2A9C64',
-  'Strategic - Locked':          '#6FA88C',
-  'Strategic - No agreement':    '#AAB4AE',
-  'Free floating - Branded':     '#3E7CA8',
-  'Free floating - Not branded': '#C7D2DC',
+  'Strategic - Fleet Agreement': '#0C2C1C',  // Bolt dark green
+  'Strategic - Branded':         '#2A9C64',  // Bolt main green
+  'Strategic - No agreement':    '#8FC9AE',  // light green (same family)
+  'Strategic - Locked':          '#454B4F',  // slate — captive fleet, apart from all
+  'Free floating - Branded':     '#9AA1A8',  // grey family, darker = branded
+  'Free floating - Not branded': '#CDD2D7',  // grey family, lighter = not branded
 };
 
 const S_BADGES = {
-  'Strategic':    { bg:'#E8F5EF', color:'#0C2C1C' },
-  'Free Floating':{ bg:'#E0F5EC', color:'#1A6B42' },
+  'Strategic':    { bg:'#E4F3EC', color:'#1A6B42' },
+  'Free Floating':{ bg:'#EEF0F2', color:'#5B636B' },
 };
 const A_BADGES = {
-  'Strategic - Fleet Agreement':{ bg:'#E8F5EF', color:'#0C2C1C' },
-  'Strategic - Branded':        { bg:'#E0F5EC', color:'#1A6B42' },
-  'Strategic - Locked':         { bg:'#E7F0EC', color:'#3B6B55' },
-  'Strategic - No agreement':   { bg:'#EFF1F0', color:'#5A655F' },
-  'Free floating - Branded':    { bg:'#E7F0F6', color:'#2C5A78' },
-  'Free floating - Not branded':{ bg:'#F2F5F8', color:'#6B7A88' },
+  'Strategic - Fleet Agreement':{ bg:'#E7F1EB', color:'#0C2C1C' },
+  'Strategic - Branded':        { bg:'#E4F3EC', color:'#1A6B42' },
+  'Strategic - No agreement':   { bg:'#EAF5EF', color:'#2A7C54' },
+  'Strategic - Locked':         { bg:'#ECEEEF', color:'#454B4F' },
+  'Free floating - Branded':    { bg:'#EEF0F2', color:'#5B636B' },
+  'Free floating - Not branded':{ bg:'#F4F6F7', color:'#8A9199' },
 };
 
 function loadSavedAgreements() {
@@ -750,10 +755,16 @@ function loadPreloadedData() {
     agreementsLoaded = true;
   }
 
-  // ── 3. Update topbar data-freshness label ──────────────────────────────────
+  // ── 3. Update topbar "last updated" label from the build timestamp ──────────
   if (d.generated_at) {
-    const el = document.getElementById('topbar-range');
-    if (el) el.textContent = 'Databricks · ' + d.generated_at;
+    const el = document.getElementById('topbar-updated');
+    if (el) {
+      const dt = new Date(d.generated_at);
+      const txt = isNaN(dt) ? d.generated_at
+        : dt.toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric',
+                                       hour:'2-digit', minute:'2-digit', timeZone:'UTC' });
+      el.innerHTML = '<span style="color:#2A9C64">●</span> Updated ' + txt + ' UTC';
+    }
   }
 
   console.log('[PreloadedData] fleet_performance rows:', lookerRows.length,
@@ -960,8 +971,9 @@ function renderCharts(enriched, periods) {
   renderMetricBar('ohAgreementChart',      periods, bar('cohort','oh'),         AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'oh');
   renderMetricBar('driversStrategicChart', periods, bar('fleetType','drivers'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'drivers');
   renderMetricBar('driversAgreementChart', periods, bar('cohort','drivers'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'drivers');
-  renderMetricBar('hpdStrategicChart',     periods, bar('fleetType','hpd'),     STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'hpd');
-  renderMetricBar('hpdAgreementChart',     periods, bar('cohort','hpd'),        AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'hpd');
+  const hpdOpts = { valFmt: v => Math.round(v)+'h', axisFmt: v => Math.round(v)+'h' };
+  renderLines('hpdStrategicChart', periods, bar('fleetType','hpd'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, hpdOpts);
+  renderLines('hpdAgreementChart', periods, bar('cohort','hpd'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, hpdOpts);
   renderLines('ephStrategicChart', periods, aggregateEPHBy(enriched,'fleetType'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic);
   renderLines('ephAgreementChart', periods, aggregateEPHBy(enriched,'cohort'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement);
 }
@@ -1012,9 +1024,12 @@ function renderTaxiWidget() {
   setTxt('kpi-taxi-share', tot>0 ? ((lt/tot)*100).toFixed(1)+'% of GMV' : '');
   setTxt('kpi-vtc-share',  tot>0 ? ((lv/tot)*100).toFixed(1)+'% of GMV' : '');
 
+  const taxiData = periods.map(p => Math.round(bp[p].t));
+  const pctData  = periods.map(p => { const tt = bp[p].t + bp[p].v; return tt > 0 ? +((bp[p].t/tt)*100).toFixed(1) : null; });
   const datasets = [
-    { label:'VTC',  data: periods.map(p=>Math.round(bp[p].v)), backgroundColor:'#0C2C1CEE', borderRadius:2 },
-    { label:'Taxi', data: periods.map(p=>Math.round(bp[p].t)), backgroundColor:'#2A9C64EE', borderRadius:2 },
+    { type:'bar',  label:'Taxi GMV',      data: taxiData, backgroundColor:'#2A9C64EE', borderRadius:2, yAxisID:'y',  order:2 },
+    { type:'line', label:'Taxi % of GMV', data: pctData,  borderColor:'#0C2C1C', backgroundColor:'#0C2C1C',
+      borderWidth:2, pointRadius: periods.length < 20 ? 3 : 0, pointHoverRadius:4, tension:0.3, spanGaps:true, yAxisID:'y1', order:1 },
   ];
   if (charts['taxiChart']) charts['taxiChart'].destroy();
   charts['taxiChart'] = new Chart(document.getElementById('taxiChart'), {
@@ -1022,12 +1037,14 @@ function renderTaxiWidget() {
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, datalabels:{display:false},
         tooltip:{ callbacks:{
-          label: ctx => ` ${ctx.dataset.label}: €${ctx.parsed.y.toLocaleString()}`,
-          footer: items => { const i=items[0]?.dataIndex; const p=periods[i]; const tt=(bp[p].t+bp[p].v)||1; return `  Taxi share: ${((bp[p].t/tt)*100).toFixed(1)}%`; },
+          label: ctx => ctx.dataset.yAxisID === 'y1'
+            ? ` Taxi share: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(1)+'%' : '—'}`
+            : ` Taxi GMV: €${ctx.parsed.y.toLocaleString()}`,
         } } },
       scales:{
-        x:{stacked:true,grid:{display:false},border:{display:false},ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16}},
-        y:{stacked:true,border:{display:false},grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>'€'+(v/1000).toFixed(0)+'k'}},
+        x:{grid:{display:false},border:{display:false},ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16}},
+        y:{position:'left', border:{display:false},grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>'€'+(v/1000).toFixed(0)+'k'}},
+        y1:{position:'right',beginAtZero:true,border:{display:false},grid:{drawOnChartArea:false},ticks:{font:{size:10,family:'Inter'},color:'#2A9C64',callback:v=>v+'%'}},
       }
     }
   });
@@ -1057,23 +1074,31 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        // ── Hover tooltip: value (+ % of total when the metric is a sum) ──
+        // ── Hover a column → all cohorts for that period, each with its % of total
+        //    (only when viewing all FOs) and its change vs the previous period. ──
         tooltip: {
+          mode: 'index', intersect: false,
           callbacks: {
             label: ctx => {
-              const val = ctx.parsed.y;
-              if (!stacked) return ` ${ctx.dataset.label}: ${val.toLocaleString()}${unit}`;
+              const g = ctx.dataset.label, val = ctx.parsed.y;
               const total = periodTotals[ctx.dataIndex] || 1;
-              const pct = ((val / total) * 100).toFixed(1);
-              return ` ${ctx.dataset.label}: ${val.toLocaleString()}${unit} (${pct}%)`;
+              const pct = (stacked && selectedFO === '__all') ? ` (${((val/total)*100).toFixed(1)}%)` : '';
+              let delta = '';
+              if (ctx.dataIndex > 0) {
+                const pv = byPeriod[periods[ctx.dataIndex-1]]?.[g] || 0;
+                const dd = val - pv;
+                delta = ` · Δ ${dd>=0?'+':''}${Math.round(dd).toLocaleString()} vs prev`;
+              }
+              return ` ${g}: ${val.toLocaleString()}${unit}${pct}${delta}`;
             },
-            footer: items => stacked ? `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}${unit}` : '',
+            footer: items => (stacked && selectedFO === '__all')
+              ? `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}${unit}` : '',
           }
         },
-        // ── Bar labels: show % inside segment (sum metrics only, ≥8% of total) ──
+        // ── Bar % labels: only for sum metrics, all-FOs, and few columns (else cramped) ──
         datalabels: {
           display: ctx => {
-            if (!stacked || granularity === 'week') return false;
+            if (!stacked || selectedFO !== '__all' || periods.length > 14) return false;
             const total = periodTotals[ctx.dataIndex] || 1;
             return (ctx.dataset.data[ctx.dataIndex] / total) * 100 >= 8;
           },
@@ -1095,13 +1120,17 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
   });
 }
 
-function renderLines(id, periods, ephByPeriod, groups, colors, hiddenSet) {
+function renderLines(id, periods, byPeriod, groups, colors, hiddenSet, opts) {
+  opts = opts || {};
+  const valFmt  = opts.valFmt  || (v => '€' + v.toFixed(2));   // tooltip value format
+  const axisFmt = opts.axisFmt || (v => '€' + v.toFixed(0));   // y-axis tick format
   const active = groups.filter(g => !hiddenSet.has(g));
   const datasets = active
-    .filter(g => periods.some(p => (ephByPeriod[p]?.[g]||0) > 0))
+    .filter(g => periods.some(p => (byPeriod[p]?.[g]||0) > 0))
     .map(g => ({
-      label: g,
-      data: periods.map(p => { const v=ephByPeriod[p]?.[g]; return v>0?+v.toFixed(2):null; }),
+      label: DISPLAY_NAMES[g] || g,
+      _key:  g,
+      data: periods.map(p => { const v=byPeriod[p]?.[g]; return v>0?+v.toFixed(2):null; }),
       borderColor: colors[g], backgroundColor: colors[g]+'22',
       borderWidth:2, pointRadius:periods.length<8?4:2, pointHoverRadius:5,
       tension:0.3, spanGaps:true, fill:false,
@@ -1111,12 +1140,19 @@ function renderLines(id, periods, ephByPeriod, groups, colors, hiddenSet) {
     type:'line', data:{labels:periods, datasets},
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{
-        label:ctx=>ctx.parsed.y!=null?` ${ctx.dataset.label}: €${ctx.parsed.y.toFixed(2)}`:'',
+      plugins:{legend:{display:false},datalabels:{display:false},tooltip:{ mode:'index', intersect:false, callbacks:{
+        label:ctx=>{
+          if (ctx.parsed.y==null) return '';
+          const g = ctx.dataset._key || ctx.dataset.label;
+          let delta='';
+          if (ctx.dataIndex>0){ const pv=byPeriod[periods[ctx.dataIndex-1]]?.[g];
+            if (pv>0){ const dd=ctx.parsed.y-pv; delta=` · Δ ${dd>=0?'+':''}${dd.toFixed(1)}`; } }
+          return ` ${ctx.dataset.label}: ${valFmt(ctx.parsed.y)}${delta}`;
+        },
       }}},
       scales:{
         x:{grid:{display:false},border:{display:false},ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16}},
-        y:{border:{display:false},grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>'€'+v.toFixed(0)}},
+        y:{border:{display:false},grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:axisFmt}},
       }
     }
   });
