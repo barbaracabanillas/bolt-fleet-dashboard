@@ -31,7 +31,7 @@ from databricks import sql as databricks_sql
 # ──────────────────────────────────────────────────────────────────────────────
 
 MADRID_CITY_ID       = 150
-LOOKBACK_DAYS_WEEKLY = 365   # how many days back to fetch car-level weekly data
+LOOKBACK_DAYS_WEEKLY = 800   # ~all available history (Spain data starts 2024-05-31)
 LOOKBACK_DAYS_M30    = 30    # for M30 section
 COHORTS_CSV          = "fo_groups.csv"       # single source of truth (Company, Company ID, FO, Fleet Type, Cohort)
 FO_GROUPS_CSV        = "fo_groups.csv"       # same file — Company ID → FO group name
@@ -631,6 +631,7 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "co": COHORT_CODE.get(d.get("cohort"), "X"),
             "oh": round(float(d.get("online_hours") or 0)),
             "e":  round(float(d.get("earnings_eur") or 0)),
+            "g":  round(float(d.get("gmv_eur") or 0)),
             "d":  int(d.get("active_drivers") or 0),
         })
     return out

@@ -491,10 +491,7 @@
 
       <!-- Controls: Fleet selector + granularity (week/month only for fleet review) -->
       <div class="controls-bar" style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Fleet</span>
-          <select id="fleet-selector" onchange="renderFleetReview()" style="font-size:13px;font-weight:600;color:#000;border:1px solid var(--border);border-radius:6px;padding:5px 12px;background:#fff;cursor:pointer;outline:none;font-family:inherit;min-width:220px;"></select>
-        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Fleet review — filter with the City / FO controls above</div>
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="gran-toggle" id="fr-gran-toggle">
             <button class="gran-btn active" onclick="setFRGranularity('week',this)">Week</button>
@@ -707,7 +704,7 @@ function loadPreloadedData() {
           activePartners: 0,
           activeDrivers:  Number(r.d) || 0,
           rowCohort:      COHORT_BY_CODE[r.co] || null,
-          gmv:            eur,
+          gmv:            Number(r.g) || 0,
         };
       });
     lookerLoaded = lookerRows.length > 0;
@@ -731,7 +728,7 @@ function loadPreloadedData() {
           activePartners: 0,
           activeDrivers:  Number(r.d) || 0,
           rowCohort:      COHORT_BY_CODE[r.co] || null,
-          gmv:            eur,
+          gmv:            Number(r.g) || 0,
         };
       });
     console.log('[PreloadedData] daily_performance rows:', dailyRows.length);
@@ -1784,12 +1781,8 @@ function buildFRPeriodSelector(allRows) {
 //  renderFleetReview — main entry point
 // ══════════════════════════════════════════════════════════════════
 function renderFleetReview() {
-  populateFleetSelector();
-  const selectedFO = document.getElementById('fleet-selector').value;
-
-  // Looker main export (Databricks fleet_performance) — the only live FR data source.
-  const enriched  = enrich();
-  const fleetRows = selectedFO === '__all__' ? enriched : enriched.filter(r => r.foGroup === selectedFO);
+  // Uses the shared top-bar filters (City + FO); enrich() already applies them.
+  const fleetRows = enrich();
 
   // Period selector is driven entirely by the fleet (Looker) periods.
   const allPeriods = sortFRPeriods([...new Set(fleetRows.map(r => r.week).filter(Boolean).map(d => frPeriod(d)))]);
@@ -1871,7 +1864,7 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     { label: 'OH / driver',        fmt: c => c.ohPerDriver   != null ? Math.round(c.ohPerDriver)+'h'    : '—' },
     { label: 'Weekly OH / driver', fmt: c => c.weeklyOhPerDrv != null ? Math.round(c.weeklyOhPerDrv)+'h' : '—' },
     { label: 'Avg EPH',            fmt: c => EP(c.netEph) },
-    { label: 'Total revenue',      fmt: c => E(c.gmv) },
+    { label: 'GMV',                fmt: c => E(c.gmv) },
   ];
 
   tbody.innerHTML = metricRows.map((row, i) => {
