@@ -576,10 +576,18 @@ const A_BADGES = {
 // Converts Databricks row format to the internal globals the dashboard expects,
 // so no manual CSV upload is required.
 let taxiVtcRows = [];
+let companyRows = [];   // exact distinct-company counts per (week, city, FO, strategy)
 function loadPreloadedData() {
   const d = window.PRELOADED_DATA;
   if (!d) return false;
   taxiVtcRows = Array.isArray(d.taxi_vtc) ? d.taxi_vtc : [];
+  companyRows = Array.isArray(d.company_weekly) ? d.company_weekly.map(r => ({
+    week:      (r.w || '').slice(0, 10),
+    city:      r.city || null,
+    foGroup:   r.fo || null,
+    fleetType: FLEET_BY_CODE[r.f] || 'Free Floating',
+    companies: Number(r.n) || 0,
+  })) : [];
 
   // Each aggregated row already carries every dimension we need — one row per
   // (period, city, FO, cohort, fleet type). No per-company lookup required.
@@ -759,10 +767,22 @@ function updateKPIs(enriched, periods) {
     if(pEPH>0){ const d=avgEPH-pEPH,p=((d/pEPH)*100).toFixed(1); const el=document.getElementById('kpi-eph-wow'); el.textContent=`${d>=0?'+':''}€${Math.abs(d).toFixed(2)} PoP (${p}%)`; el.className='kpi-sub '+(d>=0?'up':'down'); }
   }
 
-  // Respect the active City/FO filters → count from `enriched`, not raw lookerRows.
-  // Rows are pre-aggregated, so sum each row's distinct-company count (`companies`).
-  document.getElementById('kpi-companies').textContent =
-    lastE.reduce((s,r) => s + (r.companies||0), 0).toLocaleString('es');
+  // Active companies — EXACT distinct count from company_weekly (aggregated per
+  // week/city/FO/strategy BEFORE cohorts were split, so a free-floating company
+  // with branded + non-branded cars is counted once). Falls back to the summed
+  // approximation only in Day view (no daily company counts are pre-aggregated).
+  let compCount;
+  if (granularity === 'day' || !companyRows.length) {
+    compCount = lastE.reduce((s,r) => s + (r.companies||0), 0);
+  } else {
+    compCount = companyRows
+      .filter(r => isInRange(r.week)
+                && (selectedCity === '__all' || r.city === selectedCity)
+                && (selectedFO   === '__all' || r.foGroup === selectedFO)
+                && getPeriodKey(r.week) === last)
+      .reduce((s,r) => s + (r.companies||0), 0);
+  }
+  document.getElementById('kpi-companies').textContent = compCount.toLocaleString('es');
   document.getElementById('kpi-weeks').textContent = last ? `active in ${last}` : '';
 
   const stratOH = lastE.filter(r=>r.fleetType==='Strategic').reduce((s,r)=>s+r.onlineHours,0);
@@ -1446,7 +1466,7 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     { label: 'OH / driver',        fmt: c => c.ohPerDriver   != null ? Math.round(c.ohPerDriver)+'h'    : '—' },
     { label: 'Weekly OH / driver', fmt: c => c.weeklyOhPerDrv != null ? Math.round(c.weeklyOhPerDrv)+'h' : '—' },
     { label: 'Avg EPH',            fmt: c => EP(c.netEph) },
-    { label: 'Finished rides',     fmt: c => c.rides > 0 ? Math.round(c.rides).toLocaleString('en') : '—' },
+    { label: 'Finished orders',    fmt: c => c.rides > 0 ? Math.round(c.rides).toLocaleString('en') : '—' },
     { label: 'GMV',                fmt: c => E(c.gmv) },
   ];
 

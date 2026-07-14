@@ -280,7 +280,7 @@ def fetch_car_weekly_data() -> pd.DataFrame:
 
     Returns columns:
         week_start, company_id, car_id, is_branding_car,
-        online_hours, earnings_eur, gmv_eur, rides
+        online_hours, earnings_eur, gmv_eur
     """
     sql = f"""
     SELECT
@@ -291,8 +291,7 @@ def fetch_car_weekly_data() -> pd.DataFrame:
         city_name,
         COUNT(DISTINCT date_hour_ts_local)                        AS online_hours,
         SUM(rides_driver_total_earnings_with_vat_eur_local)       AS earnings_eur,
-        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur,
-        SUM(rides_driver_reportable_activities_count_local)       AS rides
+        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur
     FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
     WHERE country_id = 67   -- Spain (all cities)
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
@@ -346,6 +345,39 @@ def fetch_drivers_weekly() -> pd.DataFrame:
     """
     df = run_query(sql)
     print(f"[drivers_weekly] Fetched {len(df):,} company-week rows")
+    return df
+
+
+def fetch_finished_rides_weekly() -> pd.DataFrame:
+    """
+    Finished rides per (week, city) from the canonical orders table
+    (order_state = 'finished'). company_id is NULL in this table, but
+    order_city_id is fully populated and matches the hourly table's city_id, so
+    we aggregate by city. In main() each city's finished rides are split across
+    that city's cohort/FO rows in proportion to online hours — the per-city (and
+    hence national) total stays exact. Matches the reference dashboard's
+    "Finished Orders", which is also city-level.
+
+    Note: this table uses `created_date_local` (not calendar_date_local), so it
+    needs its own cutoff clause.
+    """
+    cutoff = f"AND created_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+    sql = f"""
+    SELECT
+        DATE_TRUNC('week', created_date_local)   AS week_start,
+        order_city_id                            AS city_id,
+        COUNT(*)                                 AS finished_rides
+    FROM main.core_models.fact_rides_order
+    WHERE order_country_id = 67   -- Spain (all cities)
+      AND order_state = 'finished'
+      AND order_city_id IS NOT NULL
+      AND created_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+      {cutoff}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    print(f"[finished_rides] Fetched {len(df):,} week-city rows "
+          f"| Total finished = {df['finished_rides'].sum():,.0f}")
     return df
 
 
@@ -555,8 +587,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     level would multiply them across a company's many car rows.
 
     Returns columns: week_date, company_id, cohort, invoicing_strategy,
-                     city, fo, online_hours, earnings_eur, gmv_eur,
-                     rides, active_cars
+                     city, fo, online_hours, earnings_eur, gmv_eur, active_cars
     """
     branded_cars = branded_cars or set()
     total_oh_input = car_df["online_hours"].sum()
@@ -589,7 +620,6 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
             "online_hours":       row["online_hours"],
             "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
-            "rides":              row.get("rides", 0),
         })
 
     result = pd.DataFrame(rows)
@@ -607,7 +637,6 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
         .agg(online_hours=("online_hours", "sum"),
              earnings_eur=("earnings_eur", "sum"),
              gmv_eur=("gmv_eur", "sum"),
-             rides=("rides", "sum"),
              active_cars=("car_id", "nunique"))
     )
     total_oh_output = result["online_hours"].sum()
@@ -711,13 +740,77 @@ def main():
         (str(r.week_start)[:10], str(r.company_id)): int(r.active_drivers)
         for r in drivers_weekly.itertuples(index=False)
     }
+    # 4a-bis. Finished rides per (week, city) from the canonical orders table.
+    #         order_city_id → city_name via the hourly table's own mapping.
+    finished_weekly = fetch_finished_rides_weekly()
+    cityname_by_id = {}
+    for cid, cname in zip(car_df["city_id"], car_df["city_name"]):
+        try:
+            cityname_by_id[int(cid)] = cname
+        except (ValueError, TypeError):
+            pass
+    fr_lookup = {}
+    for r in finished_weekly.itertuples(index=False):
+        try:
+            cname = cityname_by_id.get(int(r.city_id))
+        except (ValueError, TypeError):
+            cname = None
+        if cname is not None:
+            fr_lookup[(str(r.week_start)[:10], cname)] = float(r.finished_rides)
+
+    # Exact distinct-company count per (week, city, FO, strategy), computed while
+    # company_id is still present (before cohorts are collapsed) so a free-floating
+    # company with both branded and non-branded cars is counted ONCE. Feeds the
+    # "Active companies" KPI. Empty frame keeps the emit below simple.
+    company_weekly = pd.DataFrame(columns=["week_date", "city", "fo", "invoicing_strategy", "n"])
+
     if not weekly_df.empty:
+        wk = weekly_df["week_date"].astype(str).str[:10]
+        comp = weekly_df["company_id"].astype(str)
         # Attach the company's active-driver count to EACH of its cohort rows
-        # (same value per company — matches the previous per-company behaviour)…
-        weekly_df["active_drivers"] = [
-            dw_lookup.get((str(w)[:10], str(c)), 0)
-            for w, c in zip(weekly_df["week_date"], weekly_df["company_id"])
-        ]
+        # (same value per company — matches the previous per-company behaviour).
+        weekly_df["active_drivers"] = [dw_lookup.get(k, 0) for k in zip(wk, comp)]
+
+        # Split each city's finished rides across that city's cohort/FO rows in
+        # proportion to online hours (pass 1). Some (week, city) have finished
+        # orders but no OH rows here — mostly strategic fleets whose Sheet city
+        # differs from their operating city — so their finished would be lost.
+        # Pass 2 spreads each week's UN-assigned remainder across that week's rows
+        # nationally (by OH), so the national weekly total stays EXACT.
+        ckey = list(zip(wk, weekly_df["city"]))
+        oh_sum = {}
+        for k, oh in zip(ckey, weekly_df["online_hours"]):
+            oh_sum[k] = oh_sum.get(k, 0.0) + float(oh or 0)
+        oh_by_week, fetched_by_week = {}, {}
+        for k, oh in zip(ckey, weekly_df["online_hours"]):
+            oh_by_week[k[0]] = oh_by_week.get(k[0], 0.0) + float(oh or 0)
+        for (w, _cn), val in fr_lookup.items():
+            fetched_by_week[w] = fetched_by_week.get(w, 0.0) + val
+
+        finished_col, assigned_by_week = [], {}
+        for k, oh in zip(ckey, weekly_df["online_hours"]):
+            total_fin = fr_lookup.get(k, 0.0)
+            denom = oh_sum.get(k, 0.0)
+            v = total_fin * (float(oh or 0) / denom) if (total_fin > 0 and denom > 0) else 0.0
+            finished_col.append(v)
+            assigned_by_week[k[0]] = assigned_by_week.get(k[0], 0.0) + v
+        # Pass 2: national remainder per week → by OH.
+        for i, (k, oh) in enumerate(zip(ckey, weekly_df["online_hours"])):
+            w = k[0]
+            res = fetched_by_week.get(w, 0.0) - assigned_by_week.get(w, 0.0)
+            denom = oh_by_week.get(w, 0.0)
+            if res > 0 and denom > 0:
+                finished_col[i] += res * (float(oh or 0) / denom)
+        weekly_df["finished_rides"] = finished_col
+
+        # Exact company count (see note above) — before collapsing cohorts.
+        company_weekly = (
+            weekly_df
+            .groupby(["week_date", "city", "fo", "invoicing_strategy"],
+                     as_index=False, dropna=False)
+            .agg(n=("company_id", "nunique"))
+        )
+
         # …THEN collapse to the final (week, city, FO, cohort, fleetType) shape,
         # summing metrics + drivers and counting distinct companies as `n`.
         weekly_df = (
@@ -727,13 +820,14 @@ def main():
             .agg(online_hours=("online_hours", "sum"),
                  earnings_eur=("earnings_eur", "sum"),
                  gmv_eur=("gmv_eur", "sum"),
-                 rides=("rides", "sum"),
+                 rides=("finished_rides", "sum"),
                  active_cars=("active_cars", "sum"),
                  active_drivers=("active_drivers", "sum"),
                  n=("company_id", "nunique"))
         )
         print(f"[aggregate] {len(weekly_df):,} week-city-FO-cohort rows (stage 2) "
-              f"| Total OH: {weekly_df['online_hours'].sum():,.0f}")
+              f"| Total OH: {weekly_df['online_hours'].sum():,.0f} "
+              f"| Total finished rides: {weekly_df['rides'].sum():,.0f}")
 
     # 4b. Aggregate daily OH by company+cohort (for 'Day' granularity button)
     daily_df = aggregate_daily_by_cohort(m30_df, agreements)
@@ -750,6 +844,16 @@ def main():
             {"w": str(r.week_start)[:10], "city": r.city_name,
              "t": round(float(r.taxi_gmv or 0)), "v": round(float(r.vtc_gmv or 0))}
             for r in taxi_df.itertuples(index=False)
+        ],
+        # Exact distinct-company count per (week, city, FO, strategy) for the
+        # "Active companies" KPI (no cross-cohort double count).
+        "company_weekly": [
+            {"w": str(r.week_date)[:10],
+             "city": "" if pd.isna(r.city) else str(r.city),
+             "fo": "" if pd.isna(r.fo) else str(r.fo),
+             "f": "S" if r.invoicing_strategy == STRATEGIC_LABEL else "F",
+             "n": int(r.n)}
+            for r in company_weekly.itertuples(index=False)
         ],
         "hourly_car_data":   [],   # car-level hourly data not yet wired up
     }
