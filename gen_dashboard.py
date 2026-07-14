@@ -280,7 +280,7 @@ def fetch_car_weekly_data() -> pd.DataFrame:
 
     Returns columns:
         week_start, company_id, car_id, is_branding_car,
-        online_hours, earnings_eur, gmv_eur
+        online_hours, earnings_eur, gmv_eur, rides
     """
     sql = f"""
     SELECT
@@ -291,7 +291,8 @@ def fetch_car_weekly_data() -> pd.DataFrame:
         city_name,
         COUNT(DISTINCT date_hour_ts_local)                        AS online_hours,
         SUM(rides_driver_total_earnings_with_vat_eur_local)       AS earnings_eur,
-        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur
+        SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur,
+        SUM(rides_driver_reportable_activities_count_local)       AS rides
     FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
     WHERE country_id = 67   -- Spain (all cities)
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
@@ -554,7 +555,8 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     level would multiply them across a company's many car rows.
 
     Returns columns: week_date, company_id, cohort, invoicing_strategy,
-                     city, fo, online_hours, earnings_eur, gmv_eur
+                     city, fo, online_hours, earnings_eur, gmv_eur,
+                     rides, active_cars
     """
     branded_cars = branded_cars or set()
     total_oh_input = car_df["online_hours"].sum()
@@ -579,6 +581,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
         rows.append({
             "week_date":          row["week_start"],
             "company_id":         cid,
+            "car_id":             row["car_id"],
             "cohort":             cohort,
             "invoicing_strategy": ag["f"],
             "city":               city,
@@ -586,6 +589,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
             "online_hours":       row["online_hours"],
             "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
+            "rides":              row.get("rides", 0),
         })
 
     result = pd.DataFrame(rows)
@@ -594,11 +598,17 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
 
     # Stage 1: collapse cars → one row per (week, company, cohort, ...).
     # city/fo are constant per company so they add no new groups.
+    # active_cars = distinct car_id in the group (cars belong to one company, so
+    # summing this across companies in stage 2 stays a correct distinct count).
     result = (
         result
         .groupby(["week_date", "company_id", "cohort", "invoicing_strategy", "city", "fo"],
                  as_index=False, dropna=False)
-        .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum"})
+        .agg(online_hours=("online_hours", "sum"),
+             earnings_eur=("earnings_eur", "sum"),
+             gmv_eur=("gmv_eur", "sum"),
+             rides=("rides", "sum"),
+             active_cars=("car_id", "nunique"))
     )
     total_oh_output = result["online_hours"].sum()
     print(f"[aggregate] {len(result):,} company-week-cohort rows (stage 1) | Total OH after aggregation: {total_oh_output:,.0f}")
@@ -660,6 +670,8 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "e":    round(float(d.get("earnings_eur") or 0)),
             "g":    round(float(d.get("gmv_eur") or 0)),
             "d":    int(d.get("active_drivers") or 0),
+            "c":    int(d.get("active_cars") or 0),
+            "r":    round(float(d.get("rides") or 0)),
             "n":    int(d.get("n") or 0),
         })
     return out
@@ -715,6 +727,8 @@ def main():
             .agg(online_hours=("online_hours", "sum"),
                  earnings_eur=("earnings_eur", "sum"),
                  gmv_eur=("gmv_eur", "sum"),
+                 rides=("rides", "sum"),
+                 active_cars=("active_cars", "sum"),
                  active_drivers=("active_drivers", "sum"),
                  n=("company_id", "nunique"))
         )

@@ -596,6 +596,8 @@ function loadPreloadedData() {
       eph:           oh > 0 ? eur / oh : 0,
       gmv:           Number(r.g) || 0,
       activeDrivers: Number(r.d) || 0,
+      activeCars:    Number(r.c) || 0,
+      rides:         Number(r.r) || 0,
       companies:     Number(r.n) || 0,
     };
   };
@@ -1392,13 +1394,30 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     ${periods.map(p => `<th style="text-align:right;padding:9px 14px;font-size:11px;font-weight:700;background:var(--dark);color:#fff;white-space:nowrap;">${fmtPeriodCol(p)}</th>`).join('')}
   </tr>`;
 
+  // All-Spain OH per period (denominator for the "% of Spain OH" market-share
+  // metric) — drops the City/FO filter (full country total) but keeps the same
+  // date range as the numerator so partial periods compare like-for-like.
+  const spainByPeriod = {};
+  for (const r of lookerRows) {
+    if (!isInRange(r.week)) continue;
+    const p = frPeriod(r.week);
+    spainByPeriod[p] = (spainByPeriod[p] || 0) + (r.onlineHours || 0);
+  }
+
   const cols = periods.map(p => {
     const rows  = fleetRows.filter(r => frPeriod(r.week) === p);
     const weeks = [...new Set(rows.map(r => r.week).filter(Boolean))];
     const totalOH = rows.reduce((s, r) => s + (r.onlineHours || 0), 0);
+    // Market share: this selection's OH ÷ all-Spain OH for the same period.
+    const shareOH = spainByPeriod[p] > 0 ? totalOH / spainByPeriod[p] : null;
     // Active drivers summed per week (across companies), then averaged over the period's weeks
     const drvByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeDrivers || 0), 0));
     const avgDrivers = drvByWeek.length ? drvByWeek.reduce((a, b) => a + b, 0) / drvByWeek.length : null;
+    // Active cars — same per-week-then-average treatment as drivers.
+    const carByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeCars || 0), 0));
+    const avgCars = carByWeek.length ? carByWeek.reduce((a, b) => a + b, 0) / carByWeek.length : null;
+    // Finished rides — additive, so a straight total over the period.
+    const rides = rows.reduce((s, r) => s + (r.rides || 0), 0);
     const ohPerDriver = (avgDrivers > 0) ? totalOH / avgDrivers : null;
     const weeklyOhPerDrv = weeks.length
       ? weeks.reduce((sum, w, i) => {
@@ -1412,7 +1431,7 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     const ephOH   = ephRows.reduce((s, r) => s + r.onlineHours, 0);
     const netEph  = ephOH > 0 ? ephRows.reduce((s, r) => s + r.onlineHours * r.eph, 0) / ephOH : null;
     const gmv = rows.reduce((s, r) => s + (r.gmv || 0), 0);
-    return { totalOH, avgDrivers, ohPerDriver, weeklyOhPerDrv, netEph, gmv };
+    return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, weeklyOhPerDrv, netEph, gmv };
   });
 
   const N  = (v) => v != null && !isNaN(v) && v > 0 ? v.toLocaleString('en',{maximumFractionDigits:0}) : '—';
@@ -1421,10 +1440,13 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
 
   const metricRows = [
     { label: 'Total OH',           fmt: c => c.totalOH > 0 ? N(c.totalOH) + 'h' : '—' },
+    { label: '% of Spain OH',      fmt: c => c.shareOH != null ? (c.shareOH*100).toFixed(1)+'%' : '—' },
     { label: 'Active drivers',     fmt: c => c.avgDrivers    != null ? Math.round(c.avgDrivers).toLocaleString('en') : '—' },
+    { label: 'Active cars',        fmt: c => c.avgCars       != null ? Math.round(c.avgCars).toLocaleString('en')    : '—' },
     { label: 'OH / driver',        fmt: c => c.ohPerDriver   != null ? Math.round(c.ohPerDriver)+'h'    : '—' },
     { label: 'Weekly OH / driver', fmt: c => c.weeklyOhPerDrv != null ? Math.round(c.weeklyOhPerDrv)+'h' : '—' },
     { label: 'Avg EPH',            fmt: c => EP(c.netEph) },
+    { label: 'Finished rides',     fmt: c => c.rides > 0 ? Math.round(c.rides).toLocaleString('en') : '—' },
     { label: 'GMV',                fmt: c => E(c.gmv) },
   ];
 
