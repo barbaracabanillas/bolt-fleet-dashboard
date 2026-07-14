@@ -194,7 +194,6 @@
 
   <div class="tab-nav">
     <button class="tab-btn active" onclick="switchTab('performance',this)">Performance</button>
-    <button class="tab-btn" onclick="switchTab('yoy',this)">Year-over-Year</button>
     <button class="tab-btn" onclick="switchTab('fleet',this)">Fleet Review</button>
     <div class="date-range-wrap">
       <span class="date-range-label">City</span>
@@ -223,12 +222,20 @@
 
     <!-- Granularity -->
     <div class="controls-bar">
-      <div style="font-size:11px;color:var(--muted);font-weight:500;">Charts and table update based on selected granularity</div>
-      <div class="gran-toggle">
-        <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
-        <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
-        <button class="gran-btn" onclick="setGranularity('month',this)">Month</button>
-        <button class="gran-btn" onclick="setGranularity('quarter',this)">Quarter</button>
+      <div style="font-size:11px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:8px;">
+        <span>Charts and table update based on selected granularity</span>
+        <span id="yoy-hint" style="display:none;align-items:center;gap:5px;">
+          <span style="display:inline-block;width:22px;height:0;border-top:2px dashed #8A9199;"></span>= last year
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="gran-btn" id="yoy-toggle" onclick="toggleYoY(this)" title="Overlay the same period one year earlier">vs Last year</button>
+        <div class="gran-toggle">
+          <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
+          <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
+          <button class="gran-btn" onclick="setGranularity('month',this)">Month</button>
+          <button class="gran-btn" onclick="setGranularity('quarter',this)">Quarter</button>
+        </div>
       </div>
     </div>
 
@@ -385,107 +392,6 @@
     </div>
   </div>
 
-  <div id="tab-yoy" class="tab-pane">
-    <div class="main">
-
-      <!-- KPIs -->
-      <div class="kpi-row">
-        <div class="kpi-card"><div class="kpi-lbl">OH · latest period</div><div class="kpi-val" id="yoy-kpi-oh-cur">—</div><div class="kpi-sub" id="yoy-kpi-oh-ly">—</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">OH YoY growth</div><div class="kpi-val" id="yoy-kpi-oh-growth">—</div><div class="kpi-sub" id="yoy-kpi-oh-growth-sub">—</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Avg. EPH · latest period</div><div class="kpi-val" id="yoy-kpi-eph-cur">—</div><div class="kpi-sub" id="yoy-kpi-eph-ly">—</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">EPH YoY growth</div><div class="kpi-val" id="yoy-kpi-eph-growth">—</div><div class="kpi-sub" id="yoy-kpi-eph-growth-sub">—</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Matched periods</div><div class="kpi-val" id="yoy-kpi-pairs">—</div><div class="kpi-sub" id="yoy-kpi-pairs-sub">—</div></div>
-      </div>
-
-      <!-- Controls -->
-      <div class="controls-bar">
-        <div style="display:flex;align-items:center;gap:16px;">
-          <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--muted);">
-            Año: <select id="yoy-year-select" onchange="renderYoY()" style="font-size:11px;font-family:inherit;font-weight:600;color:#000;border:1px solid var(--border);border-radius:5px;padding:3px 8px;background:#fff;cursor:pointer;outline:none;"></select>
-            vs año anterior
-          </div>
-          <div style="font-size:11px;color:var(--muted);font-weight:500;" id="yoy-year-label"></div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);font-weight:500;">
-            <span style="display:inline-block;width:24px;height:8px;background:#2A9C64;border-radius:2px;opacity:0.9;"></span>Current year
-            <span style="display:inline-block;width:24px;height:8px;background:#2A9C64;border-radius:2px;opacity:0.25;margin-left:8px;"></span>Last year
-          </div>
-        </div>
-        <div class="gran-toggle">
-          <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
-          <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
-          <button class="gran-btn" onclick="setGranularity('month',this)">Month</button>
-          <button class="gran-btn" onclick="setGranularity('quarter',this)">Quarter</button>
-        </div>
-      </div>
-
-      <!-- 2-column charts (same layout as Performance) -->
-      <div class="charts-2col">
-        <div>
-          <div class="chart-col-header">Strategic vs Non strategic<div class="chart-col-header-divider"></div></div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <span class="chart-title">Online Hours</span>
-              <span class="chart-subtitle">Stacked bars · two bars per period: LY (light) and CY (solid)</span>
-            </div>
-            <div class="legend-row" id="yoy-legend-strategic"></div>
-            <div style="position:relative;width:100%;height:240px;"><canvas id="yoyOhStrategicChart" role="img" aria-label="YoY OH Strategic vs Non strategic"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <span class="chart-title">Avg. EPH</span>
-              <span class="chart-subtitle">Solid line = CY · dashed line = LY</span>
-            </div>
-            <div style="position:relative;width:100%;height:200px;"><canvas id="yoyEphStrategicChart" role="img" aria-label="YoY EPH Strategic vs Non strategic"></canvas></div>
-          </div>
-        </div>
-        <div>
-          <div class="chart-col-header">Cohort<div class="chart-col-header-divider"></div></div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <span class="chart-title">Online Hours</span>
-              <span class="chart-subtitle">Stacked bars · two bars per period: LY (light) and CY (solid)</span>
-            </div>
-            <div class="legend-row" id="yoy-legend-agreement"></div>
-            <div style="position:relative;width:100%;height:240px;"><canvas id="yoyOhAgreementChart" role="img" aria-label="YoY OH Cohort"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header">
-              <span class="chart-title">Avg. EPH</span>
-              <span class="chart-subtitle">Solid line = CY · dashed line = LY</span>
-            </div>
-            <div style="position:relative;width:100%;height:200px;"><canvas id="yoyEphAgreementChart" role="img" aria-label="YoY EPH Cohort"></canvas></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- YoY table -->
-      <div class="table-card">
-        <div class="table-header">
-          <span class="table-title">YoY detail by FO group</span>
-          <span style="font-size:11px;color:var(--muted);font-weight:500;" id="yoy-table-label">—</span>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>FO Group</th>
-              <th>Fleet type</th>
-              <th>Agreement</th>
-              <th class="r">OH Current</th>
-              <th class="r">OH Last Year</th>
-              <th class="r">OH YoY %</th>
-              <th class="r">EPH Current</th>
-              <th class="r">EPH Last Year</th>
-              <th class="r">EPH YoY %</th>
-            </tr>
-          </thead>
-          <tbody id="yoy-tbody"></tbody>
-        </table>
-      </div>
-
-    </div>
-  </div>
-
   <div id="tab-fleet" class="tab-pane">
     <div class="main">
 
@@ -538,6 +444,16 @@ let lookerRows      = [];
 let dailyRows       = [];   // Daily granularity data (last 30 days)
 let _weeklyRows     = [];   // Reference to weekly rows (for toggling back from day view)
 let granularity     = 'week';
+let showYoY         = false; // "vs Last year" overlay on the Performance charts
+
+// Toggle the faded last-year overlay on the Performance charts.
+function toggleYoY(btn) {
+  showYoY = !showYoY;
+  btn.classList.toggle('active', showYoY);
+  const hint = document.getElementById('yoy-hint');
+  if (hint) hint.style.display = showYoY ? 'inline-flex' : 'none';
+  renderAll();
+}
 
 // ── FLEET REVIEW state ────────────────────────────────────────────
 let frGranularity  = 'week';
@@ -576,7 +492,6 @@ function rerenderActive() {
   const pane = document.querySelector('.tab-pane.active');
   if (!pane) return;
   if (pane.id === 'tab-performance') renderAll();
-  else if (pane.id === 'tab-yoy')    renderYoY();
   else if (pane.id === 'tab-fleet')  renderFleetReview();
 }
 
@@ -794,7 +709,6 @@ function goToTab(name) {
   if (btn) btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
   renderAll();
-  if (name === 'yoy')   renderYoY();
   if (name === 'fleet') renderFleetReview();
 }
 
@@ -813,8 +727,6 @@ function renderAll() {
 
   // (Top-left shows only the title now; the confusing data-range label was removed.)
 
-  // Also refresh YoY if that tab is active
-  if (document.getElementById('tab-yoy').classList.contains('active')) renderYoY();
   if (document.getElementById('tab-fleet').classList.contains('active')) renderFleetReview();
 }
 
@@ -888,17 +800,58 @@ function buildLegend(containerId, groups, colors, hiddenSet) {
 // ══ CHARTS ══
 function renderCharts(enriched, periods) {
   const bar = (dim, metric) => aggregateMetricBy(enriched, dim, metric).byPeriod;
-  renderMetricBar('ohStrategicChart',      periods, bar('fleetType','oh'),      STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'oh');
-  renderMetricBar('ohAgreementChart',      periods, bar('cohort','oh'),         AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'oh');
-  renderMetricBar('driversStrategicChart', periods, bar('fleetType','drivers'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'drivers');
-  renderMetricBar('driversAgreementChart', periods, bar('cohort','drivers'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'drivers');
+  // "vs Last year" overlay: one faded dashed line per chart = the same metric
+  // (total for bars, weighted overall for lines) one year earlier, aligned to
+  // the current periods. Computed from ALL data (ignoring the date range) so the
+  // previous-year period is available even when the range starts this year.
+  const ly = m => showYoY ? lastYearLine(periods, m) : null;
+  renderMetricBar('ohStrategicChart',      periods, bar('fleetType','oh'),      STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'oh', ly('oh'));
+  renderMetricBar('ohAgreementChart',      periods, bar('cohort','oh'),         AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'oh', ly('oh'));
+  renderMetricBar('driversStrategicChart', periods, bar('fleetType','drivers'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'drivers', ly('drivers'));
+  renderMetricBar('driversAgreementChart', periods, bar('cohort','drivers'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'drivers', ly('drivers'));
   const ovHpd = overallByPeriod(enriched, 'hpd');   // overall avg across ALL cohorts
   const ovEph = overallByPeriod(enriched, 'eph');
-  const hpdOpts = { valFmt: v => Math.round(v)+'h', axisFmt: v => Math.round(v)+'h', overall: ovHpd };
+  const hpdOpts = { valFmt: v => Math.round(v)+'h', axisFmt: v => Math.round(v)+'h', overall: ovHpd, lastYear: ly('hpd') };
   renderLines('hpdStrategicChart', periods, bar('fleetType','hpd'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, hpdOpts);
   renderLines('hpdAgreementChart', periods, bar('cohort','hpd'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, hpdOpts);
-  renderLines('ephStrategicChart', periods, aggregateEPHBy(enriched,'fleetType'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, { overall: ovEph });
-  renderLines('ephAgreementChart', periods, aggregateEPHBy(enriched,'cohort'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, { overall: ovEph });
+  renderLines('ephStrategicChart', periods, aggregateEPHBy(enriched,'fleetType'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, { overall: ovEph, lastYear: ly('eph') });
+  renderLines('ephAgreementChart', periods, aggregateEPHBy(enriched,'cohort'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, { overall: ovEph, lastYear: ly('eph') });
+}
+
+// Per-period OVERALL value of a metric across every cohort, computed from ALL
+// rows (City/FO filtered, but NOT date-range filtered) → used to look up the
+// previous-year value for the "vs Last year" overlay.
+function fullOverallByPeriod(metric) {
+  const bp = {};
+  for (const r of lookerRows) {
+    if (selectedCity !== '__all' && r.city !== selectedCity) continue;
+    if (selectedFO   !== '__all' && r.foGroup !== selectedFO) continue;
+    const p = getPeriodKey(r.week);
+    if (!bp[p]) bp[p] = { oh:0, drivers:0, wt:0, ohE:0 };
+    const b = bp[p];
+    b.oh += r.onlineHours || 0;
+    b.drivers += r.activeDrivers || 0;
+    if (r.eph > 0) { b.wt += (r.onlineHours||0) * r.eph; b.ohE += r.onlineHours||0; }
+  }
+  const out = {};
+  for (const [p, v] of Object.entries(bp)) {
+    out[p] = metric === 'oh'      ? v.oh
+           : metric === 'drivers' ? v.drivers
+           : metric === 'hpd'     ? (v.drivers > 0 ? v.oh / v.drivers : 0)
+           : metric === 'eph'     ? (v.ohE > 0 ? v.wt / v.ohE : 0) : 0;
+  }
+  return out;
+}
+
+// For each visible period, the value of its previous-year period (or null).
+function lastYearLine(periods, metric) {
+  const byP  = fullOverallByPeriod(metric);
+  const allP = sortPeriods(Object.keys(byP));
+  return periods.map(p => {
+    const lyP = getPrevYearPeriod(p, allP);
+    const v   = lyP ? byP[lyP] : null;
+    return (v != null && v > 0) ? +v.toFixed(2) : null;
+  });
 }
 
 // Aggregate a metric by period+dimension: sum online hours / active drivers,
@@ -991,7 +944,7 @@ function renderTaxiWidget() {
   });
 }
 
-function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metric) {
+function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metric, lyLine) {
   const stacked = metric !== 'hpd';   // hours-per-driver is a ratio → grouped, not stacked
   const active = groups.filter(g => !hiddenSet.has(g));
   const round1 = v => metric === 'hpd' ? Math.round(v*10)/10 : Math.round(v);
@@ -1000,6 +953,15 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
     data: periods.map(p => round1(byPeriod[p]?.[g]||0)),
     backgroundColor: colors[g]+'EE', borderColor: colors[g], borderWidth:0, borderRadius:2,
   }));
+  // "vs Last year" overlay: total of this metric one year earlier (own stack so
+  // it draws at its absolute value, not added on top of the current-year bars).
+  if (lyLine) {
+    datasets.push({
+      type:'line', label:'Last year', data: lyLine, stack:'_ly',
+      borderColor:'#8A9199', backgroundColor:'#8A9199', borderWidth:2, borderDash:[5,4],
+      pointRadius:0, pointHoverRadius:4, tension:0.3, spanGaps:true, order:0,
+    });
+  }
 
   // Period totals across ALL groups (used for the % share on stacked metrics).
   const periodTotals = periods.map(p =>
@@ -1022,6 +984,9 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
           callbacks: {
             label: ctx => {
               const g = ctx.dataset.label, val = ctx.parsed.y;
+              if (val == null) return '';
+              // The overlay line: just the last-year total, no % / no delta.
+              if (ctx.dataset.stack === '_ly') return ` Last year: ${Math.round(val).toLocaleString()}${unit}`;
               const total = periodTotals[ctx.dataIndex] || 1;
               const pct = (stacked && selectedFO === '__all') ? ` (${((val/total)*100).toFixed(1)}%)` : '';
               let delta = '';
@@ -1067,6 +1032,15 @@ function renderLines(id, periods, byPeriod, groups, colors, hiddenSet, opts) {
       label: 'Overall', _key: '__overall',
       data: periods.map(p => { const v = opts.overall[p]; return v > 0 ? +v.toFixed(2) : null; }),
       borderColor: '#111', backgroundColor: '#111', borderWidth: 2, borderDash: [5,4],
+      pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true, fill: false,
+    });
+  }
+  // "vs Last year" overlay — faded grey dashed line (overall, one year earlier).
+  if (opts.lastYear) {
+    datasets.push({
+      label: 'Last year', _key: '__ly',
+      data: opts.lastYear,
+      borderColor: '#8A9199', backgroundColor: '#8A9199', borderWidth: 2, borderDash: [2,3],
       pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true, fill: false,
     });
   }
@@ -1238,27 +1212,11 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'yoy') renderYoY();
   if (name === 'fleet') renderFleetReview();
 }
 
-// ══ YoY HELPERS ══
-function getShortPeriod(fullPeriod) {
-  if (granularity === 'week') {
-    const d = new Date(fullPeriod);
-    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${m[d.getMonth()]} ${d.getDate()}`;
-  }
-  if (granularity === 'month') return fullPeriod.split(' ')[0];
-  return fullPeriod.split(' ')[1]; // "Q1"
-}
-
-function getPeriodYear(fullPeriod) {
-  if (granularity === 'week') return new Date(fullPeriod).getFullYear().toString();
-  if (granularity === 'month') return fullPeriod.split(' ')[1];
-  return fullPeriod.split(' ')[0];
-}
-
+// ══ YoY HELPER (used by the "vs Last year" overlay) ══
+// Map a period to the matching period one year earlier.
 function getPrevYearPeriod(period, availablePeriods) {
   if (granularity === 'month') {
     const [m, y] = period.split(' ');
@@ -1276,314 +1234,6 @@ function getPrevYearPeriod(period, availablePeriods) {
     Math.abs(new Date(p) - target) < Math.abs(new Date(best) - target) ? p : best
   );
   return Math.abs(new Date(nearest) - target) <= 8 * 24 * 3600 * 1000 ? nearest : null;
-}
-
-function getYoYPairs(enriched) {
-  const periods = sortPeriods([...new Set(enriched.map(r => r.period))]);
-  const pairs = [];
-  for (const period of periods) {
-    const ly = getPrevYearPeriod(period, periods);
-    if (ly && periods.includes(ly) && ly !== period) {
-      pairs.push({ current: period, ly });
-    }
-  }
-  return pairs;
-}
-
-// Weighted avg EPH for a set of rows
-function calcEPH(rows) {
-  let oh = 0, wt = 0;
-  for (const r of rows) { if (r.eph > 0) { oh += r.onlineHours; wt += r.onlineHours * r.eph; } }
-  return oh > 0 ? wt / oh : 0;
-}
-
-// ══ YoY RENDER ══
-function renderYoY() {
-  try { _renderYoY(); } catch(e) {
-    console.error('YoY render error:', e);
-    document.getElementById('yoy-year-label').textContent = 'Error: ' + e.message;
-  }
-}
-
-function _renderYoY() {
-  // YoY needs ALL data regardless of the rangeFrom/rangeTo filter —
-  // the date range picker controls "current year" selection, but we still
-  // need the previous year rows to be present for matching.
-  // Dimensions already live on each row; YoY needs ALL data (no date filter),
-  // so we just tag the period. (enriched / enrichedFull are the same here.)
-  const enrichedFull = lookerRows.map(r => ({ ...r, period: getPeriodKey(r.week) }));
-
-  const allPairs = getYoYPairs(enrichedFull);
-  const el       = id => document.getElementById(id);
-
-  // ── Populate year selector with available CY years, default to latest ──
-  const availYears = [...new Set(allPairs.map(p => getPeriodYear(p.current)))].sort();
-  const sel = document.getElementById('yoy-year-select');
-  if (sel) {
-    const curVal = sel.value;
-    sel.innerHTML = availYears.map(y => `<option value="${y}">${y}</option>`).join('');
-    // Keep previous selection if still valid, else default to latest year
-    if (availYears.includes(curVal)) sel.value = curVal;
-    else sel.value = availYears[availYears.length - 1] || '';
-  }
-  const selYear = sel ? sel.value : (availYears[availYears.length - 1] || '');
-  const pairs   = allPairs.filter(p => getPeriodYear(p.current) === selYear);
-
-  // ── No data state ──
-  if (!pairs.length) {
-    const allWeeks  = [...new Set(lookerRows.map(r => r.week))].sort();
-    const rangeText = allWeeks.length
-      ? `Currently loaded: ${allWeeks[0]} → ${allWeeks[allWeeks.length-1]}`
-      : 'No data loaded';
-    el('yoy-kpi-pairs').textContent     = '0';
-    el('yoy-kpi-pairs-sub').textContent = 'no matched periods found';
-    el('yoy-year-label').textContent    = `No YoY data · ${rangeText} · Upload a Looker export covering 2 years`;
-    ['yoy-kpi-oh-cur','yoy-kpi-oh-ly','yoy-kpi-oh-growth','yoy-kpi-oh-growth-sub',
-     'yoy-kpi-eph-cur','yoy-kpi-eph-ly','yoy-kpi-eph-growth','yoy-kpi-eph-growth-sub'].forEach(id => {
-      const el2 = document.getElementById(id);
-      if (el2) { el2.textContent = '—'; el2.style.color = ''; }
-    });
-    // Clear charts gracefully
-    ['yoyOhStrategicChart','yoyOhAgreementChart','yoyEphStrategicChart','yoyEphAgreementChart'].forEach(id => {
-      if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-    });
-    document.getElementById('yoy-tbody').innerHTML =
-      `<tr><td colspan="10" class="no-data" style="padding:40px;">
-        No year-over-year data available.<br>
-        <span style="font-size:11px;color:#aaa;margin-top:6px;display:block;">${rangeText}<br>
-        Upload a Looker export that includes the same periods from the previous year.</span>
-      </td></tr>`;
-    return;
-  }
-
-  const lastPair = pairs[pairs.length - 1];
-  const cyYear   = getPeriodYear(lastPair.current);
-  const lyYear   = getPeriodYear(lastPair.ly);
-  const shortLabels = pairs.map(p => getShortPeriod(p.current));
-
-  // ── Year label ──
-  el('yoy-year-label').textContent = `${lyYear} vs ${cyYear}`;
-
-  // ── KPIs (based on last matched pair) ──
-  const cyRows = enrichedFull.filter(r => r.period === lastPair.current);
-  const lyRows = enrichedFull.filter(r => r.period === lastPair.ly);
-  const ohCY = cyRows.reduce((s,r) => s+r.onlineHours, 0);
-  const ohLY = lyRows.reduce((s,r) => s+r.onlineHours, 0);
-  const ephCY = calcEPH(cyRows), ephLY = calcEPH(lyRows);
-  const ohGrowth  = ohLY  > 0 ? ((ohCY  - ohLY)  / ohLY  * 100) : null;
-  const ephGrowth = ephLY > 0 && ephCY > 0 ? ((ephCY - ephLY) / ephLY * 100) : null;
-
-  el('yoy-kpi-oh-cur').textContent = fmtH(ohCY)+'h';
-  el('yoy-kpi-oh-ly').textContent  = `vs LY: ${fmtH(ohLY)}h`;
-  setYoYKPI('yoy-kpi-oh-growth',  'yoy-kpi-oh-growth-sub',  ohGrowth);
-  el('yoy-kpi-eph-cur').textContent = ephCY > 0 ? `€${ephCY.toFixed(2)}` : '—';
-  el('yoy-kpi-eph-ly').textContent  = `vs LY: ${ephLY > 0 ? '€'+ephLY.toFixed(2) : '—'}`;
-  setYoYKPI('yoy-kpi-eph-growth', 'yoy-kpi-eph-growth-sub', ephGrowth);
-  el('yoy-kpi-pairs').textContent     = pairs.length;
-  el('yoy-kpi-pairs-sub').textContent = `matched ${granularity}s (${lyYear} vs ${cyYear})`;
-
-  // ── Build per-group data arrays ──
-  function buildGroupArrays(groups, dim) {
-    const cy = {}, ly = {};
-    for (const g of groups) { cy[g] = []; ly[g] = []; }
-    for (const p of pairs) {
-      for (const g of groups) {
-        cy[g].push(Math.round(enrichedFull.filter(r => r.period === p.current && r[dim] === g).reduce((s,r) => s+r.onlineHours, 0)));
-        ly[g].push(Math.round(enrichedFull.filter(r => r.period === p.ly      && r[dim] === g).reduce((s,r) => s+r.onlineHours, 0)));
-      }
-    }
-    return { cy, ly };
-  }
-
-  const { cy: cyS, ly: lyS } = buildGroupArrays(STRATEGIC_GROUPS, 'fleetType');
-  const { cy: cyA, ly: lyA } = buildGroupArrays(AGREEMENT_TYPES,  'cohort');
-
-  // ── Legends (same as Performance tab) ──
-  buildYoYLegend('yoy-legend-strategic', STRATEGIC_GROUPS, S_COLORS, cyYear, lyYear);
-  buildYoYLegend('yoy-legend-agreement', AGREEMENT_TYPES,  A_COLORS, cyYear, lyYear);
-
-  // ── OH stacked bar charts ──
-  renderYoYStackedBars('yoyOhStrategicChart', shortLabels, cyS, lyS, STRATEGIC_GROUPS, S_COLORS, cyYear, lyYear);
-  renderYoYStackedBars('yoyOhAgreementChart', shortLabels, cyA, lyA, AGREEMENT_TYPES,  A_COLORS, cyYear, lyYear);
-
-  // ── EPH line charts ──
-  renderYoYEPHLines('yoyEphStrategicChart', shortLabels, pairs, enrichedFull, STRATEGIC_GROUPS, S_COLORS, 'fleetType');
-  renderYoYEPHLines('yoyEphAgreementChart', shortLabels, pairs, enrichedFull, AGREEMENT_TYPES,  A_COLORS, 'cohort');
-
-  // ── Table ──
-  renderYoYTable(enrichedFull, pairs, cyYear, lyYear);
-  el('yoy-table-label').textContent = `${lastPair.ly} vs ${lastPair.current}`;
-} // end _renderYoY
-
-function setYoYKPI(valId, subId, growth) {
-  const el = document.getElementById(valId), sub = document.getElementById(subId);
-  if (growth === null) { el.textContent = '—'; el.style.color = ''; sub.textContent = 'no LY data'; return; }
-  el.textContent = `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
-  el.style.color = growth >= 0 ? 'var(--green)' : '#c0392b';
-  sub.textContent = 'vs same period last year';
-  sub.className = 'kpi-sub ' + (growth >= 0 ? 'up' : 'down');
-}
-
-function buildYoYLegend(containerId, groups, colors, cyYear, lyYear) {
-  const c = document.getElementById(containerId);
-  c.innerHTML = groups.map(g => `
-    <div class="legend-item">
-      <span class="legend-dot" style="background:${colors[g]}"></span>${g} ${cyYear}
-    </div>
-    <div class="legend-item" style="opacity:0.5;">
-      <span class="legend-dot" style="background:${colors[g]}"></span>${g} ${lyYear}
-    </div>`
-  ).join('');
-}
-
-function renderYoYStackedBars(id, labels, cyData, lyData, groups, colors, cyYear, lyYear) {
-  // LY datasets (lighter, stack='ly') + CY datasets (solid, stack='cy')
-  const datasets = [
-    ...groups.map(g => ({
-      label: `${g} (${lyYear})`,
-      data: lyData[g],
-      backgroundColor: colors[g] + '40',
-      borderWidth: 0, borderRadius: 2,
-      stack: 'ly',
-    })),
-    ...groups.map(g => ({
-      label: `${g} (${cyYear})`,
-      data: cyData[g],
-      backgroundColor: colors[g] + 'DD',
-      borderWidth: 0, borderRadius: 2,
-      stack: 'cy',
-    })),
-  ];
-
-  // Per-label totals for tooltip footer
-  const cyTotals = labels.map((_, i) => groups.reduce((s,g) => s + (cyData[g][i]||0), 0));
-  const lyTotals = labels.map((_, i) => groups.reduce((s,g) => s + (lyData[g][i]||0), 0));
-
-  if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id), {
-    type: 'bar',
-    data: { labels, datasets },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        datalabels: {
-          display: ctx => {
-            if (granularity === 'week') return false;
-            const totals = ctx.dataset.stack === 'cy' ? cyTotals : lyTotals;
-            const total  = totals[ctx.dataIndex] || 1;
-            return (ctx.dataset.data[ctx.dataIndex] / total) * 100 >= 8;
-          },
-          formatter: (v, ctx) => {
-            const totals = ctx.dataset.stack === 'cy' ? cyTotals : lyTotals;
-            const total  = totals[ctx.dataIndex] || 1;
-            return Math.round(v / total * 100) + '%';
-          },
-          color: '#fff',
-          font: { size: 9, weight: '700', family: 'Inter' },
-          anchor: 'center', align: 'center',
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}h`,
-            footer: items => {
-              const i = items[0].dataIndex;
-              const ly = lyTotals[i], cy = cyTotals[i];
-              const growth = ly > 0 ? ((cy-ly)/ly*100).toFixed(1) : '—';
-              return [
-                `LY total: ${ly.toLocaleString()}h`,
-                `CY total: ${cy.toLocaleString()}h`,
-                `YoY: ${growth !== '—' ? (cy>=ly?'+':'')+growth+'%' : '—'}`,
-              ];
-            }
-          }
-        }
-      },
-      scales: {
-        x: { stacked:true, grid:{display:false}, border:{display:false}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16} },
-        y: { stacked:true, border:{display:false}, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>(v/1000).toFixed(0)+'k'} },
-      }
-    }
-  });
-}
-
-function renderYoYEPHLines(id, labels, pairs, enriched, groups, colors, dim) {
-  const datasets = groups.flatMap(g => [
-    // LY: dashed line
-    {
-      label: `${g} LY`,
-      data: pairs.map(p => { const v=calcEPH(enriched.filter(r=>r.period===p.ly&&r[dim]===g)); return v>0?+v.toFixed(2):null; }),
-      borderColor: colors[g]+'77', borderWidth:1.5, borderDash:[5,3],
-      pointRadius:2, tension:0.3, spanGaps:true, fill:false,
-    },
-    // CY: solid line
-    {
-      label: `${g} CY`,
-      data: pairs.map(p => { const v=calcEPH(enriched.filter(r=>r.period===p.current&&r[dim]===g)); return v>0?+v.toFixed(2):null; }),
-      borderColor: colors[g], borderWidth:2,
-      pointRadius: pairs.length<10?4:2, pointHoverRadius:5, tension:0.3, spanGaps:true, fill:false,
-    },
-  ]);
-
-  if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id), {
-    type: 'line', data: { labels, datasets },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend: { display:false }, datalabels: { display:false },
-        tooltip: { callbacks: { label: ctx => ctx.parsed.y!=null ? ` ${ctx.dataset.label}: €${ctx.parsed.y.toFixed(2)}` : '' } }
-      },
-      scales: {
-        x: { grid:{display:false}, border:{display:false}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16} },
-        y: { border:{display:false}, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',callback:v=>'€'+v.toFixed(0)} },
-      }
-    }
-  });
-}
-
-
-function renderYoYTable(enriched, pairs, cyYear, lyYear) {
-  const tbody = document.getElementById('yoy-tbody');
-  if (!pairs.length) { tbody.innerHTML = '<tr><td colspan="10" class="no-data">No matched periods</td></tr>'; return; }
-
-  // Aggregate across ALL matched periods per FO group
-  const foMap = {};
-  for (const p of pairs) {
-    const allRows = [
-      ...enriched.filter(r => r.period === p.current).map(r => ({...r, isCy:true})),
-      ...enriched.filter(r => r.period === p.ly).map(r => ({...r, isCy:false})),
-    ];
-    for (const r of allRows) {
-      const key = r.foGroup || ('__'+r.cohort);
-      if (!foMap[key]) foMap[key] = { name:r.foGroup||r.cohort, isFO:!!r.foGroup, fleetType:r.fleetType, cohort:r.cohort, cyOH:0, lyOH:0, cyRows:[], lyRows:[] };
-      if (r.isCy) { foMap[key].cyOH += r.onlineHours; foMap[key].cyRows.push(r); }
-      else        { foMap[key].lyOH += r.onlineHours; foMap[key].lyRows.push(r); }
-    }
-  }
-
-  const fmtG = v => v === null ? '—' :
-    `<span style="color:${v>=0?'var(--green)':'#c0392b'};font-weight:700">${v>=0?'+':''}${v.toFixed(1)}%</span>`;
-
-  tbody.innerHTML = Object.values(foMap).sort((a,b)=>b.cyOH-a.cyOH).map((g,i) => {
-    const sb = S_BADGES[g.fleetType]||S_BADGES['Free Floating'];
-    const ab = A_BADGES[g.cohort]||A_BADGES['Free floating - Not branded'];
-    const ohG  = g.lyOH>0 ? ((g.cyOH-g.lyOH)/g.lyOH*100) : null;
-    const eCY  = calcEPH(g.cyRows), eLY = calcEPH(g.lyRows);
-    const ephG = eLY>0&&eCY>0 ? ((eCY-eLY)/eLY*100) : null;
-    return `<tr>
-      <td class="muted" style="font-size:10px">${i+1}</td>
-      <td style="font-weight:${g.isFO?'600':'500'};color:${g.isFO?'#000':'#999'}">${g.name}</td>
-      <td><span class="badge" style="background:${sb.bg};color:${sb.color}">${g.fleetType}</span></td>
-      <td><span class="badge" style="background:${ab.bg};color:${ab.color}">${g.cohort}</span></td>
-      <td class="r">${g.cyOH>0?fmtH(g.cyOH)+'h':'—'}</td>
-      <td class="r muted">${g.lyOH>0?fmtH(g.lyOH)+'h':'—'}</td>
-      <td class="r">${fmtG(ohG)}</td>
-      <td class="r">${eCY>0?'€'+eCY.toFixed(2):'—'}</td>
-      <td class="r muted">${eLY>0?'€'+eLY.toFixed(2):'—'}</td>
-      <td class="r">${fmtG(ephG)}</td>
-    </tr>`;
-  }).join('');
 }
 
 // ══ FLEET REVIEW ══
