@@ -294,7 +294,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <span class="chart-title">Hours / Driver</span>
-          <span class="chart-subtitle">Online hours ÷ active drivers · line</span>
+          <span class="chart-subtitle">Online hours ÷ active drivers · line · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:200px;">
           <canvas id="hpdStrategicChart" role="img" aria-label="Hours per driver by Strategic vs Non strategic"></canvas>
@@ -303,7 +303,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <span class="chart-title">Hours / Driver</span>
-          <span class="chart-subtitle">Online hours ÷ active drivers · line</span>
+          <span class="chart-subtitle">Online hours ÷ active drivers · line · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:200px;">
           <canvas id="hpdAgreementChart" role="img" aria-label="Hours per driver by cohort"></canvas>
@@ -314,7 +314,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <span class="chart-title">Avg. EPH</span>
-          <span class="chart-subtitle">Weighted average · €/hour</span>
+          <span class="chart-subtitle">Weighted average · €/hour · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:180px;">
           <canvas id="ephStrategicChart" role="img" aria-label="EPH by Strategic vs Non strategic"></canvas>
@@ -323,7 +323,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <span class="chart-title">Avg. EPH</span>
-          <span class="chart-subtitle">Weighted average · €/hour</span>
+          <span class="chart-subtitle">Weighted average · €/hour · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:180px;">
           <canvas id="ephAgreementChart" role="img" aria-label="EPH by cohort"></canvas>
@@ -628,7 +628,7 @@ let lookerLoaded    = false, agreementsLoaded = false;
 
 // ══ DIMENSIONS ══
 const STRATEGIC_GROUPS = ['Strategic', 'Free Floating'];
-const AGREEMENT_TYPES  = ['Strategic - Fleet Agreement', 'Strategic - Branded', 'Strategic - No agreement', 'Strategic - Locked', 'Free floating - Branded', 'Free floating - Not branded'];
+const AGREEMENT_TYPES  = ['Strategic - Locked', 'Strategic - Fleet Agreement', 'Strategic - Branded', 'Strategic - No agreement', 'Free floating - Branded', 'Free floating - Not branded'];
 // Per-row cohort codes emitted by gen_dashboard.py (kept short to shrink the payload).
 const COHORT_BY_CODE = { A:'Strategic - Fleet Agreement', B:'Strategic - Branded', L:'Strategic - Locked', N:'Strategic - No agreement', F:'Free floating - Branded', X:'Free floating - Not branded' };
 
@@ -971,11 +971,13 @@ function renderCharts(enriched, periods) {
   renderMetricBar('ohAgreementChart',      periods, bar('cohort','oh'),         AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'oh');
   renderMetricBar('driversStrategicChart', periods, bar('fleetType','drivers'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'drivers');
   renderMetricBar('driversAgreementChart', periods, bar('cohort','drivers'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'drivers');
-  const hpdOpts = { valFmt: v => Math.round(v)+'h', axisFmt: v => Math.round(v)+'h' };
+  const ovHpd = overallByPeriod(enriched, 'hpd');   // overall avg across ALL cohorts
+  const ovEph = overallByPeriod(enriched, 'eph');
+  const hpdOpts = { valFmt: v => Math.round(v)+'h', axisFmt: v => Math.round(v)+'h', overall: ovHpd };
   renderLines('hpdStrategicChart', periods, bar('fleetType','hpd'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, hpdOpts);
   renderLines('hpdAgreementChart', periods, bar('cohort','hpd'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, hpdOpts);
-  renderLines('ephStrategicChart', periods, aggregateEPHBy(enriched,'fleetType'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic);
-  renderLines('ephAgreementChart', periods, aggregateEPHBy(enriched,'cohort'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement);
+  renderLines('ephStrategicChart', periods, aggregateEPHBy(enriched,'fleetType'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, { overall: ovEph });
+  renderLines('ephAgreementChart', periods, aggregateEPHBy(enriched,'cohort'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, { overall: ovEph });
 }
 
 // Aggregate a metric by period+dimension: sum online hours / active drivers,
@@ -1003,6 +1005,24 @@ function aggregateMetricBy(enriched, dim, metric) {
 // ── Per-metric units / axis formatting ──
 function metricUnit(m)       { return m==='drivers' ? ' drivers' : m==='hpd' ? ' h/driver' : 'h'; }
 function metricAxisTick(m,v) { return m==='oh' ? (v/1000).toFixed(0)+'k' : m==='hpd' ? v.toFixed(0) : v.toLocaleString(); }
+
+// Overall metric across ALL cohorts (not per-cohort), per period — for the reference line.
+function overallByPeriod(enriched, metric) {
+  const bp = {};
+  for (const r of enriched) {
+    if (!bp[r.period]) bp[r.period] = { oh:0, drivers:0, wt:0, ohE:0 };
+    const b = bp[r.period];
+    b.oh += r.onlineHours || 0;
+    b.drivers += r.activeDrivers || 0;
+    if (r.eph > 0) { b.wt += (r.onlineHours||0) * r.eph; b.ohE += r.onlineHours||0; }
+  }
+  const out = {};
+  for (const [p, v] of Object.entries(bp)) {
+    out[p] = metric === 'hpd' ? (v.drivers > 0 ? v.oh / v.drivers : 0)
+           : metric === 'eph' ? (v.ohE > 0 ? v.wt / v.ohE : 0) : 0;
+  }
+  return out;
+}
 
 // ── Taxi vs VTC widget (GMV split; respects the City + date-range filters) ──
 function renderTaxiWidget() {
@@ -1095,22 +1115,7 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
               ? `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}${unit}` : '',
           }
         },
-        // ── Bar % labels: only for sum metrics, all-FOs, and few columns (else cramped) ──
-        datalabels: {
-          display: ctx => {
-            if (!stacked || selectedFO !== '__all' || periods.length > 14) return false;
-            const total = periodTotals[ctx.dataIndex] || 1;
-            return (ctx.dataset.data[ctx.dataIndex] / total) * 100 >= 8;
-          },
-          formatter: (value, ctx) => {
-            const total = periodTotals[ctx.dataIndex] || 1;
-            return ((value / total) * 100).toFixed(0) + '%';
-          },
-          color: '#fff',
-          font: { size: 10, weight: '700', family: 'Inter' },
-          anchor: 'center',
-          align: 'center',
-        },
+        datalabels: { display: false },
       },
       scales: {
         x: { stacked, grid:{display:false}, border:{display:false}, ticks:{font:{size:10,family:'Inter'},color:'#aaa',maxRotation:45,autoSkip:true,maxTicksLimit:16} },
@@ -1135,6 +1140,15 @@ function renderLines(id, periods, byPeriod, groups, colors, hiddenSet, opts) {
       borderWidth:2, pointRadius:periods.length<8?4:2, pointHoverRadius:5,
       tension:0.3, spanGaps:true, fill:false,
     }));
+  // Overall (all-cohort) reference line — distinct dashed black line.
+  if (opts.overall) {
+    datasets.push({
+      label: 'Overall', _key: '__overall',
+      data: periods.map(p => { const v = opts.overall[p]; return v > 0 ? +v.toFixed(2) : null; }),
+      borderColor: '#111', backgroundColor: '#111', borderWidth: 2, borderDash: [5,4],
+      pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true, fill: false,
+    });
+  }
   if (charts[id]) charts[id].destroy();
   charts[id] = new Chart(document.getElementById(id), {
     type:'line', data:{labels:periods, datasets},
