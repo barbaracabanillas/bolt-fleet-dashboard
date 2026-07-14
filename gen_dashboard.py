@@ -391,6 +391,8 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
             "company_id":         cid,
             "cohort":             ag["c"],
             "invoicing_strategy": ag["f"],
+            "city":               ag.get("city"),
+            "fo":                 ag.get("g") or "",
             "online_hours":       row["online_hours"],
             "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
@@ -398,12 +400,19 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
         })
 
     result = pd.DataFrame(rows)
+    # Aggregate to per (day, city, FO, cohort, fleetType) — drop company_id but
+    # keep a distinct-company count (n) for the table's "Companies" column.
     result = (
         result
-        .groupby(["day_date", "company_id", "cohort", "invoicing_strategy"], as_index=False)
-        .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum", "active_drivers": "sum"})
+        .groupby(["day_date", "city", "fo", "cohort", "invoicing_strategy"],
+                 as_index=False, dropna=False)
+        .agg(online_hours=("online_hours", "sum"),
+             earnings_eur=("earnings_eur", "sum"),
+             gmv_eur=("gmv_eur", "sum"),
+             active_drivers=("active_drivers", "sum"),
+             n=("company_id", "nunique"))
     )
-    print(f"[daily] {len(result):,} company-day rows for 'Day' granularity view")
+    print(f"[daily] {len(result):,} day-city-FO-cohort rows for 'Day' granularity view")
     return result
 
 
@@ -538,13 +547,20 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     is_car_branded tag (branded_cars). So a free-floating company can appear in
     both 'Free floating - Branded' and 'Free floating - Not branded'.
 
+    This is STAGE 1 only: it returns per-company rows (still keyed by
+    company_id) carrying city + FO, so active_drivers can be merged per
+    (week, company) in main() BEFORE collapsing to the final
+    (week, city, FO, cohort, fleetType) shape. Attaching drivers at the car
+    level would multiply them across a company's many car rows.
+
     Returns columns: week_date, company_id, cohort, invoicing_strategy,
-                     online_hours, earnings_eur, gmv_eur
+                     city, fo, online_hours, earnings_eur, gmv_eur
     """
     branded_cars = branded_cars or set()
     total_oh_input = car_df["online_hours"].sum()
     print(f"[aggregate] Total OH in car_df before aggregation: {total_oh_input:,.0f}")
 
+    has_city_col = "city_name" in car_df.columns
     rows = []
     for _, row in car_df.iterrows():
         cid = str(row["company_id"])
@@ -558,11 +574,15 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
             except (ValueError, TypeError):
                 car_id = None
             cohort = FF_BRANDED if car_id in branded_cars else FF_NOT_BRANDED
+        city = ag.get("city") or (row["city_name"] if has_city_col else None)
+        fo   = ag.get("g") or ""
         rows.append({
             "week_date":          row["week_start"],
             "company_id":         cid,
             "cohort":             cohort,
             "invoicing_strategy": ag["f"],
+            "city":               city,
+            "fo":                 fo,
             "online_hours":       row["online_hours"],
             "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
@@ -572,13 +592,16 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     if result.empty:
         return result
 
+    # Stage 1: collapse cars → one row per (week, company, cohort, ...).
+    # city/fo are constant per company so they add no new groups.
     result = (
         result
-        .groupby(["week_date", "company_id", "cohort", "invoicing_strategy"], as_index=False)
+        .groupby(["week_date", "company_id", "cohort", "invoicing_strategy", "city", "fo"],
+                 as_index=False, dropna=False)
         .agg({"online_hours": "sum", "earnings_eur": "sum", "gmv_eur": "sum"})
     )
     total_oh_output = result["online_hours"].sum()
-    print(f"[aggregate] {len(result):,} company-week-cohort rows | Total OH after aggregation: {total_oh_output:,.0f}")
+    print(f"[aggregate] {len(result):,} company-week-cohort rows (stage 1) | Total OH after aggregation: {total_oh_output:,.0f}")
     return result
 
 
@@ -587,22 +610,19 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
 # ──────────────────────────────────────────────────────────────────────────────
 
 def generate_html(data: dict) -> str:
-    """Load dashboard_template.html and inject PRELOADED_DATA + EMBEDDED_AGREEMENTS."""
+    """Load dashboard_template.html and inject PRELOADED_DATA.
+
+    All dimensions (city / FO / cohort / fleet type) now travel on each
+    aggregated performance row, so the per-company EMBEDDED_AGREEMENTS lookup
+    is no longer emitted."""
     template_path = Path("dashboard_template.html")
     html = template_path.read_text(encoding="utf-8")
 
-    # 1. Inject PRELOADED_DATA (performance timeseries for charts)
+    # Inject PRELOADED_DATA (performance timeseries for charts)
     data_json = json.dumps(data, default=str, ensure_ascii=False)
     html = html.replace(
         "/* __PRELOADED_DATA__ */",
         f"window.PRELOADED_DATA = {data_json};",
-    )
-
-    # 2. Inject EMBEDDED_AGREEMENTS (company→cohort mapping)
-    agreements_json = json.dumps(data["agreements"], ensure_ascii=False)
-    html = html.replace(
-        "/* __EMBEDDED_AGREEMENTS__ */",
-        f"const EMBEDDED_AGREEMENTS = {agreements_json};",
     )
 
     return html
@@ -614,25 +634,33 @@ def generate_html(data: dict) -> str:
 
 def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
     """
-    Compact a performance DataFrame into the minimal rows the dashboard needs:
-        {"w": date, "ci": company_id, "oh": online_hours, "e": earnings_eur}
-    Cohort / fleet type / FO / city are derived client-side from EMBEDDED_AGREEMENTS,
-    so they are NOT repeated per row. Short keys + rounded numbers keep the embedded
-    JSON small (this is what got the page from ~55 MB down to a few MB).
+    Compact an aggregated performance DataFrame into the minimal rows the
+    dashboard needs — one per (period, city, FO, cohort, fleetType):
+        {"w": date, "f": fleetTypeCode, "co": cohortCode, "city": city,
+         "fo": foGroup, "oh": online_hours, "e": earnings_eur, "g": gmv,
+         "d": active_drivers, "n": distinct_companies}
+    fleetTypeCode is 'S' (Strategic) or 'F' (Free Floating); all dimensions are
+    carried on the row so the front-end no longer needs a per-company lookup.
+    Short keys + rounded numbers keep the embedded JSON small.
     """
     if df is None or df.empty:
         return []
     out = []
     for row in df.itertuples(index=False):
         d = row._asdict()
+        city = d.get("city")
+        fo   = d.get("fo")
         out.append({
-            "w":  str(d[date_col])[:10],
-            "ci": str(d["company_id"]),
-            "co": COHORT_CODE.get(d.get("cohort"), "X"),
-            "oh": round(float(d.get("online_hours") or 0)),
-            "e":  round(float(d.get("earnings_eur") or 0)),
-            "g":  round(float(d.get("gmv_eur") or 0)),
-            "d":  int(d.get("active_drivers") or 0),
+            "w":    str(d[date_col])[:10],
+            "f":    "S" if d.get("invoicing_strategy") == STRATEGIC_LABEL else "F",
+            "co":   COHORT_CODE.get(d.get("cohort"), "X"),
+            "city": "" if pd.isna(city) else str(city),
+            "fo":   "" if pd.isna(fo) else str(fo),
+            "oh":   round(float(d.get("online_hours") or 0)),
+            "e":    round(float(d.get("earnings_eur") or 0)),
+            "g":    round(float(d.get("gmv_eur") or 0)),
+            "d":    int(d.get("active_drivers") or 0),
+            "n":    int(d.get("n") or 0),
         })
     return out
 
@@ -672,10 +700,26 @@ def main():
         for r in drivers_weekly.itertuples(index=False)
     }
     if not weekly_df.empty:
+        # Attach the company's active-driver count to EACH of its cohort rows
+        # (same value per company — matches the previous per-company behaviour)…
         weekly_df["active_drivers"] = [
             dw_lookup.get((str(w)[:10], str(c)), 0)
             for w, c in zip(weekly_df["week_date"], weekly_df["company_id"])
         ]
+        # …THEN collapse to the final (week, city, FO, cohort, fleetType) shape,
+        # summing metrics + drivers and counting distinct companies as `n`.
+        weekly_df = (
+            weekly_df
+            .groupby(["week_date", "city", "fo", "cohort", "invoicing_strategy"],
+                     as_index=False, dropna=False)
+            .agg(online_hours=("online_hours", "sum"),
+                 earnings_eur=("earnings_eur", "sum"),
+                 gmv_eur=("gmv_eur", "sum"),
+                 active_drivers=("active_drivers", "sum"),
+                 n=("company_id", "nunique"))
+        )
+        print(f"[aggregate] {len(weekly_df):,} week-city-FO-cohort rows (stage 2) "
+              f"| Total OH: {weekly_df['online_hours'].sum():,.0f}")
 
     # 4b. Aggregate daily OH by company+cohort (for 'Day' granularity button)
     daily_df = aggregate_daily_by_cohort(m30_df, agreements)
@@ -686,7 +730,6 @@ def main():
     # 5. Convert dataframes to JSON-serialisable dicts
     data = {
         "generated_at":      datetime.datetime.utcnow().isoformat() + "Z",
-        "agreements":        agreements,
         "fleet_performance": _compact_perf(weekly_df, "week_date"),
         "daily_performance": _compact_perf(daily_df,  "day_date"),
         "taxi_vtc": [
@@ -696,6 +739,12 @@ def main():
         ],
         "hourly_car_data":   [],   # car-level hourly data not yet wired up
     }
+
+    # 5a. Sanity check — total OH across the emitted (aggregated) rows should
+    #     match the pre-aggregation car-level total.
+    total_oh_emitted = sum(r["oh"] for r in data["fleet_performance"])
+    print(f"[sanity] fleet_performance: {len(data['fleet_performance']):,} rows | "
+          f"Total OH = {total_oh_emitted:,.0f}")
 
     # 6. Generate HTML
     html = generate_html(data)
