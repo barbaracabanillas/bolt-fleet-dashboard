@@ -395,40 +395,20 @@
   <div id="tab-fleet" class="tab-pane">
     <div class="main">
 
-      <!-- Controls: Fleet selector + granularity (week/month only for fleet review) -->
+      <!-- Controls: granularity (Day / Week / Month) -->
       <div class="controls-bar" style="margin-bottom:16px;">
         <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Fleet review — filter with the City / FO controls above</div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div class="gran-toggle" id="fr-gran-toggle">
-            <button class="gran-btn active" onclick="setFRGranularity('week',this)">Week</button>
-            <button class="gran-btn" onclick="setFRGranularity('month',this)">Month</button>
-          </div>
-          <select id="fr-period-sel" onchange="renderFleetReview()" style="font-size:11px;font-family:inherit;font-weight:500;color:#555;border:1px solid var(--border);border-radius:5px;padding:3px 8px;background:#fff;cursor:pointer;outline:none;min-width:110px;"></select>
-        </div>
-      </div>
-
-      <!-- Metric selector chips (drive both the chart and the table below) -->
-      <div id="fr-metric-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
-
-      <!-- ═══════════════════════════════════════════════════════════
-           TREND CHART — selected metrics over time (deep-dive per fleet)
-      ═══════════════════════════════════════════════════════════ -->
-      <div class="table-card" style="margin-bottom:16px;">
-        <div class="table-header">
-          <div>
-            <span class="table-title">Metric trend</span>
-            <span style="font-size:10px;color:var(--muted);font-weight:500;margin-left:8px;" id="fr-chart-subtitle"></span>
-          </div>
-        </div>
-        <div style="position:relative;width:100%;height:300px;padding:12px 14px 16px;box-sizing:border-box;">
-          <canvas id="frMetricChart" role="img" aria-label="Fleet metric trend over time"></canvas>
+        <div class="gran-toggle" id="fr-gran-toggle">
+          <button class="gran-btn" onclick="setFRGranularity('day',this)">Day</button>
+          <button class="gran-btn active" onclick="setFRGranularity('week',this)">Week</button>
+          <button class="gran-btn" onclick="setFRGranularity('month',this)">Month</button>
         </div>
       </div>
 
       <!-- ═══════════════════════════════════════════════════════════
-           TABLE 1 · FLEET PERFORMANCE — KPIs over time
+           TABLE 1 · FLEET PERFORMANCE — all metrics over time (fixed, on top)
       ═══════════════════════════════════════════════════════════ -->
-      <div class="table-card" style="margin-bottom:24px;">
+      <div class="table-card" style="margin-bottom:20px;">
         <div class="table-header">
           <div>
             <span class="table-title">Fleet Performance</span>
@@ -440,6 +420,23 @@
             <thead id="fr-t1-thead"></thead>
             <tbody id="fr-t1-tbody"></tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           TREND CHART — pick metrics with the chips (deep-dive per fleet)
+      ═══════════════════════════════════════════════════════════ -->
+      <div class="table-card" style="margin-bottom:24px;">
+        <div class="table-header">
+          <div>
+            <span class="table-title">Metric trend</span>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;margin-left:8px;" id="fr-chart-subtitle"></span>
+          </div>
+        </div>
+        <!-- Metric selector chips (control the chart only; the table always shows all) -->
+        <div id="fr-metric-chips" style="display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 0;"></div>
+        <div style="position:relative;width:100%;height:300px;padding:12px 14px 16px;box-sizing:border-box;">
+          <canvas id="frMetricChart" role="img" aria-label="Fleet metric trend over time"></canvas>
         </div>
       </div>
 
@@ -1316,6 +1313,7 @@ function frPeriod(weekDate) {
   const normalized = raw.length === 7 ? raw + '-01' : raw;
   const d = new Date(normalized + 'T00:00:00');
   if (isNaN(d)) return weekDate;
+  if (frGranularity === 'day') return raw;   // day period = the date itself
   if (frGranularity === 'week') {
     // Snap to Monday (ISO week start). Use local date parts to avoid UTC shift.
     const day = d.getDay(); // 0=Sun … 6=Sat
@@ -1356,7 +1354,7 @@ function periodToYM(period) {
 
 // Sort FR periods chronologically
 function sortFRPeriods(arr) {
-  if (frGranularity === 'week') return [...arr].sort();
+  if (frGranularity === 'week' || frGranularity === 'day') return [...arr].sort();
   // month: "Jan 2025" style
   return [...arr].sort((a, b) => {
     const [ma, ya] = a.split(' '), [mb, yb] = b.split(' ');
@@ -1364,43 +1362,17 @@ function sortFRPeriods(arr) {
   });
 }
 
-// Populate the period selector and return { periods, selectedPeriod }
-function buildFRPeriodSelector(allRows) {
-  const rawDates = allRows.map(r => r.weekDate || r.week || '').filter(Boolean);
-  const periodsSet = new Set(rawDates.map(d => frPeriod(d)));
-  const periods = sortFRPeriods([...periodsSet]);
-  const sel = document.getElementById('fr-period-sel');
-  const cur = sel.value;
-  sel.innerHTML = periods.map(p => `<option value="${p}">${p}</option>`).join('');
-  // Default: latest period
-  const selected = (cur && periods.includes(cur)) ? cur : periods[periods.length - 1];
-  sel.value = selected;
-  return { periods, selected };
-}
-
 // ══════════════════════════════════════════════════════════════════
 //  renderFleetReview — main entry point
 // ══════════════════════════════════════════════════════════════════
 function renderFleetReview() {
-  // Uses the shared top-bar filters (City + FO); enrich() already applies them.
-  const fleetRows = enrich();
-
-  // Period selector is driven entirely by the fleet (Looker) periods.
-  const allPeriods = sortFRPeriods([...new Set(fleetRows.map(r => r.week).filter(Boolean).map(d => frPeriod(d)))]);
-
-  if (!allPeriods.length) {
-    renderT1FleetPerf([], selectedFO);
-    return;
-  }
-
-  const selEl = document.getElementById('fr-period-sel');
-  const curSel = selEl.value;
-  selEl.innerHTML = allPeriods.map(p => `<option value="${p}">${p}</option>`).join('');
-  const defaultPeriod = allPeriods[allPeriods.length - 1];
-  const selPeriod = (curSel && allPeriods.includes(curSel)) ? curSel : defaultPeriod;
-  selEl.value = selPeriod;
-
-  // T1 shows all periods as columns, computed from the Databricks fleet data.
+  // Base rows depend on the Fleet Review granularity: Day uses the daily rows
+  // (last ~30 days); Week/Month use the weekly rows. Then apply the shared
+  // top-bar filters (date range + City + FO).
+  const base = (frGranularity === 'day') ? dailyRows : _weeklyRows;
+  const fleetRows = base.filter(r => isInRange(r.week)
+      && (selectedCity === '__all' || r.city === selectedCity)
+      && (selectedFO   === '__all' || r.foGroup === selectedFO));
   renderT1FleetPerf(fleetRows, selectedFO);
 }
 
@@ -1408,18 +1380,31 @@ function renderFleetReview() {
 //    string formatter, and a colour. Drives both the metric chips, the trend
 //    chart and the detail table below.
 const _frN = v => Math.round(v).toLocaleString('en');
+// `type` = how the metric draws in the trend chart: 'bar' (OH / drivers / GMV,
+// grouped side-by-side, never stacked) or 'line' (everything else).
 const FR_METRICS = [
-  { k:'oh',    label:'Total OH',           color:'#2A9C64', val:c=>c.totalOH>0?c.totalOH:null,          fmt:v=>_frN(v)+'h' },
-  { k:'share', label:'% of Spain OH',      color:'#7E6BA6', val:c=>c.shareOH!=null?c.shareOH*100:null,   fmt:v=>v.toFixed(1)+'%' },
-  { k:'rides', label:'Finished orders',    color:'#1668E3', val:c=>c.rides>0?c.rides:null,               fmt:v=>_frN(v) },
-  { k:'eph',   label:'Avg EPH',            color:'#C79A00', val:c=>c.netEph>0?c.netEph:null,             fmt:v=>'€'+v.toFixed(2) },
-  { k:'drv',   label:'Active drivers',     color:'#2C8C8C', val:c=>c.avgDrivers!=null?c.avgDrivers:null, fmt:v=>_frN(v) },
-  { k:'cars',  label:'Active cars',        color:'#C15B4C', val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
-  { k:'ohpd',  label:'OH / driver',        color:'#E08A2B', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null,   fmt:v=>_frN(v)+'h' },
-  { k:'wohpd', label:'Weekly OH / driver', color:'#9C8B5A', val:c=>c.weeklyOhPerDrv!=null?c.weeklyOhPerDrv:null, fmt:v=>_frN(v)+'h' },
-  { k:'gmv',   label:'GMV',                color:'#555555', val:c=>c.gmv>0?c.gmv:null,                   fmt:v=>'€'+_frN(v) },
+  { k:'oh',    label:'Total OH',           color:'#2A9C64', type:'bar',  val:c=>c.totalOH>0?c.totalOH:null,          fmt:v=>_frN(v)+'h' },
+  { k:'share', label:'% of Spain OH',      color:'#7E6BA6', type:'line', val:c=>c.shareOH!=null?c.shareOH*100:null,   fmt:v=>v.toFixed(1)+'%' },
+  { k:'rides', label:'Finished orders',    color:'#1668E3', type:'line', val:c=>c.rides>0?c.rides:null,               fmt:v=>_frN(v) },
+  { k:'eph',   label:'Avg EPH',            color:'#C79A00', type:'line', val:c=>c.netEph>0?c.netEph:null,             fmt:v=>'€'+v.toFixed(2) },
+  { k:'drv',   label:'Active drivers',     color:'#2C8C8C', type:'bar',  val:c=>c.avgDrivers!=null?c.avgDrivers:null, fmt:v=>_frN(v) },
+  { k:'cars',  label:'Active cars',        color:'#C15B4C', type:'line', val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
+  { k:'ohpd',  label:'OH / driver',        color:'#E08A2B', type:'line', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null,   fmt:v=>_frN(v)+'h' },
+  { k:'wohpd', label:'Weekly OH / driver', color:'#9C8B5A', type:'line', val:c=>c.weeklyOhPerDrv!=null?c.weeklyOhPerDrv:null, fmt:v=>_frN(v)+'h' },
+  { k:'gmv',   label:'GMV',                color:'#555555', type:'bar',  val:c=>c.gmv>0?c.gmv:null,                   fmt:v=>'€'+_frN(v) },
 ];
-// Metrics shown by default (chart + table). User toggles via the chips.
+// Delta unit for the table's period-over-period variation column.
+function frDeltaHTML(m, cur, prev) {
+  if (cur == null || prev == null) return '';
+  const d = cur - prev;
+  const eps = Math.abs(cur) * 1e-6;
+  const flat = Math.abs(d) <= eps;
+  const sign = d > 0 ? '+' : (d < 0 ? '−' : '');
+  const txt = m.k === 'share' ? sign + Math.abs(d).toFixed(1) + ' pp' : sign + m.fmt(Math.abs(d));
+  const col = flat ? '#9aa0a6' : (d > 0 ? '#1A6B42' : '#c0392b');
+  return `<div style="font-size:10px;font-weight:600;color:${col};margin-top:2px;">${txt}</div>`;
+}
+// Metrics drawn in the trend chart (chips). The TABLE always shows all metrics.
 let frSelectedMetrics = new Set(['oh', 'share', 'rides', 'eph']);
 
 function toggleFRMetric(k) {
@@ -1452,16 +1437,25 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     return isNaN(d) ? p : d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
   }
 
+  // Δ label depends on granularity (Day→DoD, Week→WoW, Month→MoM).
+  const deltaLbl = frGranularity === 'day' ? 'DoD' : frGranularity === 'month' ? 'MoM' : 'WoW';
+  document.getElementById('fr-t1-subtitle').textContent =
+    `all metrics over time · small figure = change vs previous period (${deltaLbl})`;
+
+  // Sticky first column so the metric names stay visible when scrolling right.
+  const STK_H = 'position:sticky;left:0;z-index:4;';
+  const STK_C = 'position:sticky;left:0;z-index:2;';
   thead.innerHTML = `<tr>
-    <th style="text-align:left;min-width:160px;padding:9px 14px;font-size:11px;background:var(--dark);color:#fff;">Metric</th>
+    <th style="text-align:left;min-width:150px;padding:9px 14px;font-size:11px;background:var(--dark);color:#fff;${STK_H}">Metric</th>
     ${periods.map(p => `<th style="text-align:right;padding:9px 14px;font-size:11px;font-weight:700;background:var(--dark);color:#fff;white-space:nowrap;">${fmtPeriodCol(p)}</th>`).join('')}
   </tr>`;
 
   // All-Spain OH per period (denominator for the "% of Spain OH" market-share
   // metric) — drops the City/FO filter (full country total) but keeps the same
   // date range as the numerator so partial periods compare like-for-like.
+  const spainBase = (frGranularity === 'day') ? dailyRows : _weeklyRows;
   const spainByPeriod = {};
-  for (const r of lookerRows) {
+  for (const r of spainBase) {
     if (!isInRange(r.week)) continue;
     const p = frPeriod(r.week);
     spainByPeriod[p] = (spainByPeriod[p] || 0) + (r.onlineHours || 0);
@@ -1473,13 +1467,11 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     const totalOH = rows.reduce((s, r) => s + (r.onlineHours || 0), 0);
     // Market share: this selection's OH ÷ all-Spain OH for the same period.
     const shareOH = spainByPeriod[p] > 0 ? totalOH / spainByPeriod[p] : null;
-    // Active drivers summed per week (across companies), then averaged over the period's weeks
+    // Active drivers summed per sub-period (across companies), then averaged.
     const drvByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeDrivers || 0), 0));
     const avgDrivers = drvByWeek.length ? drvByWeek.reduce((a, b) => a + b, 0) / drvByWeek.length : null;
-    // Active cars — same per-week-then-average treatment as drivers.
     const carByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeCars || 0), 0));
     const avgCars = carByWeek.length ? carByWeek.reduce((a, b) => a + b, 0) / carByWeek.length : null;
-    // Finished rides — additive, so a straight total over the period.
     const rides = rows.reduce((s, r) => s + (r.rides || 0), 0);
     const ohPerDriver = (avgDrivers > 0) ? totalOH / avgDrivers : null;
     const weeklyOhPerDrv = weeks.length
@@ -1489,7 +1481,6 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
           return sum + (wD > 0 ? wOH / wD : 0);
         }, 0) / weeks.length
       : null;
-    // OH-weighted average EPH
     const ephRows = rows.filter(r => r.eph > 0 && r.onlineHours > 0);
     const ephOH   = ephRows.reduce((s, r) => s + r.onlineHours, 0);
     const netEph  = ephOH > 0 ? ephRows.reduce((s, r) => s + r.onlineHours * r.eph, 0) / ephOH : null;
@@ -1497,7 +1488,21 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, weeklyOhPerDrv, netEph, gmv };
   });
 
-  // ── Metric chips (drive chart + table) ──
+  // ── Detail table: ALWAYS all metrics (independent of the chart chips) ──
+  tbody.innerHTML = FR_METRICS.map((m, i) => {
+    const rowBg = i % 2 === 0 ? '#fff' : '#f9fafb';
+    return `<tr style="background:${rowBg};">
+      <td style="font-weight:700;font-size:11px;padding:8px 14px;color:#333;white-space:nowrap;background:${rowBg};${STK_C}">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color};margin-right:6px;"></span>${m.label}</td>
+      ${cols.map((c, j) => {
+        const v = m.val(c);
+        const delta = j > 0 ? frDeltaHTML(m, v, m.val(cols[j-1])) : '';
+        return `<td style="text-align:right;font-size:12px;padding:8px 14px;white-space:nowrap;">${v == null ? '—' : m.fmt(v)}${delta}</td>`;
+      }).join('')}
+    </tr>`;
+  }).join('');
+
+  // ── Metric chips (control the CHART only) ──
   document.getElementById('fr-metric-chips').innerHTML = FR_METRICS.map(m => {
     const on = frSelectedMetrics.has(m.k);
     return `<button onclick="toggleFRMetric('${m.k}')" style="display:inline-flex;align-items:center;gap:6px;
@@ -1509,16 +1514,20 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
   const selected = FR_METRICS.filter(m => frSelectedMetrics.has(m.k));
   const multi = selected.length > 1;
 
-  // ── Trend chart ──
+  // ── Trend chart: OH / Active drivers / GMV as grouped bars, the rest as lines.
+  //    With >1 metric the values are indexed (first period = 100) so different
+  //    units compare on one axis; with 1 metric it shows absolute values. ──
   const datasets = selected.map(m => {
     const raw = cols.map(m.val);
     const base = raw.find(v => v != null && v > 0);
     const data = multi
       ? raw.map(v => (v != null && base) ? +(v / base * 100).toFixed(1) : null)
       : raw.map(v => v != null ? +v.toFixed(2) : null);
-    return { label: m.label, data, _raw: raw, _fmt: m.fmt,
-      borderColor: m.color, backgroundColor: m.color + '22',
-      borderWidth: 2.5, pointRadius: periods.length < 12 ? 3 : 0, pointHoverRadius: 5,
+    const isBar = m.type === 'bar';
+    return { type: m.type, label: m.label, data, _raw: raw, _fmt: m.fmt,
+      borderColor: m.color, backgroundColor: isBar ? m.color + 'CC' : m.color + '22',
+      borderWidth: isBar ? 0 : 2.5, borderRadius: isBar ? 3 : 0,
+      pointRadius: isBar ? 0 : (periods.length < 12 ? 3 : 0), pointHoverRadius: 5,
       tension: 0.3, spanGaps: true, fill: false };
   });
   document.getElementById('fr-chart-subtitle').textContent = multi
@@ -1526,7 +1535,7 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     : (selected[0] ? selected[0].label + ' · absolute values' : '');
   if (charts['frMetricChart']) charts['frMetricChart'].destroy();
   charts['frMetricChart'] = new Chart(document.getElementById('frMetricChart'), {
-    type: 'line',
+    type: 'bar',
     data: { labels: periods.map(fmtPeriodCol), datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -1540,23 +1549,13 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
         } } },
       },
       scales: {
-        x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa', maxRotation: 45, autoSkip: true, maxTicksLimit: 16 } },
-        y: { border: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' },
+        x: { stacked: false, grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa', maxRotation: 45, autoSkip: true, maxTicksLimit: 16 } },
+        y: { stacked: false, border: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' },
           ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa',
             callback: v => multi ? v : (selected[0] ? selected[0].fmt(v) : v) } },
       }
     }
   });
-
-  // ── Detail table (only the selected metrics) ──
-  tbody.innerHTML = selected.map((m, i) => {
-    const bg = i % 2 === 0 ? '' : 'background:#f9fafb;';
-    return `<tr style="${bg}">
-      <td style="font-weight:700;font-size:11px;padding:8px 14px;color:#333;white-space:nowrap;">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color};margin-right:6px;"></span>${m.label}</td>
-      ${cols.map(c => { const v = m.val(c); return `<td style="text-align:right;font-size:12px;padding:8px 14px;">${v == null ? '—' : m.fmt(v)}</td>`; }).join('')}
-    </tr>`;
-  }).join('');
 }
 
 // ── Skip the landing page — open the dashboard on Performance directly.

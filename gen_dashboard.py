@@ -381,6 +381,29 @@ def fetch_finished_rides_weekly() -> pd.DataFrame:
     return df
 
 
+def fetch_finished_rides_daily() -> pd.DataFrame:
+    """Finished rides per (day, city) for the last M30 days — for the Fleet
+    Review 'Day' granularity. Same source/logic as the weekly version."""
+    cutoff = f"AND created_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+    sql = f"""
+    SELECT
+        created_date_local   AS day_date,
+        order_city_id        AS city_id,
+        COUNT(*)             AS finished_rides
+    FROM main.core_models.fact_rides_order
+    WHERE order_country_id = 67
+      AND order_state = 'finished'
+      AND order_city_id IS NOT NULL
+      AND created_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+      {cutoff}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    print(f"[finished_daily] Fetched {len(df):,} day-city rows "
+          f"| Total finished = {df['finished_rides'].sum():,.0f}")
+    return df
+
+
 def fetch_taxi_vtc_weekly() -> pd.DataFrame:
     """
     Weekly GMV split into Taxi vs VTC per city (for the Taxi vs VTC widget).
@@ -430,6 +453,7 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
             "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
             "active_drivers":     row.get("active_drivers", 0),
+            "active_cars":        row.get("active_cars", 0),
         })
 
     result = pd.DataFrame(rows)
@@ -443,6 +467,7 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
              earnings_eur=("earnings_eur", "sum"),
              gmv_eur=("gmv_eur", "sum"),
              active_drivers=("active_drivers", "sum"),
+             active_cars=("active_cars", "sum"),
              n=("company_id", "nunique"))
     )
     print(f"[daily] {len(result):,} day-city-FO-cohort rows for 'Day' granularity view")
@@ -671,6 +696,54 @@ def generate_html(data: dict) -> str:
 # MAIN
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _distribute_finished(df: pd.DataFrame, date_col: str, fr_lookup: dict) -> pd.DataFrame:
+    """Add a 'rides' column to an aggregated df (needs date_col, city,
+    online_hours) by splitting each (date, city)'s finished rides across its
+    rows in proportion to online hours; a 2nd pass spreads each date's
+    unassigned remainder nationally by OH so the per-date total stays exact.
+    fr_lookup: {(date10, city_name): finished_rides}."""
+    if df is None or df.empty:
+        if df is not None:
+            df["rides"] = []
+        return df
+    dk    = df[date_col].astype(str).str[:10].tolist()
+    oh    = [float(x or 0) for x in df["online_hours"].tolist()]
+    ckey  = list(zip(dk, df["city"].tolist()))
+    oh_sum, oh_by_date, assigned_by_date, fetched_by_date = {}, {}, {}, {}
+    for k, o in zip(ckey, oh):
+        oh_sum[k] = oh_sum.get(k, 0.0) + o
+        oh_by_date[k[0]] = oh_by_date.get(k[0], 0.0) + o
+    for (d, _c), v in fr_lookup.items():
+        fetched_by_date[d] = fetched_by_date.get(d, 0.0) + v
+    finished = []
+    for k, o in zip(ckey, oh):
+        tot, denom = fr_lookup.get(k, 0.0), oh_sum.get(k, 0.0)
+        v = tot * (o / denom) if (tot > 0 and denom > 0) else 0.0
+        finished.append(v)
+        assigned_by_date[k[0]] = assigned_by_date.get(k[0], 0.0) + v
+    for i, (k, o) in enumerate(zip(ckey, oh)):
+        d = k[0]
+        res, denom = fetched_by_date.get(d, 0.0) - assigned_by_date.get(d, 0.0), oh_by_date.get(d, 0.0)
+        if res > 0 and denom > 0:
+            finished[i] += res * (o / denom)
+    df = df.copy()
+    df["rides"] = finished
+    return df
+
+
+def _finished_lookup(finished_df, date_attr, cityname_by_id):
+    """Build {(date10, city_name): finished} from a (date, city_id, finished) frame."""
+    out = {}
+    for r in finished_df.itertuples(index=False):
+        try:
+            cname = cityname_by_id.get(int(r.city_id))
+        except (ValueError, TypeError):
+            cname = None
+        if cname is not None:
+            out[(str(getattr(r, date_attr))[:10], cname)] = float(r.finished_rides)
+    return out
+
+
 def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
     """
     Compact an aggregated performance DataFrame into the minimal rows the
@@ -829,8 +902,14 @@ def main():
               f"| Total OH: {weekly_df['online_hours'].sum():,.0f} "
               f"| Total finished rides: {weekly_df['rides'].sum():,.0f}")
 
-    # 4b. Aggregate daily OH by company+cohort (for 'Day' granularity button)
+    # 4b. Aggregate daily OH by company+cohort (for 'Day' granularity button),
+    #     then distribute daily finished rides by (day, city).
     daily_df = aggregate_daily_by_cohort(m30_df, agreements)
+    finished_daily = fetch_finished_rides_daily()
+    frd_lookup = _finished_lookup(finished_daily, "day_date", cityname_by_id)
+    daily_df = _distribute_finished(daily_df, "day_date", frd_lookup)
+    if not daily_df.empty:
+        print(f"[daily] Total finished rides distributed: {daily_df['rides'].sum():,.0f}")
 
     # 4c. Taxi vs VTC GMV per week+city (for the Taxi vs VTC widget)
     taxi_df = fetch_taxi_vtc_weekly()
