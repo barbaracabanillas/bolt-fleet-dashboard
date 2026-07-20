@@ -608,7 +608,7 @@ function loadPreloadedData() {
   // (period, city, FO, cohort, fleet type). No per-company lookup required.
   const mapRow = r => {
     const oh  = Number(r.oh) || 0;
-    const eur = Number(r.e)  || 0;
+    const gmv = Number(r.g)  || 0;
     return {
       week:          (r.w || '').slice(0, 10),
       fleetType:     FLEET_BY_CODE[r.f] || 'Free Floating',
@@ -616,8 +616,9 @@ function loadPreloadedData() {
       foGroup:       r.fo || null,
       city:          r.city || null,
       onlineHours:   oh,
-      eph:           oh > 0 ? eur / oh : 0,
-      gmv:           Number(r.g) || 0,
+      // EPH = GMV per online hour (matches the reference dashboard's definition).
+      eph:           oh > 0 ? gmv / oh : 0,
+      gmv:           gmv,
       activeDrivers: Number(r.d) || 0,
       activeCars:    Number(r.c) || 0,
       rides:         Number(r.r) || 0,

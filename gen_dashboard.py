@@ -381,6 +381,76 @@ def fetch_finished_rides_weekly() -> pd.DataFrame:
     return df
 
 
+def fetch_online_hours_weekly() -> pd.DataFrame:
+    """Canonical vehicle online hours per (week, company) from the fleet mart.
+    This is the SUPPLY definition (time online/available, incl. idle), which is
+    higher and more up-to-date than counting hours-with-ride-activity from the
+    earnings table. In main() each company's canonical OH is spread across its
+    cohort/city/FO rows in proportion to its active hours, so the per-company
+    (and national) total matches this source while the cohort split is kept."""
+    cutoff = f"AND calendar_date <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+    sql = f"""
+    SELECT
+        DATE_TRUNC('week', calendar_date)  AS week_start,
+        COALESCE(company_id, -1)           AS company_id,
+        SUM(fleet_online_hours)            AS online_hours
+    FROM main.mart_models.mart_fleet_company_daily_history
+    WHERE LOWER(company_country_code) = 'es'
+      AND calendar_date >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+      {cutoff}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    print(f"[online_hours] Fetched {len(df):,} week-company rows "
+          f"| Total canonical OH = {df['online_hours'].sum():,.0f}")
+    return df
+
+
+def fetch_online_hours_daily() -> pd.DataFrame:
+    """Canonical online hours per (day, company) for the last M30 days (Day view)."""
+    cutoff = f"AND calendar_date <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+    sql = f"""
+    SELECT
+        calendar_date              AS day_date,
+        COALESCE(company_id, -1)   AS company_id,
+        SUM(fleet_online_hours)    AS online_hours
+    FROM main.mart_models.mart_fleet_company_daily_history
+    WHERE LOWER(company_country_code) = 'es'
+      AND calendar_date >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+      {cutoff}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    print(f"[online_hours_daily] Fetched {len(df):,} day-company rows "
+          f"| Total canonical OH = {df['online_hours'].sum():,.0f}")
+    return df
+
+
+def _scale_oh_to_canonical(rows_df, date_col, canon_lookup):
+    """Rescale each row's `online_hours` so every (date, company)'s total matches
+    the canonical mart value, keeping the intra-company split (cohort/city/FO)
+    proportional to the original active hours. Companies missing from the mart
+    keep their original (active-hours) value. Operates on rows that still carry
+    company_id. Returns the same df with `online_hours` replaced."""
+    if rows_df is None or rows_df.empty:
+        return rows_df
+    dk   = rows_df[date_col].astype(str).str[:10].tolist()
+    comp = rows_df["company_id"].astype(str).tolist()
+    oh   = [float(x or 0) for x in rows_df["online_hours"].tolist()]
+    keys = list(zip(dk, comp))
+    act_sum = {}
+    for k, o in zip(keys, oh):
+        act_sum[k] = act_sum.get(k, 0.0) + o
+    scaled = []
+    for k, o in zip(keys, oh):
+        canon = canon_lookup.get(k)
+        a = act_sum.get(k, 0.0)
+        scaled.append(canon * (o / a) if (canon is not None and a > 0) else o)
+    rows_df = rows_df.copy()
+    rows_df["online_hours"] = scaled
+    return rows_df
+
+
 def fetch_finished_rides_daily() -> pd.DataFrame:
     """Finished rides per (day, city) for the last M30 days — for the Fleet
     Review 'Day' granularity. Same source/logic as the weekly version."""
@@ -429,11 +499,16 @@ def fetch_taxi_vtc_weekly() -> pd.DataFrame:
     return df
 
 
-def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.DataFrame:
+def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict,
+                              canon_oh_lookup: dict = None) -> pd.DataFrame:
     """
     Convert daily company-level M30 data into the same shape as fleet_performance
     (cohort-tagged), but keyed by day_date instead of week_date.
     Used by the 'Day' granularity button in the dashboard.
+
+    If canon_oh_lookup is given ({(day10, company_id): canonical online hours}),
+    each company's online_hours is rescaled to the canonical mart value before
+    collapsing cohorts (same treatment as the weekly path).
     """
     if m30_df.empty:
         return pd.DataFrame()
@@ -457,6 +532,9 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
         })
 
     result = pd.DataFrame(rows)
+    # Rescale to canonical online hours per (day, company) before collapsing.
+    if canon_oh_lookup:
+        result = _scale_oh_to_canonical(result, "day_date", canon_oh_lookup)
     # Aggregate to per (day, city, FO, cohort, fleetType) — drop company_id but
     # keep a distinct-company count (n) for the table's "Companies" column.
     result = (
@@ -779,10 +857,48 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
     return out
 
 
+def refine_cutoff_to_complete_week():
+    """Move DATA_CUTOFF back to the last Sunday whose full Mon–Sun week is
+    FULLY LOADED in the earnings table (every day >= 23 of 24 hours). The
+    earnings table lags a day or two and occasionally has mid-week holes, so
+    without this the latest week would show complete online hours (from the
+    mart) but partial GMV/rides/EPH. Skipped when DATA_CUTOFF is set explicitly."""
+    global DATA_CUTOFF, _CUTOFF_CLAUSE
+    if os.environ.get("DATA_CUTOFF", "").strip():
+        return
+    df = run_query("""
+        SELECT calendar_date_local AS d, COUNT(DISTINCT date_hour_ts_local) AS hrs
+        FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
+        WHERE country_id = 67 AND calendar_date_local >= CURRENT_DATE - INTERVAL 45 DAYS
+        GROUP BY 1
+    """)
+    complete = {str(r.d)[:10] for r in df.itertuples(index=False) if int(r.hrs) >= 23}
+    if not complete:
+        print("[cutoff] No completeness data; keeping default cutoff.")
+        return
+    d = datetime.date.fromisoformat(max(complete))
+    for _ in range(35):
+        if d.weekday() == 6:  # Sunday = end of a Mon–Sun week
+            week = [(d - datetime.timedelta(days=k)).isoformat() for k in range(7)]
+            if all(w in complete for w in week):
+                if d.isoformat() != DATA_CUTOFF:
+                    print(f"[cutoff] Refined DATA_CUTOFF {DATA_CUTOFF} → {d.isoformat()} "
+                          f"(last fully-loaded week in the earnings table)")
+                DATA_CUTOFF = d.isoformat()
+                _CUTOFF_CLAUSE = f"AND calendar_date_local <= DATE '{DATA_CUTOFF}'"
+                return
+        d -= datetime.timedelta(days=1)
+    print("[cutoff] No fully-loaded week found in window; keeping default cutoff.")
+
+
 def main():
     print("=" * 60)
     print(f"Dashboard build started at {datetime.datetime.utcnow().isoformat()}Z")
     print("=" * 60)
+
+    # 0. Pin the cutoff to the last fully-loaded week (unless DATA_CUTOFF is set).
+    refine_cutoff_to_complete_week()
+    print(f"[cutoff] Using DATA_CUTOFF = {DATA_CUTOFF}")
 
     # 1. Load cohort classification and FO group mapping
     #    (optionally refreshed from the Google Sheet first, if SHEET_CSV_URL is set)
@@ -806,6 +922,17 @@ def main():
 
     # 4. Aggregate weekly OH by company+cohort (per-car cohort split for free floating)
     weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars)
+
+    # 4·OH. Replace the active-hours proxy with the canonical SUPPLY online hours
+    #       (fleet mart), rescaling per company so the cohort/city/FO split is kept.
+    oh_weekly = fetch_online_hours_weekly()
+    ohw_lookup = {
+        (str(r.week_start)[:10], str(r.company_id)): float(r.online_hours)
+        for r in oh_weekly.itertuples(index=False)
+    }
+    weekly_df = _scale_oh_to_canonical(weekly_df, "week_date", ohw_lookup)
+    if not weekly_df.empty:
+        print(f"[online_hours] Weekly OH after canonical rescale: {weekly_df['online_hours'].sum():,.0f}")
 
     # 4a. Merge distinct active-drivers per company-week (for the metric selector)
     drivers_weekly = fetch_drivers_weekly()
@@ -903,8 +1030,13 @@ def main():
               f"| Total finished rides: {weekly_df['rides'].sum():,.0f}")
 
     # 4b. Aggregate daily OH by company+cohort (for 'Day' granularity button),
-    #     then distribute daily finished rides by (day, city).
-    daily_df = aggregate_daily_by_cohort(m30_df, agreements)
+    #     rescaled to canonical online hours, then distribute daily finished rides.
+    oh_daily = fetch_online_hours_daily()
+    ohd_lookup = {
+        (str(r.day_date)[:10], str(r.company_id)): float(r.online_hours)
+        for r in oh_daily.itertuples(index=False)
+    }
+    daily_df = aggregate_daily_by_cohort(m30_df, agreements, ohd_lookup)
     finished_daily = fetch_finished_rides_daily()
     frd_lookup = _finished_lookup(finished_daily, "day_date", cityname_by_id)
     daily_df = _distribute_finished(daily_df, "day_date", frd_lookup)
