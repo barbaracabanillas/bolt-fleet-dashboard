@@ -66,7 +66,9 @@
   .kpi-sub.down { color: #c0392b; }
 
   /* ── CONTROLS ── */
-  .controls-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .controls-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+                  position: sticky; top: var(--header-h, 87px); z-index: 90;
+                  background: var(--bg); padding: 10px 0; border-bottom: 1px solid var(--border); }
   .gran-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
   .gran-btn { font-size: 11px; padding: 5px 13px; border: none; border-right: 1px solid var(--border); background: #fff; cursor: pointer; color: var(--muted); font-family: inherit; font-weight: 500; }
   .gran-btn:last-child { border-right: none; }
@@ -105,7 +107,8 @@
   select { font-size: 11px; font-family: inherit; font-weight: 500; color: #555; border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; background: #fff; cursor: pointer; outline: none; }
 
   /* ── TABS ── */
-  .tab-nav { background: var(--dark); display: flex; align-items: center; gap: 2px; padding: 0 24px; }
+  .tab-nav { background: var(--dark); display: flex; align-items: center; gap: 2px; padding: 0 24px;
+             position: sticky; top: var(--topbar-h, 50px); z-index: 99; }
   .tab-btn { font-size: 12px; font-weight: 600; padding: 10px 18px; border: none; background: transparent; color: rgba(255,255,255,0.45); cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; align-self: flex-end; }
   .tab-btn:hover { color: rgba(255,255,255,0.75); }
   .tab-btn.active { color: #fff; border-bottom-color: var(--green); }
@@ -1673,10 +1676,26 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
   });
 }
 
+// ── Keep the topbar, tabs+filters and the granularity bar all frozen on scroll.
+//    Measured live (heights change if the filter row wraps) → exposed as CSS vars
+//    that .tab-nav and .controls-bar stick against.
+function updateStickyOffsets() {
+  const tb = document.querySelector('.topbar');
+  const tn = document.querySelector('.tab-nav');
+  if (!tb || !tn) return;
+  const th = tb.offsetHeight, nh = tn.offsetHeight;
+  document.documentElement.style.setProperty('--topbar-h', th + 'px');
+  document.documentElement.style.setProperty('--header-h', (th + nh) + 'px');
+}
+window.addEventListener('resize', updateStickyOffsets);
+
 // ── Skip the landing page — open the dashboard on Performance directly.
 //    Runs last, so all consts (AGREEMENT_TYPES, colours…) and render helpers exist.
 populateFilters();
 goToTab('performance');
+updateStickyOffsets();
+// Re-measure after fonts/layout settle.
+setTimeout(updateStickyOffsets, 300);
 
 </script>
 </body>
