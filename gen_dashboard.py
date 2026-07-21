@@ -352,128 +352,52 @@ def fetch_drivers_weekly() -> pd.DataFrame:
     return df
 
 
-def fetch_finished_rides_weekly() -> pd.DataFrame:
-    """
-    Finished rides per (week, city) from the canonical orders table
-    (order_state = 'finished'). company_id is NULL in this table, but
-    order_city_id is fully populated and matches the hourly table's city_id, so
-    we aggregate by city. In main() each city's finished rides are split across
-    that city's cohort/FO rows in proportion to online hours — the per-city (and
-    hence national) total stays exact. Matches the reference dashboard's
-    "Finished Orders", which is also city-level.
+# Canonical SUPPLY metrics from the city-hour rides mart — the SAME source as the
+# reference (Álvaro) dashboard, so OH, GMV and Finished orders match it exactly in
+# every period (the fleet-company mart's online hours over-report mid-2025). These
+# are city-level, so in main() they are distributed to the cohort/FO rows by each
+# row's activity share. `ap_wsum` is the finished-order-weighted sum of active
+# partners (concurrent drivers); active partners = ap_wsum / finished.
+_CITY_SUPPLY_SELECT = """
+        SUM(a.sum_driver_online_time_seconds_local) / 3600.0                             AS online_hours,
+        SUM(CAST(a.rides_gmv_before_discounts_eur_local AS DOUBLE))                      AS gmv_eur,
+        SUM(a.rides_orders_in_finished_state_local)                                      AS finished,
+        SUM(CAST(na.rides_partners_with_orders_finished_local AS DOUBLE)
+            * a.rides_orders_in_finished_state_local)                                    AS ap_wsum
+    FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides a
+    LEFT JOIN hive_metastore.mart_models_spark.mart_non_additive_city_hour_local_rides na
+      ON a.city_id = na.city_id AND a.date_hour_ts_local = na.date_hour_ts_local
+    WHERE a.country_name = 'Spain'
+"""
 
-    Note: this table uses `created_date_local` (not calendar_date_local), so it
-    needs its own cutoff clause.
-    """
-    cutoff = f"AND created_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+def fetch_city_supply_weekly() -> pd.DataFrame:
+    """OH / GMV / finished / active-partner-weight per (week, city)."""
+    cutoff = f"AND a.calendar_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
     sql = f"""
-    SELECT
-        DATE_TRUNC('week', created_date_local)   AS week_start,
-        order_city_id                            AS city_id,
-        COUNT(*)                                 AS finished_rides
-    FROM main.core_models.fact_rides_order
-    WHERE order_country_id = 67   -- Spain (all cities)
-      AND order_state = 'finished'
-      AND order_city_id IS NOT NULL
-      AND created_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+    SELECT DATE_TRUNC('week', a.calendar_date_local) AS week_start, a.city_name,
+    {_CITY_SUPPLY_SELECT}
+      AND a.calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
       {cutoff}
     GROUP BY 1, 2
     """
     df = run_query(sql)
-    print(f"[finished_rides] Fetched {len(df):,} week-city rows "
-          f"| Total finished = {df['finished_rides'].sum():,.0f}")
+    print(f"[city] Fetched {len(df):,} week-city rows | OH={df['online_hours'].sum():,.0f} "
+          f"| GMV={df['gmv_eur'].sum():,.0f} | finished={df['finished'].sum():,.0f}")
     return df
 
 
-def fetch_mart_weekly() -> pd.DataFrame:
-    """Canonical SUPPLY metrics per (week, company) from the fleet mart:
-    online hours, GMV (rides earnings before discounts) and active drivers.
-    The mart is fresh (loaded same-day) and complete, unlike the rides-earnings
-    table. In main() each company's totals are spread across its cohort/city/FO
-    rows in proportion to its active hours, keeping the split while matching the
-    canonical per-company (and national) totals."""
-    cutoff = f"AND calendar_date <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+def fetch_city_supply_daily() -> pd.DataFrame:
+    """OH / GMV / finished / active-partner-weight per (day, city) — last M30 days."""
+    cutoff = f"AND a.calendar_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
     sql = f"""
-    SELECT
-        DATE_TRUNC('week', calendar_date)               AS week_start,
-        COALESCE(company_id, -1)                        AS company_id,
-        SUM(fleet_online_hours)                         AS online_hours,
-        SUM(fleet_rides_earnings_before_discounts_eur)  AS gmv_eur,
-        SUM(fleet_count_active_drivers)                 AS active_drivers
-    FROM main.mart_models.mart_fleet_company_daily_history
-    WHERE LOWER(company_country_code) = 'es'
-      AND calendar_date >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+    SELECT a.calendar_date_local AS day_date, a.city_name,
+    {_CITY_SUPPLY_SELECT}
+      AND a.calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
       {cutoff}
     GROUP BY 1, 2
     """
     df = run_query(sql)
-    print(f"[mart] Fetched {len(df):,} week-company rows | Canonical OH = {df['online_hours'].sum():,.0f} "
-          f"| GMV = {df['gmv_eur'].sum():,.0f} | drivers = {df['active_drivers'].sum():,.0f}")
-    return df
-
-
-def fetch_mart_daily() -> pd.DataFrame:
-    """Canonical supply metrics per (day, company) for the last M30 days (Day view)."""
-    cutoff = f"AND calendar_date <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
-    sql = f"""
-    SELECT
-        calendar_date                                   AS day_date,
-        COALESCE(company_id, -1)                        AS company_id,
-        SUM(fleet_online_hours)                         AS online_hours,
-        SUM(fleet_rides_earnings_before_discounts_eur)  AS gmv_eur,
-        SUM(fleet_count_active_drivers)                 AS active_drivers
-    FROM main.mart_models.mart_fleet_company_daily_history
-    WHERE LOWER(company_country_code) = 'es'
-      AND calendar_date >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
-      {cutoff}
-    GROUP BY 1, 2
-    """
-    df = run_query(sql)
-    print(f"[mart_daily] Fetched {len(df):,} day-company rows "
-          f"| Canonical OH = {df['online_hours'].sum():,.0f}")
-    return df
-
-
-# The TRUE driver online hours (incl. idle), city-hour rides mart — this is the
-# reference source (matches the Álvaro dashboard exactly in every period). The
-# fleet-company mart's fleet_online_hours over-reports mid-2025, so OH uses this
-# instead. It is city-level, so in main() it is distributed to the cohort/FO rows
-# by each row's activity share (same as finished orders).
-def fetch_city_oh_weekly() -> pd.DataFrame:
-    """Driver online hours per (week, city) from mart_city_hour_local_rides."""
-    cutoff = f"AND calendar_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
-    sql = f"""
-    SELECT
-        DATE_TRUNC('week', calendar_date_local)             AS week_start,
-        city_name,
-        SUM(sum_driver_online_time_seconds_local) / 3600.0  AS online_hours
-    FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides
-    WHERE country_name = 'Spain'
-      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
-      {cutoff}
-    GROUP BY 1, 2
-    """
-    df = run_query(sql)
-    print(f"[city_oh] Fetched {len(df):,} week-city rows | Total OH = {df['online_hours'].sum():,.0f}")
-    return df
-
-
-def fetch_city_oh_daily() -> pd.DataFrame:
-    """Driver online hours per (day, city) for the last M30 days (Day view)."""
-    cutoff = f"AND calendar_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
-    sql = f"""
-    SELECT
-        calendar_date_local                                 AS day_date,
-        city_name,
-        SUM(sum_driver_online_time_seconds_local) / 3600.0  AS online_hours
-    FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides
-    WHERE country_name = 'Spain'
-      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
-      {cutoff}
-    GROUP BY 1, 2
-    """
-    df = run_query(sql)
-    print(f"[city_oh_daily] Fetched {len(df):,} day-city rows | Total OH = {df['online_hours'].sum():,.0f}")
+    print(f"[city_daily] Fetched {len(df):,} day-city rows | OH={df['online_hours'].sum():,.0f}")
     return df
 
 
@@ -503,29 +427,6 @@ def _scale_metric_to_canonical(rows_df, date_col, canon_lookup, target_col, weig
     return rows_df
 
 
-def fetch_finished_rides_daily() -> pd.DataFrame:
-    """Finished rides per (day, city) for the last M30 days — for the Fleet
-    Review 'Day' granularity. Same source/logic as the weekly version."""
-    cutoff = f"AND created_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
-    sql = f"""
-    SELECT
-        created_date_local   AS day_date,
-        order_city_id        AS city_id,
-        COUNT(*)             AS finished_rides
-    FROM main.core_models.fact_rides_order
-    WHERE order_country_id = 67
-      AND order_state = 'finished'
-      AND order_city_id IS NOT NULL
-      AND created_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
-      {cutoff}
-    GROUP BY 1, 2
-    """
-    df = run_query(sql)
-    print(f"[finished_daily] Fetched {len(df):,} day-city rows "
-          f"| Total finished = {df['finished_rides'].sum():,.0f}")
-    return df
-
-
 def fetch_taxi_vtc_weekly() -> pd.DataFrame:
     """
     Weekly GMV split into Taxi vs VTC per city (for the Taxi vs VTC widget).
@@ -551,16 +452,12 @@ def fetch_taxi_vtc_weekly() -> pd.DataFrame:
     return df
 
 
-def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict,
-                              canon_oh=None, canon_gmv=None, canon_drv=None) -> pd.DataFrame:
+def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.DataFrame:
     """
     Convert daily company-level M30 data into the same shape as fleet_performance
-    (cohort-tagged), but keyed by day_date instead of week_date.
-    Used by the 'Day' granularity button in the dashboard.
-
-    canon_oh / canon_gmv / canon_drv ({(day10, company_id): value}) rescale the
-    respective columns to the canonical mart totals per (day, company) before
-    collapsing cohorts (same treatment as the weekly path).
+    (cohort-tagged), keyed by day_date. Keeps ACTIVE online hours as the weight;
+    OH/GMV/finished/partners are overwritten with the city-hour mart values in
+    main(). Active drivers & cars are the daily distinct counts from the M30 data.
     """
     if m30_df.empty:
         return pd.DataFrame()
@@ -577,28 +474,16 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict,
             "city":               ag.get("city"),
             "fo":                 ag.get("g") or "",
             "online_hours":       row["online_hours"],
-            "earnings_eur":       row["earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
             "active_drivers":     row.get("active_drivers", 0),
             "active_cars":        row.get("active_cars", 0),
         })
 
-    result = pd.DataFrame(rows)
-    # Rescale OH / GMV / drivers to canonical mart totals per (day, company),
-    # spread by active-OH share, before collapsing.
-    if canon_oh or canon_gmv or canon_drv:
-        result["_w"] = result["online_hours"]
-        if canon_oh:  result = _scale_metric_to_canonical(result, "day_date", canon_oh,  "online_hours",   "_w")
-        if canon_gmv: result = _scale_metric_to_canonical(result, "day_date", canon_gmv, "gmv_eur",        "_w")
-        if canon_drv: result = _scale_metric_to_canonical(result, "day_date", canon_drv, "active_drivers", "_w")
-    # Aggregate to per (day, city, FO, cohort, fleetType) — drop company_id but
-    # keep a distinct-company count (n) for the table's "Companies" column.
     result = (
-        result
+        pd.DataFrame(rows)
         .groupby(["day_date", "city", "fo", "cohort", "invoicing_strategy"],
                  as_index=False, dropna=False)
         .agg(online_hours=("online_hours", "sum"),
-             earnings_eur=("earnings_eur", "sum"),
              gmv_eur=("gmv_eur", "sum"),
              active_drivers=("active_drivers", "sum"),
              active_cars=("active_cars", "sum"),
@@ -926,19 +811,6 @@ def _distribute_city(df: pd.DataFrame, date_col: str, lookup: dict,
     return df
 
 
-def _finished_lookup(finished_df, date_attr, cityname_by_id):
-    """Build {(date10, city_name): finished} from a (date, city_id, finished) frame."""
-    out = {}
-    for r in finished_df.itertuples(index=False):
-        try:
-            cname = cityname_by_id.get(int(r.city_id))
-        except (ValueError, TypeError):
-            cname = None
-        if cname is not None:
-            out[(str(getattr(r, date_attr))[:10], cname)] = float(r.finished_rides)
-    return out
-
-
 def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
     """
     Compact an aggregated performance DataFrame into the minimal rows the
@@ -969,6 +841,7 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "d":    int(d.get("active_drivers") or 0),
             "c":    int(d.get("active_cars") or 0),
             "r":    round(float(d.get("rides") or 0)),
+            "p":    round(float(d.get("active_partners") or 0)),
             "n":    int(d.get("n") or 0),
         }
         # Per-car OH upside at each FLEET_TARGETS level (weekly rows only).
@@ -1045,60 +918,44 @@ def main():
     # 4. Aggregate weekly OH by company+cohort (per-car cohort split for free floating)
     weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars)
 
-    # 4·SUPPLY. Headline metrics from canonical marts, spread across the
-    #   cohort/city/FO rows by each row's activity (earnings active OH) share:
-    #   - Online Hours: driver online time from the city-hour RIDES mart
-    #     (reference source; the fleet-company mart over-reports mid-2025).
-    #     Distributed by (week, city).
-    #   - GMV: fleet mart, per company.  - Drivers: distinct weekly, earnings.
-    #   - Finished orders: canonical orders table, by (week, city).
-    city_oh_weekly = fetch_city_oh_weekly()
-    city_oh = {(str(r.week_start)[:10], r.city_name): float(r.online_hours or 0)
-               for r in city_oh_weekly.itertuples(index=False) if r.city_name is not None}
-    mart_weekly = fetch_mart_weekly()
-    mgm = {(str(r.week_start)[:10], str(r.company_id)): float(r.gmv_eur)      for r in mart_weekly.itertuples(index=False)}
-    # Active drivers: DISTINCT drivers per (week, company) from the earnings table
-    # — the mart only has DAILY counts (summing 7 days would ~7x inflate a weekly
-    # distinct count), so weekly drivers stay on the correct distinct measure.
+    # 4·SUPPLY. OH, GMV, Finished orders and Active partners ALL come from the
+    #   city-hour rides mart (the SAME source as the reference dashboard → they
+    #   match it in every period). They are city-level, distributed to the
+    #   cohort/FO rows by each row's activity (earnings active-OH) share. Active
+    #   DRIVERS (distinct weekly) come from the earnings table.
+    city_w = fetch_city_supply_weekly()
+    city_oh, city_gmv, city_fin, city_ap = {}, {}, {}, {}
+    for r in city_w.itertuples(index=False):
+        if r.city_name is None:
+            continue
+        k = (str(r.week_start)[:10], r.city_name)
+        fin = float(r.finished or 0)
+        city_oh[k]  = float(r.online_hours or 0)
+        city_gmv[k] = float(r.gmv_eur or 0)
+        city_fin[k] = fin
+        city_ap[k]  = (float(r.ap_wsum or 0) / fin) if fin > 0 else 0.0
+    # Active drivers: DISTINCT drivers per (week, company) from the earnings table.
     dw_lookup = {
         (str(r.week_start)[:10], str(r.company_id)): int(r.active_drivers)
         for r in fetch_drivers_weekly().itertuples(index=False)
     }
-    # Finished rides per (week, city) from the canonical orders table (fresh + exact).
-    finished_weekly = fetch_finished_rides_weekly()
-    cityname_by_id = {}
-    for cid, cname in zip(car_df["city_id"], car_df["city_name"]):
-        try:
-            cityname_by_id[int(cid)] = cname
-        except (ValueError, TypeError):
-            pass
-    fr_lookup = {}
-    for r in finished_weekly.itertuples(index=False):
-        try:
-            cname = cityname_by_id.get(int(r.city_id))
-        except (ValueError, TypeError):
-            cname = None
-        if cname is not None:
-            fr_lookup[(str(r.week_start)[:10], cname)] = float(r.finished_rides)
 
     company_weekly = pd.DataFrame(columns=["week_date", "city", "fo", "invoicing_strategy", "n"])
 
     if not weekly_df.empty:
-        # Activity weight = earnings active online hours (splits every canonical
-        # total across the cohort/city/FO rows).
+        # Activity weight = earnings active online hours.
         weekly_df["_w"] = weekly_df["online_hours"]
-        # GMV ← fleet mart per company (spread by active share).
-        weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", mgm, "gmv_eur", "_w")
-        # Drivers ← distinct weekly count (spread by active share; no double count).
+        # Active drivers ← distinct weekly count (spread by active share; no double count).
         weekly_df["active_drivers"] = 0.0
         weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", dw_lookup, "active_drivers", "_w")
-        # Online Hours ← city-hour rides mart, distributed by (week, city).
-        weekly_df = _distribute_city(weekly_df, "week_date", city_oh, "_w", "online_hours")
-        # Finished orders ← canonical orders table, distributed by (week, city).
-        weekly_df = _distribute_city(weekly_df, "week_date", fr_lookup, "_w", "finished_rides")
-        print(f"[supply] Weekly — OH: {weekly_df['online_hours'].sum():,.0f} "
-              f"| GMV: {weekly_df['gmv_eur'].sum():,.0f} | drivers: {weekly_df['active_drivers'].sum():,.0f} "
-              f"| finished: {weekly_df['finished_rides'].sum():,.0f}")
+        # OH / GMV / Finished / Active partners ← city-hour mart, by (week, city).
+        weekly_df = _distribute_city(weekly_df, "week_date", city_oh,  "_w", "online_hours")
+        weekly_df = _distribute_city(weekly_df, "week_date", city_gmv, "_w", "gmv_eur")
+        weekly_df = _distribute_city(weekly_df, "week_date", city_fin, "_w", "finished_rides")
+        weekly_df = _distribute_city(weekly_df, "week_date", city_ap,  "_w", "active_partners")
+        print(f"[supply] Weekly — OH:{weekly_df['online_hours'].sum():,.0f} GMV:{weekly_df['gmv_eur'].sum():,.0f} "
+              f"drivers:{weekly_df['active_drivers'].sum():,.0f} finished:{weekly_df['finished_rides'].sum():,.0f} "
+              f"partners:{weekly_df['active_partners'].sum():,.0f}")
 
         # Exact company count (see note above) — before collapsing cohorts.
         company_weekly = (
@@ -1120,6 +977,7 @@ def main():
                  rides=("finished_rides", "sum"),
                  active_cars=("active_cars", "sum"),
                  active_drivers=("active_drivers", "sum"),
+                 active_partners=("active_partners", "sum"),
                  n=("company_id", "nunique"))
         )
         print(f"[aggregate] {len(weekly_df):,} week-city-FO-cohort rows (stage 2) "
@@ -1149,20 +1007,26 @@ def main():
         for T in FLEET_TARGETS:
             weekly_df[f"hr{T}"] = cols[T]
 
-    # 4b. Aggregate daily (for 'Day' granularity): GMV & drivers from the fleet
-    #     mart per company; OH from the city-hour rides mart (by day, city);
-    #     finished from the orders table (by day, city).
-    mart_daily = fetch_mart_daily()
-    d_gm = {(str(r.day_date)[:10], str(r.company_id)): float(r.gmv_eur)        for r in mart_daily.itertuples(index=False)}
-    d_dr = {(str(r.day_date)[:10], str(r.company_id)): float(r.active_drivers) for r in mart_daily.itertuples(index=False)}
-    daily_df = aggregate_daily_by_cohort(m30_df, agreements, None, d_gm, d_dr)  # OH left active
+    # 4b. Daily (for 'Day' granularity): OH/GMV/finished/partners from the
+    #     city-hour mart (by day, city); drivers & cars from the earnings M30.
+    daily_df = aggregate_daily_by_cohort(m30_df, agreements)
     if daily_df is not None and not daily_df.empty:
+        city_d = fetch_city_supply_daily()
+        d_oh, d_gmv, d_fin, d_ap = {}, {}, {}, {}
+        for r in city_d.itertuples(index=False):
+            if r.city_name is None:
+                continue
+            k = (str(r.day_date)[:10], r.city_name)
+            fin = float(r.finished or 0)
+            d_oh[k]  = float(r.online_hours or 0)
+            d_gmv[k] = float(r.gmv_eur or 0)
+            d_fin[k] = fin
+            d_ap[k]  = (float(r.ap_wsum or 0) / fin) if fin > 0 else 0.0
         daily_df["_w"] = daily_df["online_hours"]
-        city_oh_d = {(str(r.day_date)[:10], r.city_name): float(r.online_hours or 0)
-                     for r in fetch_city_oh_daily().itertuples(index=False) if r.city_name is not None}
-        daily_df = _distribute_city(daily_df, "day_date", city_oh_d, "_w", "online_hours")
-        frd_lookup = _finished_lookup(fetch_finished_rides_daily(), "day_date", cityname_by_id)
-        daily_df = _distribute_city(daily_df, "day_date", frd_lookup, "_w", "rides")
+        daily_df = _distribute_city(daily_df, "day_date", d_oh,  "_w", "online_hours")
+        daily_df = _distribute_city(daily_df, "day_date", d_gmv, "_w", "gmv_eur")
+        daily_df = _distribute_city(daily_df, "day_date", d_fin, "_w", "rides")
+        daily_df = _distribute_city(daily_df, "day_date", d_ap,  "_w", "active_partners")
         print(f"[daily] OH {daily_df['online_hours'].sum():,.0f} | finished {daily_df['rides'].sum():,.0f}")
 
     # 4c. Taxi vs VTC GMV per week+city (for the Taxi vs VTC widget)
