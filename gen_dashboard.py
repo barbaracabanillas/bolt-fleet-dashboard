@@ -81,6 +81,10 @@ COHORT_CODE = {
 
 VALID_COHORTS = list(COHORT_STRATEGIC.values()) + [FF_BRANDED, FF_NOT_BRANDED]
 
+# Weekly online-hours-per-car targets ("double shift" scenarios) used to estimate
+# a fleet's upside: for each car, headroom = max(0, target - car's weekly OH).
+FLEET_TARGETS = [60, 70, 80, 90, 100]
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DATABRICKS CONNECTION
@@ -756,6 +760,63 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     return result
 
 
+def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: set,
+                         moh_lookup: dict) -> pd.DataFrame:
+    """Per-car OH upside per (week, city, FO, cohort, strategy). For each car we
+    take its weekly online hours scaled to the canonical mart level (same factor
+    used for the fleet OH), then for each target T sum max(0, T - car_online_h).
+    Returns one row per group with columns hr60, hr70, … (the extra OH a fleet
+    could do if each of its cars reached that weekly target). moh_lookup:
+    {(week10, company_id): canonical company OH}."""
+    branded_cars = branded_cars or set()
+    if car_df.empty:
+        return pd.DataFrame()
+    wk    = car_df["week_start"].astype(str).str[:10].tolist()
+    comp  = car_df["company_id"].astype(str).tolist()
+    oh    = [float(x or 0) for x in car_df["online_hours"].tolist()]
+    carid = car_df["car_id"].tolist()
+    city_col = car_df["city_name"].tolist() if "city_name" in car_df.columns else [None] * len(car_df)
+    # Company scaling factor (canonical / active), same as the OH rescale.
+    act_by_wc = {}
+    for w, c, o in zip(wk, comp, oh):
+        act_by_wc[(w, c)] = act_by_wc.get((w, c), 0.0) + o
+    groups = {}
+    for w, c, o, cid, ccity in zip(wk, comp, oh, carid, city_col):
+        ag = agreements.get(c) or {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL}
+        if ag["f"] == STRATEGIC_LABEL:
+            cohort = ag["c"]
+        else:
+            try:
+                cint = int(cid)
+            except (ValueError, TypeError):
+                cint = None
+            cohort = FF_BRANDED if cint in branded_cars else FF_NOT_BRANDED
+        city = ag.get("city") or ccity
+        fo   = ag.get("g") or ""
+        strat = ag["f"]
+        mv  = moh_lookup.get((w, c))
+        act = act_by_wc.get((w, c), 0.0)
+        online_car = o * (mv / act) if (mv is not None and act > 0) else o
+        key = (w, "" if city is None or (isinstance(city, float) and pd.isna(city)) else str(city),
+               "" if fo is None else str(fo), cohort, strat)
+        arr = groups.get(key)
+        if arr is None:
+            arr = [0.0] * len(FLEET_TARGETS)
+            groups[key] = arr
+        for i, T in enumerate(FLEET_TARGETS):
+            if online_car < T:
+                arr[i] += (T - online_car)
+    recs = []
+    for (w, city, fo, cohort, strat), arr in groups.items():
+        rec = {"week_date": w, "city": city, "fo": fo, "cohort": cohort, "invoicing_strategy": strat}
+        for i, T in enumerate(FLEET_TARGETS):
+            rec[f"hr{T}"] = arr[i]
+        recs.append(rec)
+    print(f"[headroom] {len(recs):,} groups | total upside @80: "
+          f"{sum(r['hr80'] for r in recs):,.0f} OH")
+    return pd.DataFrame(recs)
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # HTML GENERATION
 # ──────────────────────────────────────────────────────────────────────────────
@@ -849,7 +910,7 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
         d = row._asdict()
         city = d.get("city")
         fo   = d.get("fo")
-        out.append({
+        rec = {
             "w":    str(d[date_col])[:10],
             "f":    "S" if d.get("invoicing_strategy") == STRATEGIC_LABEL else "F",
             "co":   COHORT_CODE.get(d.get("cohort"), "X"),
@@ -862,7 +923,11 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "c":    int(d.get("active_cars") or 0),
             "r":    round(float(d.get("rides") or 0)),
             "n":    int(d.get("n") or 0),
-        })
+        }
+        # Per-car OH upside at each FLEET_TARGETS level (weekly rows only).
+        if ("hr%d" % FLEET_TARGETS[0]) in d:
+            rec["hr"] = [round(float(d.get("hr%d" % T) or 0)) for T in FLEET_TARGETS]
+        out.append(rec)
     return out
 
 
@@ -1039,6 +1104,23 @@ def main():
               f"| Total OH: {weekly_df['online_hours'].sum():,.0f} "
               f"| Total finished rides: {weekly_df['rides'].sum():,.0f}")
 
+        # Per-car OH upside (headroom to each weekly target) merged onto the rows.
+        hr_df = compute_car_headroom(car_df, agreements, branded_cars, moh)
+        hr_lookup = {}
+        for r in hr_df.itertuples(index=False):
+            hr_lookup[(str(r.week_date)[:10], r.city or "", r.fo or "", r.cohort, r.invoicing_strategy)] = \
+                [getattr(r, f"hr{T}") for T in FLEET_TARGETS]
+        wk2 = weekly_df["week_date"].astype(str).str[:10].tolist()
+        cols = {T: [] for T in FLEET_TARGETS}
+        for w, city, fo, cohort, strat in zip(
+                wk2, weekly_df["city"], weekly_df["fo"], weekly_df["cohort"], weekly_df["invoicing_strategy"]):
+            key = (w, "" if pd.isna(city) else str(city), "" if pd.isna(fo) else str(fo), cohort, strat)
+            arr = hr_lookup.get(key, [0.0] * len(FLEET_TARGETS))
+            for i, T in enumerate(FLEET_TARGETS):
+                cols[T].append(arr[i])
+        for T in FLEET_TARGETS:
+            weekly_df[f"hr{T}"] = cols[T]
+
     # 4b. Aggregate daily by company+cohort (for 'Day' granularity button),
     #     rescaled to canonical mart OH/GMV/drivers, then distribute daily finished.
     mart_daily = fetch_mart_daily()
@@ -1075,6 +1157,7 @@ def main():
              "n": int(r.n)}
             for r in company_weekly.itertuples(index=False)
         ],
+        "fleet_targets":     FLEET_TARGETS,   # weekly OH-per-car targets for the upside tool
         "hourly_car_data":   [],   # car-level hourly data not yet wired up
     }
 

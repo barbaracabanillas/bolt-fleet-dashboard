@@ -440,6 +440,39 @@
         </div>
       </div>
 
+      <!-- ═══════════════════════════════════════════════════════════
+           FLEET UPSIDE — potential extra OH & Finished orders per fleet
+      ═══════════════════════════════════════════════════════════ -->
+      <div class="table-card" style="margin-bottom:24px;">
+        <div class="table-header" style="flex-wrap:wrap;gap:8px;">
+          <div>
+            <span class="table-title">Fleet upside · potential</span>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;margin-left:8px;" id="fr-upside-sub"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Target OH / car · week</span>
+            <div class="gran-toggle" id="fr-target-toggle"></div>
+          </div>
+        </div>
+        <div style="padding:14px 16px 18px;">
+          <!-- Scenario A: existing ACTIVE cars work up to the target (per-car headroom) -->
+          <div style="font-size:11px;font-weight:700;color:#333;margin-bottom:10px;">
+            If every ACTIVE car reached the target (double shift)</div>
+          <div id="fr-upside-auto" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;"></div>
+          <!-- Scenario B: a manually-entered number of licences at the target -->
+          <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+            <div style="font-size:11px;font-weight:700;color:#333;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              If this fleet had
+              <input id="fr-licenses" type="number" min="0" step="1" placeholder="licences"
+                style="width:90px;font-family:inherit;font-size:12px;font-weight:600;border:1px solid var(--border);border-radius:5px;padding:3px 8px;outline:none;"
+                oninput="renderFleetUpside()">
+              licences working with Bolt at the target
+            </div>
+            <div id="fr-upside-manual" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -472,6 +505,7 @@ function toggleYoY(btn) {
 
 // ── FLEET REVIEW state ────────────────────────────────────────────
 let frGranularity  = 'week';
+let frTarget       = 80;   // selected weekly OH-per-car target for the upside tool
 
 // ── DATE RANGE + CITY + FO FILTERS ─────────────────────────────────
 let rangeFrom = null;  // 'YYYY-MM-DD' or null (no lower bound)
@@ -592,10 +626,12 @@ const A_BADGES = {
 // so no manual CSV upload is required.
 let taxiVtcRows = [];
 let companyRows = [];   // exact distinct-company counts per (week, city, FO, strategy)
+let FLEET_TARGETS = [60, 70, 80, 90, 100];   // weekly OH-per-car upside targets
 function loadPreloadedData() {
   const d = window.PRELOADED_DATA;
   if (!d) return false;
   taxiVtcRows = Array.isArray(d.taxi_vtc) ? d.taxi_vtc : [];
+  if (Array.isArray(d.fleet_targets) && d.fleet_targets.length) FLEET_TARGETS = d.fleet_targets.map(Number);
   companyRows = Array.isArray(d.company_weekly) ? d.company_weekly.map(r => ({
     week:      (r.w || '').slice(0, 10),
     city:      r.city || null,
@@ -623,6 +659,7 @@ function loadPreloadedData() {
       activeCars:    Number(r.c) || 0,
       rides:         Number(r.r) || 0,
       companies:     Number(r.n) || 0,
+      headroom:      Array.isArray(r.hr) ? r.hr.map(Number) : null,  // per-car OH upside by target
     };
   };
 
@@ -1381,6 +1418,77 @@ function renderFleetReview() {
       && (selectedCity === '__all' || r.city === selectedCity)
       && (selectedFO   === '__all' || r.foGroup === selectedFO));
   renderT1FleetPerf(fleetRows, selectedFO);
+  renderFleetUpside();
+}
+
+// ══ FLEET UPSIDE ══
+// Estimate a fleet's untapped potential: if each ACTIVE car reached a weekly
+// OH target ("double shift"), how many extra Online Hours — and, applying the
+// fleet's own RPH (finished ÷ OH), how many extra Finished orders. Always based
+// on the LATEST complete week for the current City/FO filter (weekly concept).
+function setFRTarget(t, btn) {
+  frTarget = t;
+  document.querySelectorAll('#fr-target-toggle .gran-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFleetUpside();
+}
+
+function _upCard(label, value, sub, accent) {
+  return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">${label}</div>
+    <div style="font-size:18px;font-weight:800;color:${accent || '#111'};margin-top:3px;">${value}</div>
+    ${sub ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${sub}</div>` : ''}</div>`;
+}
+
+function renderFleetUpside() {
+  const tgt = document.getElementById('fr-target-toggle');
+  if (!tgt) return;
+  // Build the target presets once.
+  if (!tgt.children.length) {
+    tgt.innerHTML = FLEET_TARGETS.map(t =>
+      `<button class="gran-btn${t === frTarget ? ' active' : ''}" onclick="setFRTarget(${t},this)">${t}h</button>`).join('');
+  }
+  const auto = document.getElementById('fr-upside-auto');
+  const man  = document.getElementById('fr-upside-manual');
+  const sub  = document.getElementById('fr-upside-sub');
+  const rows0 = _weeklyRows.filter(r => isInRange(r.week)
+      && (selectedCity === '__all' || r.city === selectedCity)
+      && (selectedFO   === '__all' || r.foGroup === selectedFO));
+  if (!rows0.length) { auto.innerHTML = '<div class="no-data" style="font-size:11px">No data.</div>'; man.innerHTML = ''; sub.textContent = ''; return; }
+  const lastWk = rows0.map(r => r.week).sort().slice(-1)[0];
+  const rows = rows0.filter(r => r.week === lastWk);
+  const N = v => Math.round(v).toLocaleString('en');
+  const oh       = rows.reduce((s, r) => s + r.onlineHours, 0);
+  const cars     = rows.reduce((s, r) => s + r.activeCars, 0);
+  const finished = rows.reduce((s, r) => s + r.rides, 0);
+  const idx      = FLEET_TARGETS.indexOf(frTarget);
+  const upOH     = rows.reduce((s, r) => s + ((r.headroom && idx >= 0) ? (r.headroom[idx] || 0) : 0), 0);
+  const rph      = oh > 0 ? finished / oh : 0;
+  const ohPerCar = cars > 0 ? oh / cars : 0;
+  const extraFin = upOH * rph;
+  const pct      = oh > 0 ? (upOH / oh * 100) : 0;
+  sub.textContent = `week of ${lastWk} · RPH ${rph.toFixed(2)} orders/OH · target ${frTarget}h/car`;
+  auto.innerHTML =
+    _upCard('Active cars', N(cars), 'this fleet, this week') +
+    _upCard('Current OH / car', ohPerCar.toFixed(1) + 'h', 'avg per active car') +
+    _upCard('Upside OH', '+' + N(upOH) + 'h', pct.toFixed(0) + '% more', '#1668E3') +
+    _upCard('Potential OH', N(oh + upOH) + 'h', 'now ' + N(oh) + 'h') +
+    _upCard('Extra finished orders', '+' + N(extraFin), 'at current RPH', '#1668E3') +
+    _upCard('Potential finished', N(finished + extraFin), 'now ' + N(finished));
+  const lic = parseFloat(document.getElementById('fr-licenses').value);
+  if (lic > 0) {
+    const potOH  = lic * frTarget;
+    const upOH2  = Math.max(0, potOH - oh);
+    const extra2 = upOH2 * rph;
+    man.innerHTML =
+      _upCard('Licences (input)', N(lic), 'at ' + frTarget + 'h/car·week') +
+      _upCard('Potential OH', N(potOH) + 'h', 'now ' + N(oh) + 'h') +
+      _upCard('Upside OH', '+' + N(upOH2) + 'h', oh > 0 ? (upOH2 / oh * 100).toFixed(0) + '% more' : '', '#1668E3') +
+      _upCard('Extra finished orders', '+' + N(extra2), 'at current RPH', '#1668E3') +
+      _upCard('Potential finished', N(finished + extra2), 'now ' + N(finished));
+  } else {
+    man.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Enter a licence count above to see this scenario.</div>';
+  }
 }
 
 // ── Fleet Review metric catalogue: numeric value (per period column `c`),
