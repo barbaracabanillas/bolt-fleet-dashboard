@@ -356,17 +356,12 @@ def fetch_drivers_weekly() -> pd.DataFrame:
 # reference (Álvaro) dashboard, so OH, GMV and Finished orders match it exactly in
 # every period (the fleet-company mart's online hours over-report mid-2025). These
 # are city-level, so in main() they are distributed to the cohort/FO rows by each
-# row's activity share. `ap_wsum` is the finished-order-weighted sum of active
-# partners (concurrent drivers); active partners = ap_wsum / finished.
+# row's activity share.
 _CITY_SUPPLY_SELECT = """
         SUM(a.sum_driver_online_time_seconds_local) / 3600.0                             AS online_hours,
         SUM(CAST(a.rides_gmv_before_discounts_eur_local AS DOUBLE))                      AS gmv_eur,
-        SUM(a.rides_orders_in_finished_state_local)                                      AS finished,
-        SUM(CAST(na.rides_partners_with_orders_finished_local AS DOUBLE)
-            * a.rides_orders_in_finished_state_local)                                    AS ap_wsum
+        SUM(a.rides_orders_in_finished_state_local)                                      AS finished
     FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides a
-    LEFT JOIN hive_metastore.mart_models_spark.mart_non_additive_city_hour_local_rides na
-      ON a.city_id = na.city_id AND a.date_hour_ts_local = na.date_hour_ts_local
     WHERE a.country_name = 'Spain'
 """
 
@@ -841,7 +836,6 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "d":    int(d.get("active_drivers") or 0),
             "c":    int(d.get("active_cars") or 0),
             "r":    round(float(d.get("rides") or 0)),
-            "p":    round(float(d.get("active_partners") or 0)),
             "n":    int(d.get("n") or 0),
         }
         # Per-car OH upside at each FLEET_TARGETS level (weekly rows only).
@@ -924,16 +918,14 @@ def main():
     #   cohort/FO rows by each row's activity (earnings active-OH) share. Active
     #   DRIVERS (distinct weekly) come from the earnings table.
     city_w = fetch_city_supply_weekly()
-    city_oh, city_gmv, city_fin, city_ap = {}, {}, {}, {}
+    city_oh, city_gmv, city_fin = {}, {}, {}
     for r in city_w.itertuples(index=False):
         if r.city_name is None:
             continue
         k = (str(r.week_start)[:10], r.city_name)
-        fin = float(r.finished or 0)
         city_oh[k]  = float(r.online_hours or 0)
         city_gmv[k] = float(r.gmv_eur or 0)
-        city_fin[k] = fin
-        city_ap[k]  = (float(r.ap_wsum or 0) / fin) if fin > 0 else 0.0
+        city_fin[k] = float(r.finished or 0)
     # Active drivers: DISTINCT drivers per (week, company) from the earnings table.
     dw_lookup = {
         (str(r.week_start)[:10], str(r.company_id)): int(r.active_drivers)
@@ -948,14 +940,12 @@ def main():
         # Active drivers ← distinct weekly count (spread by active share; no double count).
         weekly_df["active_drivers"] = 0.0
         weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", dw_lookup, "active_drivers", "_w")
-        # OH / GMV / Finished / Active partners ← city-hour mart, by (week, city).
+        # OH / GMV / Finished ← city-hour mart, distributed by (week, city).
         weekly_df = _distribute_city(weekly_df, "week_date", city_oh,  "_w", "online_hours")
         weekly_df = _distribute_city(weekly_df, "week_date", city_gmv, "_w", "gmv_eur")
         weekly_df = _distribute_city(weekly_df, "week_date", city_fin, "_w", "finished_rides")
-        weekly_df = _distribute_city(weekly_df, "week_date", city_ap,  "_w", "active_partners")
         print(f"[supply] Weekly — OH:{weekly_df['online_hours'].sum():,.0f} GMV:{weekly_df['gmv_eur'].sum():,.0f} "
-              f"drivers:{weekly_df['active_drivers'].sum():,.0f} finished:{weekly_df['finished_rides'].sum():,.0f} "
-              f"partners:{weekly_df['active_partners'].sum():,.0f}")
+              f"drivers:{weekly_df['active_drivers'].sum():,.0f} finished:{weekly_df['finished_rides'].sum():,.0f}")
 
         # Exact company count (see note above) — before collapsing cohorts.
         company_weekly = (
@@ -977,7 +967,6 @@ def main():
                  rides=("finished_rides", "sum"),
                  active_cars=("active_cars", "sum"),
                  active_drivers=("active_drivers", "sum"),
-                 active_partners=("active_partners", "sum"),
                  n=("company_id", "nunique"))
         )
         print(f"[aggregate] {len(weekly_df):,} week-city-FO-cohort rows (stage 2) "
@@ -1012,21 +1001,18 @@ def main():
     daily_df = aggregate_daily_by_cohort(m30_df, agreements)
     if daily_df is not None and not daily_df.empty:
         city_d = fetch_city_supply_daily()
-        d_oh, d_gmv, d_fin, d_ap = {}, {}, {}, {}
+        d_oh, d_gmv, d_fin = {}, {}, {}
         for r in city_d.itertuples(index=False):
             if r.city_name is None:
                 continue
             k = (str(r.day_date)[:10], r.city_name)
-            fin = float(r.finished or 0)
             d_oh[k]  = float(r.online_hours or 0)
             d_gmv[k] = float(r.gmv_eur or 0)
-            d_fin[k] = fin
-            d_ap[k]  = (float(r.ap_wsum or 0) / fin) if fin > 0 else 0.0
+            d_fin[k] = float(r.finished or 0)
         daily_df["_w"] = daily_df["online_hours"]
         daily_df = _distribute_city(daily_df, "day_date", d_oh,  "_w", "online_hours")
         daily_df = _distribute_city(daily_df, "day_date", d_gmv, "_w", "gmv_eur")
         daily_df = _distribute_city(daily_df, "day_date", d_fin, "_w", "rides")
-        daily_df = _distribute_city(daily_df, "day_date", d_ap,  "_w", "active_partners")
         print(f"[daily] OH {daily_df['online_hours'].sum():,.0f} | finished {daily_df['rides'].sum():,.0f}")
 
     # 4c. Taxi vs VTC GMV per week+city (for the Taxi vs VTC widget)
