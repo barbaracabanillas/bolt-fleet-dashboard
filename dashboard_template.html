@@ -51,7 +51,7 @@
   .reload-btn { font-size: 11px; padding: 4px 9px; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; background: transparent; cursor: pointer; color: rgba(255,255,255,0.65); font-family: inherit; font-weight: 500; display:inline-flex; align-items:center; gap:4px; white-space: nowrap; }
   .reload-btn:hover { background: rgba(255,255,255,0.1); }
   .data-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.18); flex-shrink:0; transition:background 0.25s; }
-  .data-dot.loaded { background:#2A9C64; box-shadow:0 0 4px #2A9C6488; }
+  .data-dot.loaded { background:#2A9C64; }
 
   /* ── LAYOUT ── */
   .main { padding: 18px 24px; max-width: 1280px; margin: 0 auto; }
@@ -159,7 +159,7 @@
     padding: 28px 24px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
     text-align: left; font-family: inherit;
   }
-  .home-card:hover:not(:disabled) { border-color: var(--green); box-shadow: 0 2px 12px rgba(42,156,100,0.1); }
+  .home-card:hover:not(:disabled) { border-color: var(--green); }
   .home-card:disabled { opacity: 0.38; cursor: not-allowed; }
   .home-card-icon { font-size: 28px; margin-bottom: 14px; }
   .home-card-title { font-size: 15px; font-weight: 600; color: var(--dark); margin-bottom: 6px; }
@@ -1471,9 +1471,9 @@ function renderFleetUpside() {
   auto.innerHTML =
     _upCard('Active cars', N(cars), 'this fleet, this week') +
     _upCard('Current OH / car', ohPerCar.toFixed(1) + 'h', 'avg per active car') +
-    _upCard('Upside OH', '+' + N(upOH) + 'h', pct.toFixed(0) + '% more', '#1668E3') +
+    _upCard('Upside OH', '+' + N(upOH) + 'h', pct.toFixed(0) + '% more', '#2A9C64') +
     _upCard('Potential OH', N(oh + upOH) + 'h', 'now ' + N(oh) + 'h') +
-    _upCard('Extra finished orders', '+' + N(extraFin), 'at current RPH', '#1668E3') +
+    _upCard('Extra finished orders', '+' + N(extraFin), 'at current RPH', '#2A9C64') +
     _upCard('Potential finished', N(finished + extraFin), 'now ' + N(finished));
   const lic = parseFloat(document.getElementById('fr-licenses').value);
   if (lic > 0) {
@@ -1483,8 +1483,8 @@ function renderFleetUpside() {
     man.innerHTML =
       _upCard('Licences (input)', N(lic), 'at ' + frTarget + 'h/car·week') +
       _upCard('Potential OH', N(potOH) + 'h', 'now ' + N(oh) + 'h') +
-      _upCard('Upside OH', '+' + N(upOH2) + 'h', oh > 0 ? (upOH2 / oh * 100).toFixed(0) + '% more' : '', '#1668E3') +
-      _upCard('Extra finished orders', '+' + N(extra2), 'at current RPH', '#1668E3') +
+      _upCard('Upside OH', '+' + N(upOH2) + 'h', oh > 0 ? (upOH2 / oh * 100).toFixed(0) + '% more' : '', '#2A9C64') +
+      _upCard('Extra finished orders', '+' + N(extra2), 'at current RPH', '#2A9C64') +
       _upCard('Potential finished', N(finished + extra2), 'now ' + N(finished));
   } else {
     man.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Enter a licence count above to see this scenario.</div>';
