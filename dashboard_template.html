@@ -847,8 +847,14 @@ function renderCharts(enriched, periods) {
   renderMetricBar('ohAgreementChart',      periods, bar('cohort','oh'),         AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'oh', ly('oh'));
   renderMetricBar('driversStrategicChart', periods, bar('fleetType','drivers'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, 'drivers', ly('drivers'));
   renderMetricBar('driversAgreementChart', periods, bar('cohort','drivers'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, 'drivers', ly('drivers'));
-  const ovHpd = overallByPeriod(enriched, 'hpd');   // overall avg across ALL cohorts
-  const ovEph = overallByPeriod(enriched, 'eph');
+  // The "Overall" dashed line is the market average across ALL fleets — it keeps
+  // ignoring the FO filter (but respects City + date range), so when you filter
+  // one fleet you can compare it against the all-fleets average.
+  const allFleets = lookerRows
+    .filter(r => isInRange(r.week) && (selectedCity === '__all' || r.city === selectedCity))
+    .map(r => ({ ...r, period: getPeriodKey(r.week) }));
+  const ovHpd = overallByPeriod(allFleets, 'hpd');
+  const ovEph = overallByPeriod(allFleets, 'eph');
   const hpdOpts = { valFmt: v => Math.round(v)+'h', axisFmt: v => Math.round(v)+'h', overall: ovHpd, lastYear: ly('hpd') };
   renderLines('hpdStrategicChart', periods, bar('fleetType','hpd'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, hpdOpts);
   renderLines('hpdAgreementChart', periods, bar('cohort','hpd'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, hpdOpts);
@@ -1067,7 +1073,7 @@ function renderLines(id, periods, byPeriod, groups, colors, hiddenSet, opts) {
   // Overall (all-cohort) reference line — distinct dashed black line.
   if (opts.overall) {
     datasets.push({
-      label: 'Overall', _key: '__overall',
+      label: (selectedFO !== '__all') ? 'Overall (all fleets)' : 'Overall', _key: '__overall',
       data: periods.map(p => { const v = opts.overall[p]; return v > 0 ? +v.toFixed(2) : null; }),
       borderColor: '#111', backgroundColor: '#111', borderWidth: 2, borderDash: [5,4],
       pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true, fill: false,
