@@ -434,6 +434,49 @@ def fetch_mart_daily() -> pd.DataFrame:
     return df
 
 
+# The TRUE driver online hours (incl. idle), city-hour rides mart — this is the
+# reference source (matches the Álvaro dashboard exactly in every period). The
+# fleet-company mart's fleet_online_hours over-reports mid-2025, so OH uses this
+# instead. It is city-level, so in main() it is distributed to the cohort/FO rows
+# by each row's activity share (same as finished orders).
+def fetch_city_oh_weekly() -> pd.DataFrame:
+    """Driver online hours per (week, city) from mart_city_hour_local_rides."""
+    cutoff = f"AND calendar_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+    sql = f"""
+    SELECT
+        DATE_TRUNC('week', calendar_date_local)             AS week_start,
+        city_name,
+        SUM(sum_driver_online_time_seconds_local) / 3600.0  AS online_hours
+    FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides
+    WHERE country_name = 'Spain'
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+      {cutoff}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    print(f"[city_oh] Fetched {len(df):,} week-city rows | Total OH = {df['online_hours'].sum():,.0f}")
+    return df
+
+
+def fetch_city_oh_daily() -> pd.DataFrame:
+    """Driver online hours per (day, city) for the last M30 days (Day view)."""
+    cutoff = f"AND calendar_date_local <= DATE '{DATA_CUTOFF}'" if DATA_CUTOFF else ""
+    sql = f"""
+    SELECT
+        calendar_date_local                                 AS day_date,
+        city_name,
+        SUM(sum_driver_online_time_seconds_local) / 3600.0  AS online_hours
+    FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides
+    WHERE country_name = 'Spain'
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+      {cutoff}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    print(f"[city_oh_daily] Fetched {len(df):,} day-city rows | Total OH = {df['online_hours'].sum():,.0f}")
+    return df
+
+
 def _scale_metric_to_canonical(rows_df, date_col, canon_lookup, target_col, weight_col):
     """Set each row's `target_col` so every (date, company)'s total matches the
     canonical mart value in canon_lookup ({(date10, company_id): total}), split
@@ -761,26 +804,22 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
 
 
 def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: set,
-                         moh_lookup: dict) -> pd.DataFrame:
-    """Per-car OH upside per (week, city, FO, cohort, strategy). For each car we
-    take its weekly online hours scaled to the canonical mart level (same factor
-    used for the fleet OH), then for each target T sum max(0, T - car_online_h).
+                         grp_oh_lookup: dict) -> pd.DataFrame:
+    """Per-car OH upside per (week, city, FO, cohort, strategy). Each car's active
+    hours are scaled up so the group total matches its DISPLAYED online hours
+    (grp_oh_lookup), then for each target T we sum max(0, T - car_online_h).
     Returns one row per group with columns hr60, hr70, … (the extra OH a fleet
-    could do if each of its cars reached that weekly target). moh_lookup:
-    {(week10, company_id): canonical company OH}."""
+    could do if each of its cars reached that weekly target).
+    grp_oh_lookup: {(week10, city, fo, cohort, strategy): displayed group OH}."""
     branded_cars = branded_cars or set()
     if car_df.empty:
         return pd.DataFrame()
 
     # Pass 1 — accumulate ACTIVE OH per DISTINCT car within its group (a car is
     # fragmented across several earnings rows / company_ids; those must be merged
-    # so a busy car is not double-counted as several idle "cars"). Also collect,
-    # per group, the total active OH and the set of companies (for the canonical
-    # scaling factor).
-    car_active  = {}   # (group_key, car_id) -> active OH
-    grp_active  = {}   # group_key -> active OH (Σ over its cars)
-    grp_comps   = {}   # group_key -> set(company_id)
-    comp_active = {}   # (week, company) -> active OH (canonical fallback)
+    # so a busy car is not double-counted as several idle "cars").
+    car_active = {}   # (group_key, car_id) -> active OH
+    grp_active = {}   # group_key -> active OH (Σ over its cars)
     for row in car_df.itertuples(index=False):
         w = str(row.week_start)[:10]
         c = str(row.company_id)
@@ -798,21 +837,14 @@ def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: s
               "" if ag.get("g") is None else str(ag.get("g") or ""), cohort, ag["f"])
         car_active[(gk, carid)] = car_active.get((gk, carid), 0.0) + o
         grp_active[gk] = grp_active.get(gk, 0.0) + o
-        grp_comps.setdefault(gk, set()).add(c)
-        comp_active[(w, c)] = comp_active.get((w, c), 0.0) + o
 
-    # Group canonical OH = Σ company mart OH (fallback to that company's active).
-    grp_canon = {}
-    for gk, comps in grp_comps.items():
-        w = gk[0]
-        grp_canon[gk] = sum(moh_lookup.get((w, c), comp_active.get((w, c), 0.0)) for c in comps)
-
-    # Pass 2 — per distinct car, scale its active OH to the canonical level and
-    # sum the headroom max(0, target - car online hours) into its group.
+    # Pass 2 — per distinct car, scale its active OH to the group's displayed OH
+    # and sum the headroom max(0, target - car online hours) into its group.
     groups = {}
     for (gk, carid), oa in car_active.items():
         ga = grp_active.get(gk, 0.0)
-        online = oa * (grp_canon[gk] / ga) if ga > 0 else oa
+        canon = grp_oh_lookup.get(gk, ga)
+        online = oa * (canon / ga) if ga > 0 else oa
         arr = groups.get(gk)
         if arr is None:
             arr = [0.0] * len(FLEET_TARGETS)
@@ -859,38 +891,38 @@ def generate_html(data: dict) -> str:
 # MAIN
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _distribute_finished(df: pd.DataFrame, date_col: str, fr_lookup: dict) -> pd.DataFrame:
-    """Add a 'rides' column to an aggregated df (needs date_col, city,
-    online_hours) by splitting each (date, city)'s finished rides across its
-    rows in proportion to online hours; a 2nd pass spreads each date's
-    unassigned remainder nationally by OH so the per-date total stays exact.
-    fr_lookup: {(date10, city_name): finished_rides}."""
+def _distribute_city(df: pd.DataFrame, date_col: str, lookup: dict,
+                     weight_col: str, out_col: str) -> pd.DataFrame:
+    """Distribute each (date, city) total in `lookup` across the df's rows in
+    proportion to `weight_col`, writing `out_col`. A 2nd pass spreads each date's
+    unassigned remainder nationally (by weight) so the per-date total stays exact.
+    lookup: {(date10, city_name): total}."""
     if df is None or df.empty:
         if df is not None:
-            df["rides"] = []
+            df[out_col] = []
         return df
-    dk    = df[date_col].astype(str).str[:10].tolist()
-    oh    = [float(x or 0) for x in df["online_hours"].tolist()]
-    ckey  = list(zip(dk, df["city"].tolist()))
-    oh_sum, oh_by_date, assigned_by_date, fetched_by_date = {}, {}, {}, {}
-    for k, o in zip(ckey, oh):
-        oh_sum[k] = oh_sum.get(k, 0.0) + o
-        oh_by_date[k[0]] = oh_by_date.get(k[0], 0.0) + o
-    for (d, _c), v in fr_lookup.items():
-        fetched_by_date[d] = fetched_by_date.get(d, 0.0) + v
-    finished = []
-    for k, o in zip(ckey, oh):
-        tot, denom = fr_lookup.get(k, 0.0), oh_sum.get(k, 0.0)
-        v = tot * (o / denom) if (tot > 0 and denom > 0) else 0.0
-        finished.append(v)
+    dk   = df[date_col].astype(str).str[:10].tolist()
+    w    = [float(x or 0) for x in df[weight_col].tolist()]
+    ckey = list(zip(dk, df["city"].tolist()))
+    w_sum, w_by_date, assigned_by_date, total_by_date = {}, {}, {}, {}
+    for k, x in zip(ckey, w):
+        w_sum[k] = w_sum.get(k, 0.0) + x
+        w_by_date[k[0]] = w_by_date.get(k[0], 0.0) + x
+    for (d, _c), v in lookup.items():
+        total_by_date[d] = total_by_date.get(d, 0.0) + v
+    out = []
+    for k, x in zip(ckey, w):
+        tot, denom = lookup.get(k, 0.0), w_sum.get(k, 0.0)
+        v = tot * (x / denom) if (tot > 0 and denom > 0) else 0.0
+        out.append(v)
         assigned_by_date[k[0]] = assigned_by_date.get(k[0], 0.0) + v
-    for i, (k, o) in enumerate(zip(ckey, oh)):
+    for i, (k, x) in enumerate(zip(ckey, w)):
         d = k[0]
-        res, denom = fetched_by_date.get(d, 0.0) - assigned_by_date.get(d, 0.0), oh_by_date.get(d, 0.0)
+        res, denom = total_by_date.get(d, 0.0) - assigned_by_date.get(d, 0.0), w_by_date.get(d, 0.0)
         if res > 0 and denom > 0:
-            finished[i] += res * (o / denom)
+            out[i] += res * (x / denom)
     df = df.copy()
-    df["rides"] = finished
+    df[out_col] = out
     return df
 
 
@@ -956,10 +988,10 @@ def refine_cutoff_to_complete_week():
     if os.environ.get("DATA_CUTOFF", "").strip():
         return
     df = run_query("""
-        SELECT calendar_date AS d, SUM(fleet_online_hours) AS oh
-        FROM main.mart_models.mart_fleet_company_daily_history
-        WHERE LOWER(company_country_code) = 'es'
-          AND calendar_date >= CURRENT_DATE - INTERVAL 45 DAYS
+        SELECT calendar_date_local AS d, SUM(sum_driver_online_time_seconds_local) AS oh
+        FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides
+        WHERE country_name = 'Spain'
+          AND calendar_date_local >= CURRENT_DATE - INTERVAL 45 DAYS
         GROUP BY 1
     """)
     complete = {str(r.d)[:10] for r in df.itertuples(index=False) if float(r.oh or 0) > 0}
@@ -1013,12 +1045,17 @@ def main():
     # 4. Aggregate weekly OH by company+cohort (per-car cohort split for free floating)
     weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars)
 
-    # 4·MART. Replace the earnings-based proxies with the canonical SUPPLY metrics
-    #   (fleet mart): online hours, GMV and active drivers. Each company's mart
-    #   total is spread across its cohort/city/FO rows in proportion to its active
-    #   online hours, so the split is kept while per-company totals match the mart.
+    # 4·SUPPLY. Headline metrics from canonical marts, spread across the
+    #   cohort/city/FO rows by each row's activity (earnings active OH) share:
+    #   - Online Hours: driver online time from the city-hour RIDES mart
+    #     (reference source; the fleet-company mart over-reports mid-2025).
+    #     Distributed by (week, city).
+    #   - GMV: fleet mart, per company.  - Drivers: distinct weekly, earnings.
+    #   - Finished orders: canonical orders table, by (week, city).
+    city_oh_weekly = fetch_city_oh_weekly()
+    city_oh = {(str(r.week_start)[:10], r.city_name): float(r.online_hours or 0)
+               for r in city_oh_weekly.itertuples(index=False) if r.city_name is not None}
     mart_weekly = fetch_mart_weekly()
-    moh = {(str(r.week_start)[:10], str(r.company_id)): float(r.online_hours) for r in mart_weekly.itertuples(index=False)}
     mgm = {(str(r.week_start)[:10], str(r.company_id)): float(r.gmv_eur)      for r in mart_weekly.itertuples(index=False)}
     # Active drivers: DISTINCT drivers per (week, company) from the earnings table
     # — the mart only has DAILY counts (summing 7 days would ~7x inflate a weekly
@@ -1047,51 +1084,21 @@ def main():
     company_weekly = pd.DataFrame(columns=["week_date", "city", "fo", "invoicing_strategy", "n"])
 
     if not weekly_df.empty:
-        wk = weekly_df["week_date"].astype(str).str[:10]
-        comp = weekly_df["company_id"].astype(str)
-        # Weight for spreading company totals across its rows = active online hours.
+        # Activity weight = earnings active online hours (splits every canonical
+        # total across the cohort/city/FO rows).
         weekly_df["_w"] = weekly_df["online_hours"]
-        # OH & GMV ← canonical mart totals (spread by active-OH share).
-        weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", moh, "online_hours", "_w")
-        weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", mgm, "gmv_eur",      "_w")
-        # Drivers ← distinct weekly count, also spread by active-OH share (so a
-        # company's cohort rows sum to its distinct weekly drivers, no double count).
+        # GMV ← fleet mart per company (spread by active share).
+        weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", mgm, "gmv_eur", "_w")
+        # Drivers ← distinct weekly count (spread by active share; no double count).
         weekly_df["active_drivers"] = 0.0
         weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", dw_lookup, "active_drivers", "_w")
-        print(f"[mart] Weekly after rescale — OH: {weekly_df['online_hours'].sum():,.0f} "
-              f"| GMV: {weekly_df['gmv_eur'].sum():,.0f} | drivers: {weekly_df['active_drivers'].sum():,.0f}")
-
-        # Split each city's finished rides across that city's cohort/FO rows in
-        # proportion to online hours (pass 1). Some (week, city) have finished
-        # orders but no OH rows here — mostly strategic fleets whose Sheet city
-        # differs from their operating city — so their finished would be lost.
-        # Pass 2 spreads each week's UN-assigned remainder across that week's rows
-        # nationally (by OH), so the national weekly total stays EXACT.
-        ckey = list(zip(wk, weekly_df["city"]))
-        oh_sum = {}
-        for k, oh in zip(ckey, weekly_df["online_hours"]):
-            oh_sum[k] = oh_sum.get(k, 0.0) + float(oh or 0)
-        oh_by_week, fetched_by_week = {}, {}
-        for k, oh in zip(ckey, weekly_df["online_hours"]):
-            oh_by_week[k[0]] = oh_by_week.get(k[0], 0.0) + float(oh or 0)
-        for (w, _cn), val in fr_lookup.items():
-            fetched_by_week[w] = fetched_by_week.get(w, 0.0) + val
-
-        finished_col, assigned_by_week = [], {}
-        for k, oh in zip(ckey, weekly_df["online_hours"]):
-            total_fin = fr_lookup.get(k, 0.0)
-            denom = oh_sum.get(k, 0.0)
-            v = total_fin * (float(oh or 0) / denom) if (total_fin > 0 and denom > 0) else 0.0
-            finished_col.append(v)
-            assigned_by_week[k[0]] = assigned_by_week.get(k[0], 0.0) + v
-        # Pass 2: national remainder per week → by OH.
-        for i, (k, oh) in enumerate(zip(ckey, weekly_df["online_hours"])):
-            w = k[0]
-            res = fetched_by_week.get(w, 0.0) - assigned_by_week.get(w, 0.0)
-            denom = oh_by_week.get(w, 0.0)
-            if res > 0 and denom > 0:
-                finished_col[i] += res * (float(oh or 0) / denom)
-        weekly_df["finished_rides"] = finished_col
+        # Online Hours ← city-hour rides mart, distributed by (week, city).
+        weekly_df = _distribute_city(weekly_df, "week_date", city_oh, "_w", "online_hours")
+        # Finished orders ← canonical orders table, distributed by (week, city).
+        weekly_df = _distribute_city(weekly_df, "week_date", fr_lookup, "_w", "finished_rides")
+        print(f"[supply] Weekly — OH: {weekly_df['online_hours'].sum():,.0f} "
+              f"| GMV: {weekly_df['gmv_eur'].sum():,.0f} | drivers: {weekly_df['active_drivers'].sum():,.0f} "
+              f"| finished: {weekly_df['finished_rides'].sum():,.0f}")
 
         # Exact company count (see note above) — before collapsing cohorts.
         company_weekly = (
@@ -1120,7 +1127,13 @@ def main():
               f"| Total finished rides: {weekly_df['rides'].sum():,.0f}")
 
         # Per-car OH upside (headroom to each weekly target) merged onto the rows.
-        hr_df = compute_car_headroom(car_df, agreements, branded_cars, moh)
+        # Each car's active OH is scaled to its group's DISPLAYED online hours.
+        grp_oh = {(str(r.week_date)[:10],
+                   "" if pd.isna(r.city) else str(r.city),
+                   "" if pd.isna(r.fo) else str(r.fo),
+                   r.cohort, r.invoicing_strategy): float(r.online_hours)
+                  for r in weekly_df.itertuples(index=False)}
+        hr_df = compute_car_headroom(car_df, agreements, branded_cars, grp_oh)
         hr_lookup = {}
         for r in hr_df.itertuples(index=False):
             hr_lookup[(str(r.week_date)[:10], r.city or "", r.fo or "", r.cohort, r.invoicing_strategy)] = \
@@ -1136,18 +1149,21 @@ def main():
         for T in FLEET_TARGETS:
             weekly_df[f"hr{T}"] = cols[T]
 
-    # 4b. Aggregate daily by company+cohort (for 'Day' granularity button),
-    #     rescaled to canonical mart OH/GMV/drivers, then distribute daily finished.
+    # 4b. Aggregate daily (for 'Day' granularity): GMV & drivers from the fleet
+    #     mart per company; OH from the city-hour rides mart (by day, city);
+    #     finished from the orders table (by day, city).
     mart_daily = fetch_mart_daily()
-    d_oh = {(str(r.day_date)[:10], str(r.company_id)): float(r.online_hours)   for r in mart_daily.itertuples(index=False)}
     d_gm = {(str(r.day_date)[:10], str(r.company_id)): float(r.gmv_eur)        for r in mart_daily.itertuples(index=False)}
     d_dr = {(str(r.day_date)[:10], str(r.company_id)): float(r.active_drivers) for r in mart_daily.itertuples(index=False)}
-    daily_df = aggregate_daily_by_cohort(m30_df, agreements, d_oh, d_gm, d_dr)
-    finished_daily = fetch_finished_rides_daily()
-    frd_lookup = _finished_lookup(finished_daily, "day_date", cityname_by_id)
-    daily_df = _distribute_finished(daily_df, "day_date", frd_lookup)
-    if not daily_df.empty:
-        print(f"[daily] Total finished rides distributed: {daily_df['rides'].sum():,.0f}")
+    daily_df = aggregate_daily_by_cohort(m30_df, agreements, None, d_gm, d_dr)  # OH left active
+    if daily_df is not None and not daily_df.empty:
+        daily_df["_w"] = daily_df["online_hours"]
+        city_oh_d = {(str(r.day_date)[:10], r.city_name): float(r.online_hours or 0)
+                     for r in fetch_city_oh_daily().itertuples(index=False) if r.city_name is not None}
+        daily_df = _distribute_city(daily_df, "day_date", city_oh_d, "_w", "online_hours")
+        frd_lookup = _finished_lookup(fetch_finished_rides_daily(), "day_date", cityname_by_id)
+        daily_df = _distribute_city(daily_df, "day_date", frd_lookup, "_w", "rides")
+        print(f"[daily] OH {daily_df['online_hours'].sum():,.0f} | finished {daily_df['rides'].sum():,.0f}")
 
     # 4c. Taxi vs VTC GMV per week+city (for the Taxi vs VTC widget)
     taxi_df = fetch_taxi_vtc_weekly()
