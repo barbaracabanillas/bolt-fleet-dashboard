@@ -771,41 +771,56 @@ def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: s
     branded_cars = branded_cars or set()
     if car_df.empty:
         return pd.DataFrame()
-    wk    = car_df["week_start"].astype(str).str[:10].tolist()
-    comp  = car_df["company_id"].astype(str).tolist()
-    oh    = [float(x or 0) for x in car_df["online_hours"].tolist()]
-    carid = car_df["car_id"].tolist()
-    city_col = car_df["city_name"].tolist() if "city_name" in car_df.columns else [None] * len(car_df)
-    # Company scaling factor (canonical / active), same as the OH rescale.
-    act_by_wc = {}
-    for w, c, o in zip(wk, comp, oh):
-        act_by_wc[(w, c)] = act_by_wc.get((w, c), 0.0) + o
-    groups = {}
-    for w, c, o, cid, ccity in zip(wk, comp, oh, carid, city_col):
+
+    # Pass 1 — accumulate ACTIVE OH per DISTINCT car within its group (a car is
+    # fragmented across several earnings rows / company_ids; those must be merged
+    # so a busy car is not double-counted as several idle "cars"). Also collect,
+    # per group, the total active OH and the set of companies (for the canonical
+    # scaling factor).
+    car_active  = {}   # (group_key, car_id) -> active OH
+    grp_active  = {}   # group_key -> active OH (Σ over its cars)
+    grp_comps   = {}   # group_key -> set(company_id)
+    comp_active = {}   # (week, company) -> active OH (canonical fallback)
+    for row in car_df.itertuples(index=False):
+        w = str(row.week_start)[:10]
+        c = str(row.company_id)
+        o = float(row.online_hours or 0)
+        try:
+            carid = int(row.car_id)
+        except (ValueError, TypeError):
+            carid = None
         ag = agreements.get(c) or {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL}
-        if ag["f"] == STRATEGIC_LABEL:
-            cohort = ag["c"]
-        else:
-            try:
-                cint = int(cid)
-            except (ValueError, TypeError):
-                cint = None
-            cohort = FF_BRANDED if cint in branded_cars else FF_NOT_BRANDED
-        city = ag.get("city") or ccity
-        fo   = ag.get("g") or ""
-        strat = ag["f"]
-        mv  = moh_lookup.get((w, c))
-        act = act_by_wc.get((w, c), 0.0)
-        online_car = o * (mv / act) if (mv is not None and act > 0) else o
-        key = (w, "" if city is None or (isinstance(city, float) and pd.isna(city)) else str(city),
-               "" if fo is None else str(fo), cohort, strat)
-        arr = groups.get(key)
+        cohort = ag["c"] if ag["f"] == STRATEGIC_LABEL else \
+                 (FF_BRANDED if carid in branded_cars else FF_NOT_BRANDED)
+        ccity = getattr(row, "city_name", None)
+        city  = ag.get("city") or ccity
+        gk = (w, "" if city is None or (isinstance(city, float) and pd.isna(city)) else str(city),
+              "" if ag.get("g") is None else str(ag.get("g") or ""), cohort, ag["f"])
+        car_active[(gk, carid)] = car_active.get((gk, carid), 0.0) + o
+        grp_active[gk] = grp_active.get(gk, 0.0) + o
+        grp_comps.setdefault(gk, set()).add(c)
+        comp_active[(w, c)] = comp_active.get((w, c), 0.0) + o
+
+    # Group canonical OH = Σ company mart OH (fallback to that company's active).
+    grp_canon = {}
+    for gk, comps in grp_comps.items():
+        w = gk[0]
+        grp_canon[gk] = sum(moh_lookup.get((w, c), comp_active.get((w, c), 0.0)) for c in comps)
+
+    # Pass 2 — per distinct car, scale its active OH to the canonical level and
+    # sum the headroom max(0, target - car online hours) into its group.
+    groups = {}
+    for (gk, carid), oa in car_active.items():
+        ga = grp_active.get(gk, 0.0)
+        online = oa * (grp_canon[gk] / ga) if ga > 0 else oa
+        arr = groups.get(gk)
         if arr is None:
             arr = [0.0] * len(FLEET_TARGETS)
-            groups[key] = arr
+            groups[gk] = arr
         for i, T in enumerate(FLEET_TARGETS):
-            if online_car < T:
-                arr[i] += (T - online_car)
+            if online < T:
+                arr[i] += (T - online)
+
     recs = []
     for (w, city, fo, cohort, strat), arr in groups.items():
         rec = {"week_date": w, "city": city, "fo": fo, "cohort": cohort, "invoicing_strategy": strat}

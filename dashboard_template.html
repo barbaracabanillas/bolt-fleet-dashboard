@@ -1507,8 +1507,8 @@ const FR_METRICS = [
   { k:'eph',   label:'Avg EPH',            color:'#C79A00', type:'line', val:c=>c.netEph>0?c.netEph:null,             fmt:v=>'€'+v.toFixed(2) },
   { k:'drv',   label:'Active drivers',     color:'#2C8C8C', type:'bar',  val:c=>c.avgDrivers!=null?c.avgDrivers:null, fmt:v=>_frN(v) },
   { k:'cars',  label:'Active cars',        color:'#C15B4C', type:'line', val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
-  { k:'ohpd',  label:'OH / driver',        color:'#E08A2B', type:'line', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null,   fmt:v=>_frN(v)+'h' },
-  { k:'wohpd', label:'Weekly OH / driver', color:'#9C8B5A', type:'line', val:c=>c.weeklyOhPerDrv!=null?c.weeklyOhPerDrv:null, fmt:v=>_frN(v)+'h' },
+  { k:'ohpd',  label:'OH / driver',        color:'#E08A2B', type:'line', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null, fmt:v=>_frN(v)+'h' },
+  { k:'ohcar', label:'OH / car',           color:'#9C8B5A', type:'line', val:c=>c.ohPerCar!=null?c.ohPerCar:null,     fmt:v=>_frN(v)+'h' },
   { k:'gmv',   label:'GMV',                color:'#555555', type:'bar',  val:c=>c.gmv>0?c.gmv:null,                   fmt:v=>'€'+_frN(v) },
 ];
 // Delta unit for the table's period-over-period variation column.
@@ -1592,18 +1592,12 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     const avgCars = carByWeek.length ? carByWeek.reduce((a, b) => a + b, 0) / carByWeek.length : null;
     const rides = rows.reduce((s, r) => s + (r.rides || 0), 0);
     const ohPerDriver = (avgDrivers > 0) ? totalOH / avgDrivers : null;
-    const weeklyOhPerDrv = weeks.length
-      ? weeks.reduce((sum, w, i) => {
-          const wOH = rows.filter(r => r.week === w).reduce((s, r) => s + (r.onlineHours || 0), 0);
-          const wD  = drvByWeek[i] || 0;
-          return sum + (wD > 0 ? wOH / wD : 0);
-        }, 0) / weeks.length
-      : null;
+    const ohPerCar    = (avgCars > 0)    ? totalOH / avgCars    : null;
     const ephRows = rows.filter(r => r.eph > 0 && r.onlineHours > 0);
     const ephOH   = ephRows.reduce((s, r) => s + r.onlineHours, 0);
     const netEph  = ephOH > 0 ? ephRows.reduce((s, r) => s + r.onlineHours * r.eph, 0) / ephOH : null;
     const gmv = rows.reduce((s, r) => s + (r.gmv || 0), 0);
-    return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, weeklyOhPerDrv, netEph, gmv };
+    return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, ohPerCar, netEph, gmv };
   });
 
   // ── Detail table: ALWAYS all metrics (independent of the chart chips) ──
