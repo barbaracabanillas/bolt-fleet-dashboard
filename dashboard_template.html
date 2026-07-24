@@ -122,6 +122,18 @@
   .date-range-input { font-size: 11px; font-family: inherit; font-weight: 500; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #fff; padding: 4px 8px; cursor: pointer; outline: none; width: 118px; }
   .filter-select { font-size: 11px; font-family: inherit; font-weight: 500; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; color: #fff; padding: 4px 8px; cursor: pointer; outline: none; max-width: 170px; }
   .filter-select option { color: #111; }
+  /* FO multi-select (checkbox dropdown) */
+  .fo-multi { position: relative; display: inline-block; }
+  .fo-multi-btn { text-align: left; min-width: 130px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fo-multi-panel { display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 60;
+    background: #fff; border: 1px solid #d0d5dd; border-radius: 7px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    padding: 5px; min-width: 220px; max-height: 320px; overflow-y: auto; }
+  .fo-opt { display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; padding: 6px 9px;
+    font-size: 12px; font-family: inherit; color: #111; background: #fff; border: 0; border-radius: 5px;
+    cursor: pointer; text-align: left; }
+  .fo-opt:hover { background: #f1f5f9; }
+  .fo-opt.fo-all { font-weight: 700; border-bottom: 1px solid #eee; border-radius: 0; margin-bottom: 3px; }
+  .fo-opt input { cursor: pointer; margin: 0; }
   th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
   th.sortable:hover { opacity: 0.75; }
   .date-range-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.5); cursor: pointer; }
@@ -202,7 +214,10 @@
       <span class="date-range-label">City</span>
       <select id="filter-city" class="filter-select" onchange="applyCityFilter(this.value)"></select>
       <span class="date-range-label">FO</span>
-      <select id="filter-fo" class="filter-select" onchange="applyFOFilter(this.value)"></select>
+      <div id="fo-multi" class="fo-multi">
+        <button type="button" id="fo-multi-btn" class="filter-select fo-multi-btn" onclick="toggleFOPanel(event)">All FOs  ▾</button>
+        <div id="fo-multi-panel" class="fo-multi-panel"></div>
+      </div>
       <span class="date-range-label">Range</span>
       <input type="date" id="range-from" class="date-range-input" placeholder="From" onchange="applyDateRange()">
       <span class="date-range-sep">→</span>
@@ -217,7 +232,7 @@
     <!-- KPIs -->
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-lbl">Online Hours · last period</div><div class="kpi-val" id="kpi-oh">—</div><div class="kpi-sub" id="kpi-oh-wow">—</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">Avg. EPH</div><div class="kpi-val" id="kpi-eph">—</div><div class="kpi-sub" id="kpi-eph-wow">—</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">EPH bruto</div><div class="kpi-val" id="kpi-eph">—</div><div class="kpi-sub" id="kpi-eph-wow">—</div></div>
       <div class="kpi-card"><div class="kpi-lbl">Active companies</div><div class="kpi-val" id="kpi-companies">—</div><div class="kpi-sub" id="kpi-weeks">—</div></div>
       <div class="kpi-card"><div class="kpi-lbl">Strategic OH</div><div class="kpi-val" id="kpi-strategic">—</div><div class="kpi-sub" id="kpi-strategic-pct">—</div></div>
       <div class="kpi-card"><div class="kpi-lbl">No agreement</div><div class="kpi-val" id="kpi-noag">—</div><div class="kpi-sub" id="kpi-noag-sub">—</div></div>
@@ -320,10 +335,10 @@
         </div>
       </div>
 
-      <!-- Row: Avg. EPH -->
+      <!-- Row: EPH bruto -->
       <div class="chart-card">
         <div class="chart-header">
-          <span class="chart-title">Avg. EPH</span>
+          <span class="chart-title">EPH bruto</span>
           <span class="chart-subtitle">Weighted average · €/hour · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:180px;">
@@ -332,11 +347,31 @@
       </div>
       <div class="chart-card">
         <div class="chart-header">
-          <span class="chart-title">Avg. EPH</span>
+          <span class="chart-title">EPH bruto</span>
           <span class="chart-subtitle">Weighted average · €/hour · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:180px;">
           <canvas id="ephAgreementChart" role="img" aria-label="EPH by cohort"></canvas>
+        </div>
+      </div>
+
+      <!-- Row: RPH (Rides / Hour) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">RPH · Rides / Hour</span>
+          <span class="chart-subtitle">Finished orders ÷ online hours · line · dashed = overall</span>
+        </div>
+        <div style="position:relative;width:100%;height:180px;">
+          <canvas id="rphStrategicChart" role="img" aria-label="Rides per hour by Strategic vs Non strategic"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">RPH · Rides / Hour</span>
+          <span class="chart-subtitle">Finished orders ÷ online hours · line · dashed = overall</span>
+        </div>
+        <div style="position:relative;width:100%;height:180px;">
+          <canvas id="rphAgreementChart" role="img" aria-label="Rides per hour by cohort"></canvas>
         </div>
       </div>
 
@@ -383,7 +418,7 @@
             <th class="r sortable" id="th-oh" onclick="sortTable('oh')">Online Hours</th>
             <th class="r sortable" id="th-period-change" onclick="sortTable('wowAbs')">WoW</th>
             <th class="r sortable" id="th-period-change-pct" onclick="sortTable('wowPct')">WoW %</th>
-            <th class="r sortable" id="th-eph" onclick="sortTable('eph')">Avg. EPH</th>
+            <th class="r sortable" id="th-eph" onclick="sortTable('eph')">EPH bruto</th>
             <th class="r sortable" id="th-drivers" onclick="sortTable('partners')">Drivers</th>
             <th class="r sortable" id="th-gmv" onclick="sortTable('gmv')">GMV</th>
           </tr>
@@ -514,7 +549,9 @@ let frTarget       = 80;   // selected weekly OH-per-car target for the upside t
 let rangeFrom = null;  // 'YYYY-MM-DD' or null (no lower bound)
 let rangeTo   = null;  // 'YYYY-MM-DD' or null (no upper bound)
 let selectedCity = 'Madrid';  // default city; '__all' = all Spain
-let selectedFO   = '__all';   // '__all' = every FO group
+let selectedFOs  = new Set(); // FO multi-select; EMPTY = every FO group
+// A row's FO passes the filter if nothing is selected (All) or it's in the set.
+function foMatch(fo) { return selectedFOs.size === 0 || selectedFOs.has(fo); }
 
 function isInRange(dateStr) {
   if (!rangeFrom && !rangeTo) return true;
@@ -549,7 +586,6 @@ function rerenderActive() {
 
 // ── CITY / FO FILTERS ─────────────────────────────────────────────
 function applyCityFilter(v) { selectedCity = v; refreshFODropdown(); rerenderActive(); }
-function applyFOFilter(v)   { selectedFO   = v; rerenderActive(); }
 
 // Fill the City dropdown from the cities present in the data rows.
 function populateFilters() {
@@ -564,18 +600,48 @@ function populateFilters() {
   refreshFODropdown();
 }
 
-// FO options depend on the selected city (only FOs present in that city).
+// FO is a MULTI-SELECT (checkbox panel): pick any combination of FO groups —
+// e.g. both "Colorado – Core 38" and "Colorado – Resto" to see all Colorado.
+// Empty selection = All FOs. Options depend on the selected city.
+function toggleFOPanel(e) {
+  if (e) e.stopPropagation();
+  const p = document.getElementById('fo-multi-panel');
+  if (p) p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+}
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('fo-multi');
+  const p = document.getElementById('fo-multi-panel');
+  if (p && wrap && !wrap.contains(e.target)) p.style.display = 'none';
+});
+function updateFOButton() {
+  const btn = document.getElementById('fo-multi-btn');
+  if (!btn) return;
+  const n = selectedFOs.size;
+  btn.textContent = (n === 0 ? 'All FOs' : n === 1 ? [...selectedFOs][0] : `${n} FOs selected`) + '  ▾';
+}
+function toggleFO(fo, on) {
+  if (on) selectedFOs.add(fo); else selectedFOs.delete(fo);
+  updateFOButton(); rerenderActive();
+}
+function clearFO() {
+  selectedFOs.clear();
+  document.querySelectorAll('#fo-multi-panel input[type=checkbox]').forEach(c => c.checked = false);
+  updateFOButton(); rerenderActive();
+}
 function refreshFODropdown() {
-  const foSel = document.getElementById('filter-fo');
-  if (!foSel) return;
+  const panel = document.getElementById('fo-multi-panel');
+  if (!panel) return;
   const fos = [...new Set(_weeklyRows
       .filter(r => selectedCity === '__all' || r.city === selectedCity)
       .map(r => r.foGroup).filter(Boolean))].sort();
-  const prev = selectedFO;
-  foSel.innerHTML = '<option value="__all">All FOs</option>' +
-    fos.map(f => `<option value="${f}">${f}</option>`).join('');
-  foSel.value = fos.includes(prev) ? prev : '__all';
-  selectedFO = foSel.value;
+  // Drop any selected FO that no longer exists for this city.
+  [...selectedFOs].forEach(f => { if (!fos.includes(f)) selectedFOs.delete(f); });
+  const esc = s => s.replace(/"/g, '&quot;');
+  panel.innerHTML =
+    `<button type="button" class="fo-opt fo-all" onclick="clearFO()">All FOs</button>` +
+    fos.map(f => `<label class="fo-opt"><input type="checkbox" ${selectedFOs.has(f) ? 'checked' : ''}
+        onchange="toggleFO('${esc(f).replace(/'/g,"\\'")}', this.checked)"><span>${f}</span></label>`).join('');
+  updateFOButton();
 }
 
 let hiddenStrategic = new Set();
@@ -646,8 +712,16 @@ function loadPreloadedData() {
   // Each aggregated row already carries every dimension we need — one row per
   // (period, city, FO, cohort, fleet type). No per-company lookup required.
   const mapRow = r => {
-    const oh  = Number(r.oh) || 0;
-    const gmv = Number(r.g)  || 0;
+    const oh   = Number(r.oh) || 0;
+    const gmv  = Number(r.g)  || 0;
+    const earn = Number(r.e)  || 0;   // NET driver earnings (real: gross − Bolt fees)
+    const gEarn= Number(r.eg) || 0;   // GROSS driver earnings (real, ≈ fare)
+    const bonus= Number(r.b)  || 0;   // driver incentive bonus
+    // Net income on the SAME (canonical) basis as EPH bruto: the fleet keeps its
+    // real take-home share (net/gross) of its canonically-attributed GMV, plus the
+    // incentive bonus. This replicates the official "Net EpH w/ Bonus" per fleet
+    // and stays consistent with EPH bruto (both use the canonical GMV / OH).
+    const netIncome = gmv * (gEarn > 0 ? earn / gEarn : 0) + bonus;
     return {
       week:          (r.w || '').slice(0, 10),
       fleetType:     FLEET_BY_CODE[r.f] || 'Free Floating',
@@ -655,9 +729,13 @@ function loadPreloadedData() {
       foGroup:       r.fo || null,
       city:          r.city || null,
       onlineHours:   oh,
-      // EPH = GMV per online hour (matches the reference dashboard's definition).
+      // EPH bruto = GMV per online hour (official Growth Dashboard / Álvaro def).
       eph:           oh > 0 ? gmv / oh : 0,
+      // EPH neto (con bonus) = driver net income (take-home + bonus) per OH.
+      ephNet:        oh > 0 ? netIncome / oh : 0,
+      netIncome:     netIncome,
       gmv:           gmv,
+      bonus:         bonus,
       activeDrivers: Number(r.d) || 0,
       activeCars:    Number(r.c) || 0,
       rides:         Number(r.r) || 0,
@@ -711,7 +789,7 @@ function enrich() {
     .filter(r => isInRange(r.week))
     .map(r => ({ ...r, period: getPeriodKey(r.week) }))
     .filter(r => (selectedCity === '__all' || r.city === selectedCity)
-              && (selectedFO   === '__all' || r.foGroup === selectedFO));
+              && foMatch(r.foGroup));
 }
 
 // ══ AGGREGATIONS ══
@@ -834,7 +912,7 @@ function updateKPIs(enriched, periods) {
     compCount = companyRows
       .filter(r => isInRange(r.week)
                 && (selectedCity === '__all' || r.city === selectedCity)
-                && (selectedFO   === '__all' || r.foGroup === selectedFO)
+                && foMatch(r.foGroup)
                 && getPeriodKey(r.week) === last)
       .reduce((s,r) => s + (r.companies||0), 0);
   }
@@ -895,9 +973,13 @@ function renderCharts(enriched, periods) {
     .map(r => ({ ...r, period: getPeriodKey(r.week) }));
   const ovHpd = overallByPeriod(allFleets, 'hpd');
   const ovEph = overallByPeriod(allFleets, 'eph');
+  const ovRph = overallByPeriod(allFleets, 'rph');
   const hpdOpts = { valFmt: v => Math.round(v)+'h', axisFmt: v => Math.round(v)+'h', overall: ovHpd, lastYear: ly('hpd') };
   renderLines('hpdStrategicChart', periods, bar('fleetType','hpd'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, hpdOpts);
   renderLines('hpdAgreementChart', periods, bar('cohort','hpd'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, hpdOpts);
+  const rphOpts = { valFmt: v => v.toFixed(2)+' r/h', axisFmt: v => v.toFixed(1), overall: ovRph, lastYear: ly('rph') };
+  renderLines('rphStrategicChart', periods, bar('fleetType','rph'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, rphOpts);
+  renderLines('rphAgreementChart', periods, bar('cohort','rph'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, rphOpts);
   renderLines('ephStrategicChart', periods, aggregateEPHBy(enriched,'fleetType'), STRATEGIC_GROUPS, S_COLORS, hiddenStrategic, { overall: ovEph, lastYear: ly('eph') });
   renderLines('ephAgreementChart', periods, aggregateEPHBy(enriched,'cohort'),    AGREEMENT_TYPES,  A_COLORS, hiddenAgreement, { overall: ovEph, lastYear: ly('eph') });
 }
@@ -909,12 +991,13 @@ function fullOverallByPeriod(metric) {
   const bp = {};
   for (const r of lookerRows) {
     if (selectedCity !== '__all' && r.city !== selectedCity) continue;
-    if (selectedFO   !== '__all' && r.foGroup !== selectedFO) continue;
+    if (!foMatch(r.foGroup)) continue;
     const p = getPeriodKey(r.week);
-    if (!bp[p]) bp[p] = { oh:0, drivers:0, wt:0, ohE:0 };
+    if (!bp[p]) bp[p] = { oh:0, drivers:0, wt:0, ohE:0, rides:0 };
     const b = bp[p];
     b.oh += r.onlineHours || 0;
     b.drivers += r.activeDrivers || 0;
+    b.rides += r.rides || 0;
     if (r.eph > 0) { b.wt += (r.onlineHours||0) * r.eph; b.ohE += r.onlineHours||0; }
   }
   const out = {};
@@ -922,6 +1005,7 @@ function fullOverallByPeriod(metric) {
     out[p] = metric === 'oh'      ? v.oh
            : metric === 'drivers' ? v.drivers
            : metric === 'hpd'     ? (v.drivers > 0 ? v.oh / v.drivers : 0)
+           : metric === 'rph'     ? (v.oh > 0 ? v.rides / v.oh : 0)
            : metric === 'eph'     ? (v.ohE > 0 ? v.wt / v.ohE : 0) : 0;
   }
   return out;
@@ -944,9 +1028,10 @@ function aggregateMetricBy(enriched, dim, metric) {
   const bp = {};
   for (const r of enriched) {
     if (!bp[r.period]) bp[r.period] = {};
-    if (!bp[r.period][r[dim]]) bp[r.period][r[dim]] = { oh:0, drivers:0 };
+    if (!bp[r.period][r[dim]]) bp[r.period][r[dim]] = { oh:0, drivers:0, rides:0 };
     bp[r.period][r[dim]].oh      += r.onlineHours   || 0;
     bp[r.period][r[dim]].drivers += r.activeDrivers || 0;
+    bp[r.period][r[dim]].rides   += r.rides         || 0;
   }
   const out = {};
   for (const [p, gs] of Object.entries(bp)) {
@@ -954,6 +1039,7 @@ function aggregateMetricBy(enriched, dim, metric) {
     for (const [g, v] of Object.entries(gs)) {
       out[p][g] = metric === 'drivers' ? v.drivers
                 : metric === 'hpd'     ? (v.drivers > 0 ? v.oh / v.drivers : 0)
+                : metric === 'rph'     ? (v.oh > 0 ? v.rides / v.oh : 0)
                 : v.oh;
     }
   }
@@ -968,15 +1054,17 @@ function metricAxisTick(m,v) { return m==='oh' ? (v/1000).toFixed(0)+'k' : m==='
 function overallByPeriod(enriched, metric) {
   const bp = {};
   for (const r of enriched) {
-    if (!bp[r.period]) bp[r.period] = { oh:0, drivers:0, wt:0, ohE:0 };
+    if (!bp[r.period]) bp[r.period] = { oh:0, drivers:0, wt:0, ohE:0, rides:0 };
     const b = bp[r.period];
     b.oh += r.onlineHours || 0;
     b.drivers += r.activeDrivers || 0;
+    b.rides += r.rides || 0;
     if (r.eph > 0) { b.wt += (r.onlineHours||0) * r.eph; b.ohE += r.onlineHours||0; }
   }
   const out = {};
   for (const [p, v] of Object.entries(bp)) {
     out[p] = metric === 'hpd' ? (v.drivers > 0 ? v.oh / v.drivers : 0)
+           : metric === 'rph' ? (v.oh > 0 ? v.rides / v.oh : 0)
            : metric === 'eph' ? (v.ohE > 0 ? v.wt / v.ohE : 0) : 0;
   }
   return out;
@@ -1072,7 +1160,7 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
               // The overlay line: just the last-year total, no % / no delta.
               if (ctx.dataset.stack === '_ly') return ` Last year: ${Math.round(val).toLocaleString()}${unit}`;
               const total = periodTotals[ctx.dataIndex] || 1;
-              const pct = (stacked && selectedFO === '__all') ? ` (${((val/total)*100).toFixed(1)}%)` : '';
+              const pct = (stacked && selectedFOs.size === 0) ? ` (${((val/total)*100).toFixed(1)}%)` : '';
               let delta = '';
               if (ctx.dataIndex > 0) {
                 const pv = byPeriod[periods[ctx.dataIndex-1]]?.[g] || 0;
@@ -1081,7 +1169,7 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
               }
               return ` ${g}: ${val.toLocaleString()}${unit}${pct}${delta}`;
             },
-            footer: items => (stacked && selectedFO === '__all')
+            footer: items => (stacked && selectedFOs.size === 0)
               ? `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}${unit}` : '',
           }
         },
@@ -1113,7 +1201,7 @@ function renderLines(id, periods, byPeriod, groups, colors, hiddenSet, opts) {
   // Overall (all-cohort) reference line — distinct dashed black line.
   if (opts.overall) {
     datasets.push({
-      label: (selectedFO !== '__all') ? 'Overall (all fleets)' : 'Overall', _key: '__overall',
+      label: (selectedFOs.size > 0) ? 'Overall (all fleets)' : 'Overall', _key: '__overall',
       data: periods.map(p => { const v = opts.overall[p]; return v > 0 ? +v.toFixed(2) : null; }),
       borderColor: '#111', backgroundColor: '#111', borderWidth: 2, borderDash: [5,4],
       pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true, fill: false,
@@ -1252,7 +1340,7 @@ function renderTable(enriched, periods) {
   setHdr('th-oh',               'Online Hours' + arr('oh'));
   setHdr('th-period-change',     pcl           + arr('wowAbs'));
   setHdr('th-period-change-pct', pcl + ' %'    + arr('wowPct'));
-  setHdr('th-eph',              'Avg. EPH'     + arr('eph'));
+  setHdr('th-eph',              'EPH bruto'     + arr('eph'));
   setHdr('th-drivers',          'Drivers'      + arr('partners'));
   setHdr('th-gmv',              'GMV'          + arr('gmv'));
 
@@ -1419,8 +1507,8 @@ function renderFleetReview() {
   const base = (frGranularity === 'day') ? dailyRows : _weeklyRows;
   const fleetRows = base.filter(r => isInRange(r.week)
       && (selectedCity === '__all' || r.city === selectedCity)
-      && (selectedFO   === '__all' || r.foGroup === selectedFO));
-  renderT1FleetPerf(fleetRows, selectedFO);
+      && foMatch(r.foGroup));
+  renderT1FleetPerf(fleetRows);
   renderFleetUpside();
 }
 
@@ -1456,7 +1544,7 @@ function renderFleetUpside() {
   const sub  = document.getElementById('fr-upside-sub');
   const rows0 = _weeklyRows.filter(r => isInRange(r.week)
       && (selectedCity === '__all' || r.city === selectedCity)
-      && (selectedFO   === '__all' || r.foGroup === selectedFO));
+      && foMatch(r.foGroup));
   if (!rows0.length) { auto.innerHTML = '<div class="no-data" style="font-size:11px">No data.</div>'; man.innerHTML = ''; sub.textContent = ''; return; }
   const lastWk = rows0.map(r => r.week).sort().slice(-1)[0];
   const rows = rows0.filter(r => r.week === lastWk);
@@ -1500,16 +1588,24 @@ function renderFleetUpside() {
 const _frN = v => Math.round(v).toLocaleString('en');
 // `type` = how the metric draws in the trend chart: 'bar' (OH / drivers / GMV,
 // grouped side-by-side, never stacked) or 'line' (everything else).
+// Colour is UNIFIED into concept families so the table dots + trend chart aren't a
+// rainbow: green = supply hours & value (OH / %OH / GMV), blue = trips (finished /
+// RPH), gold = money-per-unit (EPH bruto / neto / ASP), teal = fleet counts
+// (drivers / cars), slate = OH-per-unit ratios. `share` label is set at render time
+// to the selected city ("% of Madrid OH" / "% of Spain OH").
 const FR_METRICS = [
   { k:'oh',    label:'Total OH',           color:'#2A9C64', type:'bar',  val:c=>c.totalOH>0?c.totalOH:null,          fmt:v=>_frN(v)+'h' },
-  { k:'share', label:'% of Spain OH',      color:'#7E6BA6', type:'line', val:c=>c.shareOH!=null?c.shareOH*100:null,   fmt:v=>v.toFixed(1)+'%' },
+  { k:'share', label:'% of Spain OH',      color:'#6FBF97', type:'line', val:c=>c.shareOH!=null?c.shareOH*100:null,   fmt:v=>v.toFixed(1)+'%' },
+  { k:'gmv',   label:'GMV',                color:'#0F5132', type:'bar',  val:c=>c.gmv>0?c.gmv:null,                   fmt:v=>'€'+_frN(v) },
   { k:'rides', label:'Finished orders',    color:'#1668E3', type:'line', val:c=>c.rides>0?c.rides:null,               fmt:v=>_frN(v) },
-  { k:'eph',   label:'Avg EPH',            color:'#C79A00', type:'line', val:c=>c.netEph>0?c.netEph:null,             fmt:v=>'€'+v.toFixed(2) },
+  { k:'rph',   label:'RPH · rides/hour',   color:'#5FA8E0', type:'line', val:c=>c.rph>0?c.rph:null,                   fmt:v=>v.toFixed(2) },
+  { k:'eph',   label:'EPH bruto',          color:'#C79A00', type:'line', val:c=>c.netEph>0?c.netEph:null,             fmt:v=>'€'+v.toFixed(2) },
+  { k:'ephnet',label:'EPH neto (c/bonus)', color:'#8A6D00', type:'line', val:c=>c.netEphNet>0?c.netEphNet:null,       fmt:v=>'€'+v.toFixed(2) },
+  { k:'asp',   label:'ASP · €/ride',       color:'#E0A63B', type:'line', val:c=>c.asp>0?c.asp:null,                   fmt:v=>'€'+v.toFixed(2) },
   { k:'drv',   label:'Active drivers',     color:'#2C8C8C', type:'bar',  val:c=>c.avgDrivers!=null?c.avgDrivers:null, fmt:v=>_frN(v) },
-  { k:'cars',  label:'Active cars',        color:'#C15B4C', type:'line', val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
-  { k:'ohpd',  label:'OH / driver',        color:'#E08A2B', type:'line', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null, fmt:v=>_frN(v)+'h' },
-  { k:'ohcar', label:'OH / car',           color:'#9C8B5A', type:'line', val:c=>c.ohPerCar!=null?c.ohPerCar:null,     fmt:v=>_frN(v)+'h' },
-  { k:'gmv',   label:'GMV',                color:'#555555', type:'bar',  val:c=>c.gmv>0?c.gmv:null,                   fmt:v=>'€'+_frN(v) },
+  { k:'cars',  label:'Active cars',        color:'#1F6F6F', type:'bar',  val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
+  { k:'ohpd',  label:'OH / driver',        color:'#6E7BA6', type:'line', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null, fmt:v=>_frN(v)+'h' },
+  { k:'ohcar', label:'OH / car',           color:'#454E86', type:'line', val:c=>c.ohPerCar!=null?c.ohPerCar:null,     fmt:v=>_frN(v)+'h' },
 ];
 // Delta unit for the table's period-over-period variation column.
 function frDeltaHTML(m, cur, prev) {
@@ -1533,7 +1629,7 @@ function toggleFRMetric(k) {
 
 // ── TABLE 1: Fleet Performance — KPIs over time (metrics = rows, periods = columns).
 //    Plus metric chips + a trend chart for the selected metrics (deep-dive per fleet).
-function renderT1FleetPerf(fleetRows, selectedFO) {
+function renderT1FleetPerf(fleetRows) {
   const thead = document.getElementById('fr-t1-thead');
   const tbody = document.getElementById('fr-t1-tbody');
 
@@ -1568,13 +1664,16 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     ${periods.map(p => `<th style="text-align:right;padding:9px 14px;font-size:11px;font-weight:700;background:var(--dark);color:#fff;white-space:nowrap;">${fmtPeriodCol(p)}</th>`).join('')}
   </tr>`;
 
-  // All-Spain OH per period (denominator for the "% of Spain OH" market-share
-  // metric) — drops the City/FO filter (full country total) but keeps the same
-  // date range as the numerator so partial periods compare like-for-like.
+  // Denominator for the "% of … OH" share metric: total OH of the SELECTED CITY
+  // (all FOs) per period — drops only the FO filter, keeps the City filter. When
+  // City = All, it's the whole-Spain total. The label reflects the scope.
+  const cityScope = (selectedCity === '__all') ? 'Spain' : selectedCity;
+  FR_METRICS.find(m => m.k === 'share').label = `% of ${cityScope} OH`;
   const spainBase = (frGranularity === 'day') ? dailyRows : _weeklyRows;
   const spainByPeriod = {};
   for (const r of spainBase) {
     if (!isInRange(r.week)) continue;
+    if (selectedCity !== '__all' && r.city !== selectedCity) continue;
     const p = frPeriod(r.week);
     spainByPeriod[p] = (spainByPeriod[p] || 0) + (r.onlineHours || 0);
   }
@@ -1596,8 +1695,13 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
     const ephRows = rows.filter(r => r.eph > 0 && r.onlineHours > 0);
     const ephOH   = ephRows.reduce((s, r) => s + r.onlineHours, 0);
     const netEph  = ephOH > 0 ? ephRows.reduce((s, r) => s + r.onlineHours * r.eph, 0) / ephOH : null;
+    // EPH neto (con bonus) = Σ net income (take-home + bonus) ÷ Σ OH.
+    const netIncomeSum = rows.reduce((s, r) => s + (r.netIncome || 0), 0);
+    const netEphNet = totalOH > 0 ? netIncomeSum / totalOH : null;
     const gmv = rows.reduce((s, r) => s + (r.gmv || 0), 0);
-    return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, ohPerCar, netEph, gmv };
+    const rph = totalOH > 0 ? rides / totalOH : null;   // rides per online hour
+    const asp = rides > 0 ? gmv / rides : null;          // avg selling price / ride
+    return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, ohPerCar, netEph, netEphNet, gmv, rph, asp };
   });
 
   // ── Detail table: ALWAYS all metrics (independent of the chart chips) ──
@@ -1624,27 +1728,41 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
   }).join('');
 
   const selected = FR_METRICS.filter(m => frSelectedMetrics.has(m.k));
-  const multi = selected.length > 1;
-
-  // ── Trend chart: OH / Active drivers / GMV as grouped bars, the rest as lines.
-  //    With >1 metric the values are indexed (first period = 100) so different
-  //    units compare on one axis; with 1 metric it shows absolute values. ──
-  const datasets = selected.map(m => {
+  const n = selected.length;
+  // 1 metric  → absolute values on the left axis.
+  // 2 metrics → REAL values, metric 1 on the left axis, metric 2 on the right axis
+  //             (each axis coloured + formatted to its metric).
+  // 3+ metrics → indexed (first period = 100) on one axis — too many units to scale.
+  const dualAxis = (n === 2);
+  const indexed  = (n >= 3);
+  const datasets = selected.map((m, mi) => {
     const raw = cols.map(m.val);
     const base = raw.find(v => v != null && v > 0);
-    const data = multi
+    const data = indexed
       ? raw.map(v => (v != null && base) ? +(v / base * 100).toFixed(1) : null)
       : raw.map(v => v != null ? +v.toFixed(2) : null);
     const isBar = m.type === 'bar';
     return { type: m.type, label: m.label, data, _raw: raw, _fmt: m.fmt,
+      yAxisID: dualAxis ? (mi === 0 ? 'y' : 'y1') : 'y',
       borderColor: m.color, backgroundColor: isBar ? m.color + 'CC' : m.color + '22',
       borderWidth: isBar ? 0 : 2.5, borderRadius: isBar ? 3 : 0,
       pointRadius: isBar ? 0 : (periods.length < 12 ? 3 : 0), pointHoverRadius: 5,
       tension: 0.3, spanGaps: true, fill: false };
   });
-  document.getElementById('fr-chart-subtitle').textContent = multi
-    ? 'indexed — first period = 100 (compares growth across metrics)'
+  document.getElementById('fr-chart-subtitle').textContent =
+      indexed  ? 'indexed — first period = 100 (3+ metrics can’t share a scale)'
+    : dualAxis ? `left: ${selected[0].label}  ·  right: ${selected[1].label}`
     : (selected[0] ? selected[0].label + ' · absolute values' : '');
+  const scales = {
+    x: { stacked: false, grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa', maxRotation: 45, autoSkip: true, maxTicksLimit: 16 } },
+    y: { stacked: false, position: 'left', border: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' },
+      ticks: { font: { size: 10, family: 'Inter' }, color: dualAxis ? selected[0].color : '#aaa',
+        callback: v => indexed ? v : (selected[0] ? selected[0].fmt(v) : v) } },
+  };
+  if (dualAxis) {
+    scales.y1 = { stacked: false, position: 'right', border: { display: false }, grid: { drawOnChartArea: false },
+      ticks: { font: { size: 10, family: 'Inter' }, color: selected[1].color, callback: v => selected[1].fmt(v) } };
+  }
   if (charts['frMetricChart']) charts['frMetricChart'].destroy();
   charts['frMetricChart'] = new Chart(document.getElementById('frMetricChart'), {
     type: 'bar',
@@ -1660,12 +1778,7 @@ function renderT1FleetPerf(fleetRows, selectedFO) {
           return rawv == null ? '' : ` ${ctx.dataset.label}: ${ctx.dataset._fmt(rawv)}`;
         } } },
       },
-      scales: {
-        x: { stacked: false, grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa', maxRotation: 45, autoSkip: true, maxTicksLimit: 16 } },
-        y: { stacked: false, border: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' },
-          ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa',
-            callback: v => multi ? v : (selected[0] ? selected[0].fmt(v) : v) } },
-      }
+      scales,
     }
   });
 }

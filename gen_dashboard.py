@@ -85,6 +85,29 @@ VALID_COHORTS = list(COHORT_STRATEGIC.values()) + [FF_BRANDED, FF_NOT_BRANDED]
 # a fleet's upside: for each car, headroom = max(0, target - car's weekly OH).
 FLEET_TARGETS = [60, 70, 80, 90, 100]
 
+# ── COLORADO "Core 38" ───────────────────────────────────────────────────────
+# Colorado (Bolt's 100%-captive fleet) = FO "DOUBLECAB (SPV)". Within it, 38
+# "first historical" licences are tracked apart. Tracking is by LICENCE (Card
+# Transport Licence Number), NOT plate/car — a crashed car re-plated under the
+# same licence keeps counting. These were resolved once from the 38 plates and
+# are a FIXED set. Matching is normalised (upper-case, alphanumeric only) because
+# dim_car licence values carry stray dashes / tabs (e.g. "5457-NGX\t").
+COLORADO_FO = "DOUBLECAB (SPV)"
+CORE38_FO   = "Colorado – Core 38"
+RESTO_FO    = "Colorado – Resto"
+_CORE38_LICENCES_RAW = [
+    "12243789","12252139","12243798","5375-NGX","11935647","11956810","5453-NGX",
+    "5457-NGX","12297189","12297108","12134650","2577-NGY","12252140","12253189",
+    "11975824","12134657","12085904","12204321","12253183","00010086","12243802",
+    "12265011","12252154","12378120","5357-NGX","12252142","2582-NGY","11957905",
+    "12253178","5338-NGX","5421-NGX","12303299","12178262","11959022","5324-NGX",
+    "12134645","12283183","12422069",
+]
+import re as _re
+COLORADO_CORE38_LICENCES = {
+    _re.sub(r"[^A-Z0-9]", "", s.upper()) for s in _CORE38_LICENCES_RAW
+}
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # DATABRICKS CONNECTION
@@ -294,7 +317,12 @@ def fetch_car_weekly_data() -> pd.DataFrame:
         city_id,
         city_name,
         COUNT(DISTINCT date_hour_ts_local)                        AS online_hours,
-        SUM(rides_driver_total_earnings_with_vat_eur_local)       AS earnings_eur,
+        -- NET driver earnings (take-home) = gross earnings − Bolt fees/commission.
+        -- driver_total_earnings alone is ~the gross fare (≈GMV); the fee must be
+        -- netted out so EPH neto reflects what the driver actually keeps.
+        SUM(rides_driver_total_earnings_with_vat_eur_local
+            - COALESCE(rides_total_fee_with_vat_eur_local, 0))    AS earnings_eur,
+        SUM(rides_driver_total_earnings_with_vat_eur_local)       AS gross_earnings_eur,
         SUM(rides_gmv_before_discounts_billing_with_vat_eur_local) AS gmv_eur
     FROM main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
     WHERE country_id = 67   -- Spain (all cities)
@@ -311,15 +339,25 @@ def fetch_car_weekly_data() -> pd.DataFrame:
     return df
 
 
-def fetch_m30_data() -> pd.DataFrame:
-    """Daily company-level data for the last 30 days (M30 section + Daily granularity view)."""
+def fetch_m30_data(core38_ids: set = None) -> pd.DataFrame:
+    """Daily company-level data for the last 30 days (Daily granularity view).
+    Also carries `is_core38` (1 if the car is one of the Colorado Core-38 licences)
+    so the Day view can split Colorado into Core 38 vs Resto — that split is per
+    car, and this is the only place daily data sees car_id."""
+    core38_ids = core38_ids or set()
+    core38_clause = (
+        "CASE WHEN car_id IN (" + ",".join(str(i) for i in core38_ids) + ") THEN 1 ELSE 0 END"
+    ) if core38_ids else "0"
     sql = f"""
     SELECT
         calendar_date_local                                                    AS date,
         COALESCE(company_id, -1)                                               AS company_id,
+        {core38_clause}                                                        AS is_core38,
         COUNT(DISTINCT CONCAT(CAST(car_id AS STRING), '|',
               CAST(date_hour_ts_local AS STRING)))                             AS online_hours,
-        SUM(rides_driver_total_earnings_with_vat_eur_local)                    AS earnings_eur,
+        SUM(rides_driver_total_earnings_with_vat_eur_local
+            - COALESCE(rides_total_fee_with_vat_eur_local, 0))                 AS earnings_eur,
+        SUM(rides_driver_total_earnings_with_vat_eur_local)                    AS gross_earnings_eur,
         SUM(rides_gmv_before_discounts_billing_with_vat_eur_local)             AS gmv_eur,
         COUNT(DISTINCT car_id)                                                 AS active_cars,
         COUNT(DISTINCT driver_id)                                              AS active_drivers
@@ -327,7 +365,7 @@ def fetch_m30_data() -> pd.DataFrame:
     WHERE country_id = 67   -- Spain (all cities)
       AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
       {_CUTOFF_CLAUSE}
-    GROUP BY 1, 2
+    GROUP BY 1, 2, 3
     """
     df = run_query(sql)
     print(f"[m30] Fetched {len(df):,} rows")
@@ -352,16 +390,84 @@ def fetch_drivers_weekly() -> pd.DataFrame:
     return df
 
 
-# Canonical SUPPLY metrics from the city-hour rides mart — the SAME source as the
-# reference (Álvaro) dashboard, so OH, GMV and Finished orders match it exactly in
-# every period (the fleet-company mart's online hours over-report mid-2025). These
-# are city-level, so in main() they are distributed to the cohort/FO rows by each
-# row's activity share.
+# Driver INCENTIVE BONUS per company (from the supply-spend mart). This is the
+# add-on to driver earnings that turns "net EPH" into the official Growth
+# Dashboard "Net EpH w/ Bonus" metric. `total_driver_bonus_with_vat_eur` matches
+# our earnings (also WITH VAT). Kept as a real per-company sum (not distributed),
+# on the SAME basis as earnings_eur, then split across a company's cohort rows by
+# activity share in main() — exactly like Active drivers.
+_BONUS_TABLE = "main.mart_models.mart_driver_city_hour_supply_spend_local"
+
+def fetch_bonus_weekly() -> pd.DataFrame:
+    """Driver incentive bonus per (week, company) — Spain."""
+    sql = f"""
+    SELECT DATE_TRUNC('week', calendar_date_local)  AS week_start,
+           COALESCE(company_id, -1)                 AS company_id,
+           SUM(total_driver_bonus_with_vat_eur)     AS bonus_eur
+    FROM {_BONUS_TABLE}
+    WHERE country_id = 67   -- Spain (all cities)
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    df["bonus_eur"] = df["bonus_eur"].astype(float)   # Databricks returns Decimal
+    print(f"[bonus_weekly] Fetched {len(df):,} company-week rows | bonus={df['bonus_eur'].sum():,.0f}")
+    return df
+
+
+def fetch_bonus_daily() -> pd.DataFrame:
+    """Driver incentive bonus per (day, company) — Spain, last M30 days."""
+    sql = f"""
+    SELECT calendar_date_local                      AS date,
+           COALESCE(company_id, -1)                 AS company_id,
+           SUM(total_driver_bonus_with_vat_eur)     AS bonus_eur
+    FROM {_BONUS_TABLE}
+    WHERE country_id = 67   -- Spain (all cities)
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    df["bonus_eur"] = df["bonus_eur"].astype(float)   # Databricks returns Decimal
+    print(f"[bonus_daily] Fetched {len(df):,} company-day rows")
+    return df
+
+
+def fetch_core38_car_ids() -> set:
+    """Resolve the 38 Colorado 'Core' licences → the set of car_ids currently
+    carrying them (dim_car). A licence can map to several car_ids over time
+    (crash → new car, same licence); all are captured so history follows the
+    licence. Matching is normalised (upper-case alphanumeric)."""
+    lics = "','".join(sorted(COLORADO_CORE38_LICENCES))
+    sql = f"""
+        SELECT DISTINCT car_id,
+               REGEXP_REPLACE(UPPER(COALESCE(car_transport_licence_number,'')),'[^A-Z0-9]','') AS lic
+        FROM main.core_models.dim_car
+        WHERE REGEXP_REPLACE(UPPER(COALESCE(car_transport_licence_number,'')),'[^A-Z0-9]','') IN ('{lics}')
+    """
+    df = run_query(sql)
+    ids = {int(x) for x in df["car_id"].dropna().tolist()}
+    found = set(df["lic"].tolist())
+    missing = COLORADO_CORE38_LICENCES - found
+    print(f"[core38] {len(ids)} car_ids across {len(found)}/{len(COLORADO_CORE38_LICENCES)} licences"
+          + (f" | ⚠️ licences with no car: {sorted(missing)}" if missing else ""))
+    return ids
+
+
+# Canonical SUPPLY metrics from the city-hour rides mart. GMV & Finished match the
+# reference (Álvaro) dashboard exactly. ONLINE HOURS here EXCLUDE the "busy"
+# (unavailable) state — i.e. only order-time + waiting-for-orders time — so our OH
+# matches the fleet business-review convention (Gonzalo). The official
+# sum_driver_online_time_seconds also adds ~9% "busy"; we deliberately drop it.
+# These are city-level, so in main() they are distributed to the cohort/FO rows by
+# each row's activity share.
 _CITY_SUPPLY_SELECT = """
-        SUM(a.sum_driver_online_time_seconds_local) / 3600.0                             AS online_hours,
+        SUM(a.sum_driver_order_time_seconds_local
+            + a.sum_driver_waiting_orders_time_seconds_local) / 3600.0                   AS online_hours,
         SUM(CAST(a.rides_gmv_before_discounts_eur_local AS DOUBLE))                      AS gmv_eur,
         SUM(a.rides_orders_in_finished_state_local)                                      AS finished
-    FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides a
+    FROM main.mart_models.mart_city_hour_local_rides a
     WHERE a.country_name = 'Spain'
 """
 
@@ -461,15 +567,22 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
     for _, row in m30_df.iterrows():
         cid = str(row["company_id"])
         ag  = agreements.get(cid, {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL})
+        fo = ag.get("g") or ""
+        # Colorado split for the Day view (is_core38 comes from m30's car-level flag).
+        if fo == COLORADO_FO:
+            fo = CORE38_FO if int(row.get("is_core38", 0) or 0) == 1 else RESTO_FO
         rows.append({
             "day_date":           str(row["date"]),
             "company_id":         cid,
             "cohort":             ag["c"],
             "invoicing_strategy": ag["f"],
             "city":               ag.get("city"),
-            "fo":                 ag.get("g") or "",
+            "fo":                 fo,
             "online_hours":       row["online_hours"],
             "gmv_eur":            row["gmv_eur"],
+            "earnings_eur":       row.get("earnings_eur", 0),
+            "gross_earnings_eur": row.get("gross_earnings_eur", 0),
+            "bonus_eur":          row.get("bonus_eur", 0),
             "active_drivers":     row.get("active_drivers", 0),
             "active_cars":        row.get("active_cars", 0),
         })
@@ -480,6 +593,9 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
                  as_index=False, dropna=False)
         .agg(online_hours=("online_hours", "sum"),
              gmv_eur=("gmv_eur", "sum"),
+             earnings_eur=("earnings_eur", "sum"),
+             gross_earnings_eur=("gross_earnings_eur", "sum"),
+             bonus_eur=("bonus_eur", "sum"),
              active_drivers=("active_drivers", "sum"),
              active_cars=("active_cars", "sum"),
              n=("company_id", "nunique"))
@@ -609,9 +725,24 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: di
 # AGGREGATE WEEKLY OH PER COMPANY+COHORT  (for the charts)
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _split_colorado_fo(fo, car_id, core38_ids):
+    """Within Colorado (FO 'DOUBLECAB (SPV)'), route each car to 'Colorado – Core
+    38' vs 'Colorado – Resto' by whether the car's licence is one of the fixed 38
+    (core38_ids). Every other FO passes through unchanged — Core 38 is only counted
+    inside Colorado (decision 2a)."""
+    if fo != COLORADO_FO:
+        return fo
+    try:
+        cid = int(car_id)
+    except (ValueError, TypeError):
+        cid = None
+    return CORE38_FO if cid in core38_ids else RESTO_FO
+
+
 def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
                                 agreements: dict,
-                                branded_cars: set = None) -> pd.DataFrame:
+                                branded_cars: set = None,
+                                core38_ids: set = None) -> pd.DataFrame:
     """
     Roll up car-level weekly data to company+cohort level. Cohort is assigned
     PER CAR: strategic companies use the Sheet cohort; non-strategic (free
@@ -629,6 +760,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
                      city, fo, online_hours, earnings_eur, gmv_eur, active_cars
     """
     branded_cars = branded_cars or set()
+    core38_ids   = core38_ids or set()
     total_oh_input = car_df["online_hours"].sum()
     print(f"[aggregate] Total OH in car_df before aggregation: {total_oh_input:,.0f}")
 
@@ -636,18 +768,18 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     rows = []
     for _, row in car_df.iterrows():
         cid = str(row["company_id"])
+        try:
+            car_id = int(row["car_id"])
+        except (ValueError, TypeError):
+            car_id = None
         ag  = agreements.get(cid) or {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL}
         if ag["f"] == STRATEGIC_LABEL:
             cohort = ag["c"]
         else:
             # Free floating → split by the car's admin branded tag
-            try:
-                car_id = int(row["car_id"])
-            except (ValueError, TypeError):
-                car_id = None
             cohort = FF_BRANDED if car_id in branded_cars else FF_NOT_BRANDED
         city = ag.get("city") or (row["city_name"] if has_city_col else None)
-        fo   = ag.get("g") or ""
+        fo   = _split_colorado_fo(ag.get("g") or "", car_id, core38_ids)
         rows.append({
             "week_date":          row["week_start"],
             "company_id":         cid,
@@ -658,6 +790,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
             "fo":                 fo,
             "online_hours":       row["online_hours"],
             "earnings_eur":       row["earnings_eur"],
+            "gross_earnings_eur": row["gross_earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
         })
 
@@ -675,6 +808,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
                  as_index=False, dropna=False)
         .agg(online_hours=("online_hours", "sum"),
              earnings_eur=("earnings_eur", "sum"),
+             gross_earnings_eur=("gross_earnings_eur", "sum"),
              gmv_eur=("gmv_eur", "sum"),
              active_cars=("car_id", "nunique"))
     )
@@ -684,7 +818,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
 
 
 def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: set,
-                         grp_oh_lookup: dict) -> pd.DataFrame:
+                         grp_oh_lookup: dict, core38_ids: set = None) -> pd.DataFrame:
     """Per-car OH upside per (week, city, FO, cohort, strategy). Each car's active
     hours are scaled up so the group total matches its DISPLAYED online hours
     (grp_oh_lookup), then for each target T we sum max(0, T - car_online_h).
@@ -692,6 +826,7 @@ def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: s
     could do if each of its cars reached that weekly target).
     grp_oh_lookup: {(week10, city, fo, cohort, strategy): displayed group OH}."""
     branded_cars = branded_cars or set()
+    core38_ids   = core38_ids or set()
     if car_df.empty:
         return pd.DataFrame()
 
@@ -713,8 +848,9 @@ def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: s
                  (FF_BRANDED if carid in branded_cars else FF_NOT_BRANDED)
         ccity = getattr(row, "city_name", None)
         city  = ag.get("city") or ccity
+        fo = _split_colorado_fo("" if ag.get("g") is None else str(ag.get("g") or ""), carid, core38_ids)
         gk = (w, "" if city is None or (isinstance(city, float) and pd.isna(city)) else str(city),
-              "" if ag.get("g") is None else str(ag.get("g") or ""), cohort, ag["f"])
+              fo, cohort, ag["f"])
         car_active[(gk, carid)] = car_active.get((gk, carid), 0.0) + o
         grp_active[gk] = grp_active.get(gk, 0.0) + o
 
@@ -832,6 +968,8 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "fo":   "" if pd.isna(fo) else str(fo),
             "oh":   round(float(d.get("online_hours") or 0)),
             "e":    round(float(d.get("earnings_eur") or 0)),
+            "eg":   round(float(d.get("gross_earnings_eur") or 0)),
+            "b":    round(float(d.get("bonus_eur") or 0)),
             "g":    round(float(d.get("gmv_eur") or 0)),
             "d":    int(d.get("active_drivers") or 0),
             "c":    int(d.get("active_cars") or 0),
@@ -856,7 +994,7 @@ def refine_cutoff_to_complete_week():
         return
     df = run_query("""
         SELECT calendar_date_local AS d, SUM(sum_driver_online_time_seconds_local) AS oh
-        FROM hive_metastore.mart_models_spark.mart_city_hour_local_rides
+        FROM main.mart_models.mart_city_hour_local_rides
         WHERE country_name = 'Spain'
           AND calendar_date_local >= CURRENT_DATE - INTERVAL 45 DAYS
         GROUP BY 1
@@ -896,8 +1034,25 @@ def main():
     fo_map     = load_fo_group_map(FO_GROUPS_CSV)
 
     # 2. Fetch data from Databricks
+    core38_ids   = fetch_core38_car_ids()   # Colorado "Core 38" licences → car_ids
     car_df       = fetch_car_weekly_data()
-    m30_df       = fetch_m30_data()
+    m30_df       = fetch_m30_data(core38_ids)
+    # Attach driver bonus per (day, company). m30 is split by is_core38, so a
+    # company can have two rows per day — spread its bonus across them by OH share
+    # (otherwise the merge would duplicate the full bonus onto each).
+    if not m30_df.empty:
+        _bonus_d = fetch_bonus_daily()
+        m30_df["company_id"] = m30_df["company_id"].astype("int64")
+        m30_df["date"] = m30_df["date"].astype(str)
+        if not _bonus_d.empty:
+            _bonus_d["company_id"] = _bonus_d["company_id"].astype("int64")
+            _bonus_d["date"] = _bonus_d["date"].astype(str)
+            m30_df = m30_df.merge(_bonus_d, on=["date", "company_id"], how="left")
+        if "bonus_eur" not in m30_df.columns:
+            m30_df["bonus_eur"] = 0.0
+        m30_df["bonus_eur"] = m30_df["bonus_eur"].fillna(0.0)
+        _grp_oh = m30_df.groupby(["date", "company_id"])["online_hours"].transform("sum")
+        m30_df["bonus_eur"] = m30_df["bonus_eur"] * (m30_df["online_hours"] / _grp_oh.where(_grp_oh > 0, 1))
     branded_cars = fetch_branded_cars()
 
     # 3. Build EMBEDDED_AGREEMENTS (one entry per company). A non-strategic company
@@ -910,7 +1065,7 @@ def main():
     agreements = build_embedded_agreements(car_df, cohort_map, fo_map, branded_companies)
 
     # 4. Aggregate weekly OH by company+cohort (per-car cohort split for free floating)
-    weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars)
+    weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars, core38_ids)
 
     # 4·SUPPLY. OH, GMV, Finished orders and Active partners ALL come from the
     #   city-hour rides mart (the SAME source as the reference dashboard → they
@@ -931,6 +1086,11 @@ def main():
         (str(r.week_start)[:10], str(r.company_id)): int(r.active_drivers)
         for r in fetch_drivers_weekly().itertuples(index=False)
     }
+    # Driver incentive bonus per (week, company) — numerator add-on for Net EpH.
+    bonus_lookup = {
+        (str(r.week_start)[:10], str(r.company_id)): float(r.bonus_eur or 0)
+        for r in fetch_bonus_weekly().itertuples(index=False)
+    }
 
     company_weekly = pd.DataFrame(columns=["week_date", "city", "fo", "invoicing_strategy", "n"])
 
@@ -940,6 +1100,9 @@ def main():
         # Active drivers ← distinct weekly count (spread by active share; no double count).
         weekly_df["active_drivers"] = 0.0
         weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", dw_lookup, "active_drivers", "_w")
+        # Driver bonus ← per-company total, split across its rows by active share.
+        weekly_df["bonus_eur"] = 0.0
+        weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", bonus_lookup, "bonus_eur", "_w")
         # OH / GMV / Finished ← city-hour mart, distributed by (week, city).
         weekly_df = _distribute_city(weekly_df, "week_date", city_oh,  "_w", "online_hours")
         weekly_df = _distribute_city(weekly_df, "week_date", city_gmv, "_w", "gmv_eur")
@@ -963,7 +1126,9 @@ def main():
                      as_index=False, dropna=False)
             .agg(online_hours=("online_hours", "sum"),
                  earnings_eur=("earnings_eur", "sum"),
+                 gross_earnings_eur=("gross_earnings_eur", "sum"),
                  gmv_eur=("gmv_eur", "sum"),
+                 bonus_eur=("bonus_eur", "sum"),
                  rides=("finished_rides", "sum"),
                  active_cars=("active_cars", "sum"),
                  active_drivers=("active_drivers", "sum"),
@@ -980,7 +1145,7 @@ def main():
                    "" if pd.isna(r.fo) else str(r.fo),
                    r.cohort, r.invoicing_strategy): float(r.online_hours)
                   for r in weekly_df.itertuples(index=False)}
-        hr_df = compute_car_headroom(car_df, agreements, branded_cars, grp_oh)
+        hr_df = compute_car_headroom(car_df, agreements, branded_cars, grp_oh, core38_ids)
         hr_lookup = {}
         for r in hr_df.itertuples(index=False):
             hr_lookup[(str(r.week_date)[:10], r.city or "", r.fo or "", r.cohort, r.invoicing_strategy)] = \
