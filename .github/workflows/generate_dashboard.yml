@@ -2,7 +2,7 @@ name: 🔄 Generar Dashboard
 
 on:
   schedule:
-    - cron: '0 5 * * 1'   # Lunes 5:00 UTC = 7:00 hora peninsular (verano)
+    - cron: '0 4 * * 1'   # Lunes 4:00 UTC = 6:00 hora peninsular (verano)
   workflow_dispatch:        # permite lanzarlo manualmente desde GitHub
 
 permissions:
