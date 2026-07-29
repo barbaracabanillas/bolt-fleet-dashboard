@@ -13,7 +13,7 @@ CLASSIFICATION RULE (per company):
         cohort taken straight from the Sheet (Branding / Fleet Agreement /
         Locked Supply / No Agreement).
   - Any other company (different fleet type, or absent from the Sheet)  →
-        NON-STRATEGIC, cohort "All Free floating (Branded TBD)".
+        FREE FLOATING, cohort "All Free floating (Branded TBD)".
 """
 
 import os
@@ -51,10 +51,10 @@ _CUTOFF_CLAUSE       = f"AND calendar_date_local <= DATE '{DATA_CUTOFF}'" if DAT
 # The Google Sheet ("Cohorts by Grouping") is the SOURCE OF TRUTH for grouping,
 # fleet type and cohort. A company is STRATEGIC only if it appears in the Sheet
 # with Fleet Type == "Strategic"; every other company (incl. those absent from
-# the Sheet) is NON-STRATEGIC and gets the catch-all cohort below.
+# the Sheet) is FREE FLOATING and gets the catch-all cohort below.
 STRATEGIC_LABEL     = "Strategic"
-# Internal fleet-type value kept as "Free Floating" (the left chart's data key);
-# it is DISPLAYED as "Non strategic" in the dashboard legend.
+# Free Floating is the team's first-level distinction alongside Strategic —
+# shown as-is in the dashboard (no "Non strategic" relabeling).
 NONSTRATEGIC_LABEL  = "Free Floating"
 
 # ── COHORTS (right-hand "Cohort" chart) ──────────────────────────────────────
@@ -629,7 +629,7 @@ def fetch_branded_cars() -> set:
     definition: a branding tag in state 'approved' whose period is active right now
     (start_date <= today <= end_date).
     Source: main.stg_models.stg_car_branding_periods_car_branding_periods.
-    Used to split the non-strategic fleet into Branded vs Not-branded PER CAR.
+    Used to split the free floating fleet into Branded vs Not-branded PER CAR.
     """
     sql = """
     SELECT DISTINCT car_id
@@ -706,7 +706,7 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: di
             }
             n_strategic += 1
         else:
-            # Non-strategic (not in the Sheet as Strategic) → Free floating.
+            # Not Strategic (not in the Sheet as Strategic) → Free Floating.
             # Branded vs not-branded comes from Databricks branding data.
             agreements[cid_str] = {
                 "n": (info or {}).get("name", ""),
@@ -717,7 +717,7 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: di
             }
 
     print(f"[agreements] Built {len(agreements)} company entries "
-          f"({n_strategic} strategic, {len(agreements) - n_strategic} non-strategic)")
+          f"({n_strategic} strategic, {len(agreements) - n_strategic} free floating)")
     return agreements
 
 
@@ -745,10 +745,10 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
                                 core38_ids: set = None) -> pd.DataFrame:
     """
     Roll up car-level weekly data to company+cohort level. Cohort is assigned
-    PER CAR: strategic companies use the Sheet cohort; non-strategic (free
-    floating) cars are split into Branded vs Not-branded by the admin
-    is_car_branded tag (branded_cars). So a free-floating company can appear in
-    both 'Free floating - Branded' and 'Free floating - Not branded'.
+    PER CAR: strategic companies use the Sheet cohort; free floating cars
+    are split into Branded vs Not-branded by the admin is_car_branded tag
+    (branded_cars). So a free floating company can appear in both
+    'Free floating - Branded' and 'Free floating - Not branded'.
 
     This is STAGE 1 only: it returns per-company rows (still keyed by
     company_id) carrying city + FO, so active_drivers can be merged per
@@ -1055,7 +1055,7 @@ def main():
         m30_df["bonus_eur"] = m30_df["bonus_eur"] * (m30_df["online_hours"] / _grp_oh.where(_grp_oh > 0, 1))
     branded_cars = fetch_branded_cars()
 
-    # 3. Build EMBEDDED_AGREEMENTS (one entry per company). A non-strategic company
+    # 3. Build EMBEDDED_AGREEMENTS (one entry per company). A free floating company
     #    counts as 'Free floating - Branded' if any of its cars was branded.
     _car_ids = pd.to_numeric(car_df["car_id"], errors="coerce")
     branded_companies = set(

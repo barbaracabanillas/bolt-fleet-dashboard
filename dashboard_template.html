@@ -210,6 +210,7 @@
   <div class="tab-nav">
     <button class="tab-btn active" onclick="switchTab('performance',this)">Performance</button>
     <button class="tab-btn" onclick="switchTab('fleet',this)">Fleet Review</button>
+    <button class="tab-btn" onclick="switchTab('comparison',this)">Fleets Comparison</button>
     <div class="date-range-wrap">
       <span class="date-range-label">City</span>
       <select id="filter-city" class="filter-select" onchange="applyCityFilter(this.value)"></select>
@@ -265,7 +266,7 @@
 
       <!-- Row: column headers -->
       <div class="chart-col-header">
-        Strategic vs Non strategic
+        Strategic vs Free Floating
         <div class="chart-col-header-divider"></div>
       </div>
       <div class="chart-col-header">
@@ -281,7 +282,7 @@
         </div>
         <div class="legend-row" id="legend-strategic"></div>
         <div style="position:relative;width:100%;height:220px;">
-          <canvas id="ohStrategicChart" role="img" aria-label="Online hours by Strategic vs Non strategic"></canvas>
+          <canvas id="ohStrategicChart" role="img" aria-label="Online hours by Strategic vs Free Floating"></canvas>
         </div>
       </div>
       <div class="chart-card">
@@ -302,7 +303,7 @@
           <span class="chart-subtitle">Distinct active drivers · stacked bars</span>
         </div>
         <div style="position:relative;width:100%;height:200px;">
-          <canvas id="driversStrategicChart" role="img" aria-label="Active drivers by Strategic vs Non strategic"></canvas>
+          <canvas id="driversStrategicChart" role="img" aria-label="Active drivers by Strategic vs Free Floating"></canvas>
         </div>
       </div>
       <div class="chart-card">
@@ -322,7 +323,7 @@
           <span class="chart-subtitle">Online hours ÷ active drivers · line · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:200px;">
-          <canvas id="hpdStrategicChart" role="img" aria-label="Hours per driver by Strategic vs Non strategic"></canvas>
+          <canvas id="hpdStrategicChart" role="img" aria-label="Hours per driver by Strategic vs Free Floating"></canvas>
         </div>
       </div>
       <div class="chart-card">
@@ -342,7 +343,7 @@
           <span class="chart-subtitle">Weighted average · €/hour · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:180px;">
-          <canvas id="ephStrategicChart" role="img" aria-label="EPH by Strategic vs Non strategic"></canvas>
+          <canvas id="ephStrategicChart" role="img" aria-label="EPH by Strategic vs Free Floating"></canvas>
         </div>
       </div>
       <div class="chart-card">
@@ -362,7 +363,7 @@
           <span class="chart-subtitle">Finished orders ÷ online hours · line · dashed = overall</span>
         </div>
         <div style="position:relative;width:100%;height:180px;">
-          <canvas id="rphStrategicChart" role="img" aria-label="Rides per hour by Strategic vs Non strategic"></canvas>
+          <canvas id="rphStrategicChart" role="img" aria-label="Rides per hour by Strategic vs Free Floating"></canvas>
         </div>
       </div>
       <div class="chart-card">
@@ -405,10 +406,13 @@
     <div class="table-card">
       <div class="table-header">
         <span class="table-title">Detail by FO group</span>
-        <select id="period-selector" onchange="renderTableFromSelector()"></select>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <select id="period-selector" onchange="renderTableFromSelector()"></select>
+          <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('perf-detail-thead'), document.getElementById('company-tbody'), 'performance_detail_by_fo.csv')">⤓ CSV</button>
+        </div>
       </div>
-      <table>
-        <thead>
+      <table id="perf-detail-table">
+        <thead id="perf-detail-thead">
           <tr>
             <th>#</th>
             <th id="th-fo" class="sortable" onclick="sortTable('name')">FO Group</th>
@@ -452,6 +456,7 @@
             <span class="table-title">Fleet Performance</span>
             <span style="font-size:10px;color:var(--muted);font-weight:500;margin-left:8px;" id="fr-t1-subtitle">overview over time</span>
           </div>
+          <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('fr-t1-thead'), document.getElementById('fr-t1-tbody'), 'fleet_review_' + frGranularity + '.csv')">⤓ CSV</button>
         </div>
         <div style="overflow-x:auto;">
           <table id="fr-t1-table">
@@ -514,6 +519,61 @@
     </div>
   </div>
 
+  <div id="tab-comparison" class="tab-pane">
+    <div class="main">
+
+      <!-- Controls: granularity + which fleets are being compared (driven by the
+           FO filter above — pick 2+ FOs there to overlay them here). -->
+      <div class="controls-bar" style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:500;color:var(--muted);" id="cmp-fleets-hint">
+          Pick 2 or more fleets using the <strong>FO</strong> filter above — each is overlaid here (never aggregated), against the City average.
+        </div>
+        <div class="gran-toggle" id="cmp-gran-toggle">
+          <button class="gran-btn" onclick="setCmpGranularity('day',this)">Day</button>
+          <button class="gran-btn active" onclick="setCmpGranularity('week',this)">Week</button>
+          <button class="gran-btn" onclick="setCmpGranularity('month',this)">Month</button>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SNAPSHOT — every metric over time, one row-group per metric
+           (City avg/total + each selected fleet)
+      ═══════════════════════════════════════════════════════════ -->
+      <div class="table-card" style="margin-bottom:20px;">
+        <div class="table-header">
+          <div>
+            <span class="table-title">Snapshot comparison</span>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;margin-left:8px;" id="cmp-snapshot-sub"></span>
+          </div>
+          <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('cmp-snapshot-thead'), document.getElementById('cmp-snapshot-tbody'), 'fleets_comparison_' + cmpGranularity + '.csv')">⤓ CSV</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="cmp-snapshot-table">
+            <thead id="cmp-snapshot-thead"></thead>
+            <tbody id="cmp-snapshot-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           TREND — one metric at a time, one line per fleet + dashed City average/total
+      ═══════════════════════════════════════════════════════════ -->
+      <div class="table-card" style="margin-bottom:24px;">
+        <div class="table-header">
+          <div>
+            <span class="table-title">Metric trend · fleets overlaid</span>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;margin-left:8px;" id="cmp-chart-subtitle"></span>
+          </div>
+        </div>
+        <div id="cmp-metric-chips" style="display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 0;"></div>
+        <div style="position:relative;width:100%;height:320px;padding:12px 14px 16px;box-sizing:border-box;">
+          <canvas id="cmpMetricChart" role="img" aria-label="Fleet comparison metric trend over time"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -544,6 +604,13 @@ function toggleYoY(btn) {
 // ── FLEET REVIEW state ────────────────────────────────────────────
 let frGranularity  = 'week';
 let frTarget       = 80;   // selected weekly OH-per-car target for the upside tool
+
+// ── FLEETS COMPARISON state ────────────────────────────────────────
+// Which fleets to overlay comes from the shared FO filter (selectedFOs) —
+// picking FOs there is exactly "choosing fleets to compare" here.
+let cmpGranularity     = 'week';
+let cmpSelectedMetric  = 'oh';   // single metric shown in the trend chart at a time
+const CMP_PALETTE = ['#2A9C64','#1668E3','#C15B4C','#7E6BA6','#E0A63B','#2C8C8C','#C79A00','#454E86','#8FA79A','#B23A62'];
 
 // ── DATE RANGE + CITY + FO FILTERS ─────────────────────────────────
 let rangeFrom = null;  // 'YYYY-MM-DD' or null (no lower bound)
@@ -580,8 +647,9 @@ function clearDateRange() {
 function rerenderActive() {
   const pane = document.querySelector('.tab-pane.active');
   if (!pane) return;
-  if (pane.id === 'tab-performance') renderAll();
-  else if (pane.id === 'tab-fleet')  renderFleetReview();
+  if (pane.id === 'tab-performance')      renderAll();
+  else if (pane.id === 'tab-fleet')       renderFleetReview();
+  else if (pane.id === 'tab-comparison')  renderComparison();
 }
 
 // ── CITY / FO FILTERS ─────────────────────────────────────────────
@@ -657,16 +725,15 @@ const COHORT_BY_CODE = { A:'Strategic - Fleet Agreement', B:'Strategic - Branded
 // Per-row fleet-type codes emitted by gen_dashboard.py.
 const FLEET_BY_CODE = { S:'Strategic', F:'Free Floating' };
 
-// Left chart data keys stay 'Strategic'/'Free Floating'; 'Free Floating' is
-// DISPLAYED as 'Non strategic' via DISPLAY_NAMES below.
+// Left chart data keys are 'Strategic'/'Free Floating' — the first-level
+// distinction the team uses, shown as-is (no display-name remapping).
 // Colour logic (Bolt palette + neutral greys for secondary families):
 //   Strategic (with agreement) → GREEN family;  Strategic-Locked (captive) → slate, apart;
 //   Free floating → GREY family, apart, with an internal light/dark split.
 const S_COLORS = {
   'Strategic':    '#2A9C64',   // Bolt main green — our strategic fleet
-  'Free Floating':'#C2C8CE',   // grey — non-strategic (commodity supply)
+  'Free Floating':'#C2C8CE',   // grey — free floating (commodity supply)
 };
-const DISPLAY_NAMES = { 'Free Floating': 'Non strategic' };
 const A_COLORS = {
   'Strategic - Fleet Agreement': '#2C8C8C',  // teal (greenish-blue)
   'Strategic - Branded':         '#2A9C64',  // Bolt green
@@ -941,7 +1008,7 @@ function buildLegend(containerId, groups, colors, hiddenSet) {
   groups.forEach(g => {
     const el = document.createElement('div');
     el.className = 'legend-item' + (hiddenSet.has(g)?' hidden':'');
-    el.innerHTML = `<span class="legend-dot" style="background:${colors[g]}"></span>${DISPLAY_NAMES[g] || g}`;
+    el.innerHTML = `<span class="legend-dot" style="background:${colors[g]}"></span>${g}`;
     el.onclick = () => {
       hiddenSet.has(g) ? hiddenSet.delete(g) : hiddenSet.add(g);
       el.classList.toggle('hidden');
@@ -1044,6 +1111,41 @@ function aggregateMetricBy(enriched, dim, metric) {
     }
   }
   return { periods: sortPeriods(Object.keys(bp)), byPeriod: out };
+}
+
+// Shorten group labels in tight spaces (chart tooltips): the first-level
+// distinction Strategic/Free Floating collapses to S/FF; cohort labels keep
+// their suffix ("S - Fleet Agreement", "FF - Branded").
+function shortLabel(g) {
+  if (g === 'Strategic') return 'S';
+  if (g === 'Free Floating') return 'FF';
+  return g.replace(/^Strategic - /, 'S - ').replace(/^Free floating - /, 'FF - ');
+}
+
+// ── CSV export: dump a <thead>+<tbody> pair as-displayed (cell text only —
+//    badges/dots/deltas collapse to their visible text) to a downloaded file. ──
+function exportTableToCSV(theadEl, tbodyEl, filename) {
+  // Cells that embed a period-over-period delta (see frDeltaHTML) mark it with
+  // class="cell-delta" — strip that out so each CSV cell holds only the metric
+  // value itself (easy to paste/compute with), never the little variation line.
+  const cellText = td => {
+    const clone = td.cloneNode(true);
+    clone.querySelectorAll('.cell-delta').forEach(el => el.remove());
+    let txt = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+    if (/[",\n]/.test(txt)) txt = '"' + txt.replace(/"/g, '""') + '"';
+    return txt;
+  };
+  const rows = [
+    ...(theadEl ? [...theadEl.querySelectorAll('tr')] : []),
+    ...(tbodyEl ? [...tbodyEl.querySelectorAll('tr')] : []),
+  ];
+  const csv = rows.map(tr => [...tr.children].map(cellText).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── Per-metric units / axis formatting ──
@@ -1165,12 +1267,24 @@ function renderMetricBar(id, periods, byPeriod, groups, colors, hiddenSet, metri
               if (ctx.dataIndex > 0) {
                 const pv = byPeriod[periods[ctx.dataIndex-1]]?.[g] || 0;
                 const dd = val - pv;
-                delta = ` · Δ ${dd>=0?'+':''}${Math.round(dd).toLocaleString()} vs prev`;
+                const ddPct = pv > 0 ? ` (${dd>=0?'+':''}${((dd/pv)*100).toFixed(1)}%)` : '';
+                delta = ` · Δ ${dd>=0?'+':''}${Math.round(dd).toLocaleString()}${ddPct}`;
               }
-              return ` ${g}: ${val.toLocaleString()}${unit}${pct}${delta}`;
+              return ` ${shortLabel(g)}: ${val.toLocaleString()}${unit}${pct}${delta}`;
             },
-            footer: items => (stacked && selectedFOs.size === 0)
-              ? `  Total: ${Math.round(periodTotals[items[0]?.dataIndex] || 0).toLocaleString()}${unit}` : '',
+            footer: items => {
+              if (!(stacked && selectedFOs.size === 0)) return '';
+              const idx = items[0]?.dataIndex;
+              const tot = periodTotals[idx] || 0;
+              let delta = '';
+              if (idx > 0) {
+                const prevTot = periodTotals[idx - 1] || 0;
+                const dd = tot - prevTot;
+                const ddPct = prevTot > 0 ? ` (${dd>=0?'+':''}${((dd/prevTot)*100).toFixed(1)}%)` : '';
+                delta = ` · Δ ${dd>=0?'+':''}${Math.round(dd).toLocaleString()}${ddPct}`;
+              }
+              return `  Total: ${Math.round(tot).toLocaleString()}${unit}${delta}`;
+            },
           }
         },
         datalabels: { display: false },
@@ -1191,7 +1305,7 @@ function renderLines(id, periods, byPeriod, groups, colors, hiddenSet, opts) {
   const datasets = active
     .filter(g => periods.some(p => (byPeriod[p]?.[g]||0) > 0))
     .map(g => ({
-      label: DISPLAY_NAMES[g] || g,
+      label: g,
       _key:  g,
       data: periods.map(p => { const v=byPeriod[p]?.[g]; return v>0?+v.toFixed(2):null; }),
       borderColor: colors[g], backgroundColor: colors[g]+'22',
@@ -1385,6 +1499,7 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'fleet') renderFleetReview();
+  else if (name === 'comparison') renderComparison();
 }
 
 // ══ YoY HELPER (used by the "vs Last year" overlay) ══
@@ -1440,16 +1555,18 @@ function setFRGranularity(g, btn) {
   renderFleetReview();
 }
 
-// Compute "period" label for a weekDate string based on frGranularity
-function frPeriod(weekDate) {
+// Compute "period" label for a weekDate string at a given granularity. Shared
+// by Fleet Review (frGranularity) and Fleets Comparison (cmpGranularity) —
+// both are per-fleet, week/month-oriented views.
+function periodForGranularity(weekDate, gran) {
   if (!weekDate) return '';
   // Normalize "YYYY-MM" (no day) → "YYYY-MM-01" so parsing works
   const raw = weekDate.slice(0, 10);
   const normalized = raw.length === 7 ? raw + '-01' : raw;
   const d = new Date(normalized + 'T00:00:00');
   if (isNaN(d)) return weekDate;
-  if (frGranularity === 'day') return raw;   // day period = the date itself
-  if (frGranularity === 'week') {
+  if (gran === 'day') return raw;   // day period = the date itself
+  if (gran === 'week') {
     // Snap to Monday (ISO week start). Use local date parts to avoid UTC shift.
     const day = d.getDay(); // 0=Sun … 6=Sat
     const diff = day === 0 ? -6 : 1 - day;
@@ -1467,11 +1584,12 @@ function frPeriod(weekDate) {
     const dd = String(mon.getDate()).padStart(2, '0');
     return `${y}-${m}-${dd}`;
   }
-  if (frGranularity === 'month') {
+  if (gran === 'month') {
     return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
   }
   return weekDate;
 }
+function frPeriod(weekDate) { return periodForGranularity(weekDate, frGranularity); }
 
 // Convert any period label back to YYYY-MM for month-level matching.
 // Handles: "2026-01-05" (week label) → "2026-01"
@@ -1487,15 +1605,16 @@ function periodToYM(period) {
   return null;
 }
 
-// Sort FR periods chronologically
-function sortFRPeriods(arr) {
-  if (frGranularity === 'week' || frGranularity === 'day') return [...arr].sort();
+// Sort periods chronologically at a given granularity (shared helper — see periodForGranularity).
+function sortPeriodsForGranularity(arr, gran) {
+  if (gran === 'week' || gran === 'day') return [...arr].sort();
   // month: "Jan 2025" style
   return [...arr].sort((a, b) => {
     const [ma, ya] = a.split(' '), [mb, yb] = b.split(' ');
     return (+ya - +yb) || ((MONTH_IDX[ma]??0) - (MONTH_IDX[mb]??0));
   });
 }
+function sortFRPeriods(arr) { return sortPeriodsForGranularity(arr, frGranularity); }
 
 // ══════════════════════════════════════════════════════════════════
 //  renderFleetReview — main entry point
@@ -1606,6 +1725,7 @@ const FR_METRICS = [
   { k:'cars',  label:'Active cars',        color:'#1F6F6F', type:'bar',  val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
   { k:'ohpd',  label:'OH / driver',        color:'#6E7BA6', type:'line', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null, fmt:v=>_frN(v)+'h' },
   { k:'ohcar', label:'OH / car',           color:'#454E86', type:'line', val:c=>c.ohPerCar!=null?c.ohPerCar:null,     fmt:v=>_frN(v)+'h' },
+  { k:'gmvcar',label:'GMV / car',          color:'#3E8E63', type:'line', val:c=>c.gmvPerCar!=null?c.gmvPerCar:null,   fmt:v=>'€'+_frN(v) },
 ];
 // Delta unit for the table's period-over-period variation column.
 function frDeltaHTML(m, cur, prev) {
@@ -1616,7 +1736,7 @@ function frDeltaHTML(m, cur, prev) {
   const sign = d > 0 ? '+' : (d < 0 ? '−' : '');
   const txt = m.k === 'share' ? sign + Math.abs(d).toFixed(1) + ' pp' : sign + m.fmt(Math.abs(d));
   const col = flat ? '#9aa0a6' : (d > 0 ? '#1A6B42' : '#c0392b');
-  return `<div style="font-size:10px;font-weight:600;color:${col};margin-top:2px;">${txt}</div>`;
+  return `<div class="cell-delta" style="font-size:10px;font-weight:600;color:${col};margin-top:2px;">${txt}</div>`;
 }
 // Metrics drawn in the trend chart (chips). The TABLE always shows all metrics.
 let frSelectedMetrics = new Set(['oh', 'share', 'rides', 'eph']);
@@ -1625,6 +1745,38 @@ function toggleFRMetric(k) {
   if (frSelectedMetrics.has(k)) { if (frSelectedMetrics.size > 1) frSelectedMetrics.delete(k); }
   else frSelectedMetrics.add(k);
   renderFleetReview();
+}
+
+// Compute every FR_METRICS input field for one (fleet-or-selection, period)
+// slice of rows. Shared by Fleet Review's Table 1 (one column per period,
+// rows aggregated together) and Fleets Comparison (one column per fleet,
+// each kept separate — see renderComparison()).
+// `spainTotalOH` is the denominator for the 'share' metric (the whole city's
+// OH for that period, ignoring the FO filter).
+function frComputeCols(rows, spainTotalOH) {
+  const weeks = [...new Set(rows.map(r => r.week).filter(Boolean))];
+  const totalOH = rows.reduce((s, r) => s + (r.onlineHours || 0), 0);
+  // Market share: this selection's OH ÷ all-Spain OH for the same period.
+  const shareOH = spainTotalOH > 0 ? totalOH / spainTotalOH : null;
+  // Active drivers summed per sub-period (across companies), then averaged.
+  const drvByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeDrivers || 0), 0));
+  const avgDrivers = drvByWeek.length ? drvByWeek.reduce((a, b) => a + b, 0) / drvByWeek.length : null;
+  const carByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeCars || 0), 0));
+  const avgCars = carByWeek.length ? carByWeek.reduce((a, b) => a + b, 0) / carByWeek.length : null;
+  const rides = rows.reduce((s, r) => s + (r.rides || 0), 0);
+  const ohPerDriver = (avgDrivers > 0) ? totalOH / avgDrivers : null;
+  const ohPerCar    = (avgCars > 0)    ? totalOH / avgCars    : null;
+  const ephRows = rows.filter(r => r.eph > 0 && r.onlineHours > 0);
+  const ephOH   = ephRows.reduce((s, r) => s + r.onlineHours, 0);
+  const netEph  = ephOH > 0 ? ephRows.reduce((s, r) => s + r.onlineHours * r.eph, 0) / ephOH : null;
+  // EPH neto (con bonus) = Σ net income (take-home + bonus) ÷ Σ OH.
+  const netIncomeSum = rows.reduce((s, r) => s + (r.netIncome || 0), 0);
+  const netEphNet = totalOH > 0 ? netIncomeSum / totalOH : null;
+  const gmv = rows.reduce((s, r) => s + (r.gmv || 0), 0);
+  const rph = totalOH > 0 ? rides / totalOH : null;   // rides per online hour
+  const asp = rides > 0 ? gmv / rides : null;          // avg selling price / ride
+  const gmvPerCar = (avgCars > 0) ? gmv / avgCars : null;
+  return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, ohPerCar, netEph, netEphNet, gmv, rph, asp, gmvPerCar };
 }
 
 // ── TABLE 1: Fleet Performance — KPIs over time (metrics = rows, periods = columns).
@@ -1678,31 +1830,7 @@ function renderT1FleetPerf(fleetRows) {
     spainByPeriod[p] = (spainByPeriod[p] || 0) + (r.onlineHours || 0);
   }
 
-  const cols = periods.map(p => {
-    const rows  = fleetRows.filter(r => frPeriod(r.week) === p);
-    const weeks = [...new Set(rows.map(r => r.week).filter(Boolean))];
-    const totalOH = rows.reduce((s, r) => s + (r.onlineHours || 0), 0);
-    // Market share: this selection's OH ÷ all-Spain OH for the same period.
-    const shareOH = spainByPeriod[p] > 0 ? totalOH / spainByPeriod[p] : null;
-    // Active drivers summed per sub-period (across companies), then averaged.
-    const drvByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeDrivers || 0), 0));
-    const avgDrivers = drvByWeek.length ? drvByWeek.reduce((a, b) => a + b, 0) / drvByWeek.length : null;
-    const carByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeCars || 0), 0));
-    const avgCars = carByWeek.length ? carByWeek.reduce((a, b) => a + b, 0) / carByWeek.length : null;
-    const rides = rows.reduce((s, r) => s + (r.rides || 0), 0);
-    const ohPerDriver = (avgDrivers > 0) ? totalOH / avgDrivers : null;
-    const ohPerCar    = (avgCars > 0)    ? totalOH / avgCars    : null;
-    const ephRows = rows.filter(r => r.eph > 0 && r.onlineHours > 0);
-    const ephOH   = ephRows.reduce((s, r) => s + r.onlineHours, 0);
-    const netEph  = ephOH > 0 ? ephRows.reduce((s, r) => s + r.onlineHours * r.eph, 0) / ephOH : null;
-    // EPH neto (con bonus) = Σ net income (take-home + bonus) ÷ Σ OH.
-    const netIncomeSum = rows.reduce((s, r) => s + (r.netIncome || 0), 0);
-    const netEphNet = totalOH > 0 ? netIncomeSum / totalOH : null;
-    const gmv = rows.reduce((s, r) => s + (r.gmv || 0), 0);
-    const rph = totalOH > 0 ? rides / totalOH : null;   // rides per online hour
-    const asp = rides > 0 ? gmv / rides : null;          // avg selling price / ride
-    return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, ohPerCar, netEph, netEphNet, gmv, rph, asp };
-  });
+  const cols = periods.map(p => frComputeCols(fleetRows.filter(r => frPeriod(r.week) === p), spainByPeriod[p]));
 
   // ── Detail table: ALWAYS all metrics (independent of the chart chips) ──
   tbody.innerHTML = FR_METRICS.map((m, i) => {
@@ -1779,6 +1907,204 @@ function renderT1FleetPerf(fleetRows) {
         } } },
       },
       scales,
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  FLEETS COMPARISON — overlay 2+ fleets (never aggregate them),
+//  always alongside the City average/total for the same metric.
+//  "Which fleets" = whatever is picked in the shared FO filter above.
+// ══════════════════════════════════════════════════════════════════
+function setCmpGranularity(g, btn) {
+  cmpGranularity = g;
+  document.querySelectorAll('#cmp-gran-toggle .gran-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderComparison();
+}
+
+function toggleCmpMetric(k) {
+  cmpSelectedMetric = k;
+  renderComparison();
+}
+
+function cmpColor(i) { return CMP_PALETTE[i % CMP_PALETTE.length]; }
+
+function renderComparison() {
+  const hint = document.getElementById('cmp-fleets-hint');
+  const fleets = [...selectedFOs].sort();
+
+  if (fleets.length === 0) {
+    hint.innerHTML = 'Pick 2 or more fleets using the <strong>FO</strong> filter above — each is overlaid here (never aggregated), against the City average.';
+    document.getElementById('cmp-snapshot-thead').innerHTML = '';
+    document.getElementById('cmp-snapshot-tbody').innerHTML =
+      `<tr><td class="no-data" style="font-size:11px;padding:20px">No fleets selected — use the FO filter above.</td></tr>`;
+    document.getElementById('cmp-snapshot-sub').textContent = '';
+    document.getElementById('cmp-metric-chips').innerHTML = '';
+    if (charts['cmpMetricChart']) { charts['cmpMetricChart'].destroy(); delete charts['cmpMetricChart']; }
+    return;
+  }
+  hint.innerHTML = `Comparing <strong>${fleets.length}</strong> fleet${fleets.length > 1 ? 's' : ''}: ${fleets.join(', ')}` +
+    (fleets.length < 2 ? ' — pick another FO above to compare it against this one.' : '');
+
+  // Base rows: City + date-range filtered, FO NOT filtered (needed for the
+  // City average/total reference), then narrowed to the selected fleets.
+  const base = (cmpGranularity === 'day') ? dailyRows : _weeklyRows;
+  const cityRows  = base.filter(r => isInRange(r.week) && (selectedCity === '__all' || r.city === selectedCity));
+  const fleetRows = cityRows.filter(r => selectedFOs.has(r.foGroup));
+
+  if (!fleetRows.length) {
+    document.getElementById('cmp-snapshot-thead').innerHTML = '';
+    document.getElementById('cmp-snapshot-tbody').innerHTML =
+      `<tr><td class="no-data" style="font-size:11px;padding:20px">No data for the selected fleets/filters.</td></tr>`;
+    document.getElementById('cmp-metric-chips').innerHTML = '';
+    if (charts['cmpMetricChart']) { charts['cmpMetricChart'].destroy(); delete charts['cmpMetricChart']; }
+    return;
+  }
+
+  const periods = sortPeriodsForGranularity(
+    [...new Set(fleetRows.map(r => periodForGranularity(r.week, cmpGranularity)))], cmpGranularity);
+
+  // City OH per period (denominator for each fleet's 'share' metric).
+  const cityOHByPeriod = {};
+  for (const r of cityRows) {
+    const p = periodForGranularity(r.week, cmpGranularity);
+    cityOHByPeriod[p] = (cityOHByPeriod[p] || 0) + (r.onlineHours || 0);
+  }
+
+  // cols[fleet][period] and cols['__city'][period] — every FR_METRICS input,
+  // computed independently per fleet (never summed together).
+  const colsByFleet = {};
+  for (const f of fleets) {
+    colsByFleet[f] = {};
+    for (const p of periods) {
+      colsByFleet[f][p] = frComputeCols(
+        fleetRows.filter(r => r.foGroup === f && periodForGranularity(r.week, cmpGranularity) === p),
+        cityOHByPeriod[p]);
+    }
+  }
+  const cityCols = {};
+  for (const p of periods) {
+    cityCols[p] = frComputeCols(cityRows.filter(r => periodForGranularity(r.week, cmpGranularity) === p), cityOHByPeriod[p]);
+  }
+
+  renderCmpSnapshot(fleets, periods, colsByFleet, cityCols);
+  renderCmpChart(fleets, periods, colsByFleet, cityCols);
+}
+
+// ── Snapshot table: periods as COLUMNS (consistent with every other table in
+//    this dashboard), one row-GROUP per metric — City avg/total row + one row
+//    per selected fleet, never aggregated together. ──
+function renderCmpSnapshot(fleets, periods, colsByFleet, cityCols) {
+  const thead = document.getElementById('cmp-snapshot-thead');
+  const tbody = document.getElementById('cmp-snapshot-tbody');
+  const sub   = document.getElementById('cmp-snapshot-sub');
+
+  const deltaLbl = cmpGranularity === 'day' ? 'DoD' : cmpGranularity === 'month' ? 'MoM' : 'WoW';
+  sub.textContent = `one row-group per metric (City avg/total + each fleet) · small figure = change vs previous period (${deltaLbl})`;
+
+  const cityScope = (selectedCity === '__all') ? 'Spain' : selectedCity;
+  FR_METRICS.find(m => m.k === 'share').label = `% of ${cityScope} OH`;
+
+  const fmtPeriodColCmp = p => {
+    if (cmpGranularity === 'month') return p;
+    const d = new Date(p + 'T00:00:00');
+    return isNaN(d) ? p : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  };
+
+  const STK_H = 'position:sticky;left:0;z-index:4;';
+  const STK_C = 'position:sticky;left:0;z-index:2;';
+  thead.innerHTML = `<tr>
+    <th style="text-align:left;min-width:170px;padding:9px 14px;font-size:11px;background:var(--dark);color:#fff;${STK_H}">Metric / fleet</th>
+    ${periods.map(p => `<th style="text-align:right;padding:9px 14px;font-size:11px;font-weight:700;background:var(--dark);color:#fff;white-space:nowrap;">${fmtPeriodColCmp(p)}</th>`).join('')}
+  </tr>`;
+
+  // One row per (metric, entity) — entity = City avg/total, then each fleet.
+  const entityRow = (labelHtml, dotColor, indentPx, valFn, fmt, m, rowBg, groupStart) => {
+    const border = groupStart ? 'border-top:2px solid var(--border);' : '';
+    const cells = periods.map((p, j) => {
+      const cur  = valFn(p);
+      const prev = j > 0 ? valFn(periods[j - 1]) : null;
+      return `<td style="text-align:right;font-size:12px;padding:8px 14px;white-space:nowrap;">
+        ${cur == null ? '—' : fmt(cur)}${frDeltaHTML(m, cur, prev)}</td>`;
+    });
+    return `<tr style="background:${rowBg};${border}">
+      <td style="font-size:11px;padding:8px 14px;color:#333;white-space:nowrap;background:${rowBg};${STK_C}${border}">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:6px;margin-left:${indentPx}px;"></span>${labelHtml}</td>
+      ${cells.join('')}
+    </tr>`;
+  };
+
+  let html = '';
+  FR_METRICS.forEach((m, mi) => {
+    const rowBg = mi % 2 === 0 ? '#fff' : '#f9fafb';
+    html += entityRow(`<b>${m.label}</b> — City avg / total`, m.color, 0,
+      p => m.val(cityCols[p]), m.fmt, m, rowBg, mi > 0);
+    fleets.forEach((f, fi) => {
+      html += entityRow(f, cmpColor(fi), 14,
+        p => m.val(colsByFleet[f][p]), m.fmt, m, rowBg, false);
+    });
+  });
+  tbody.innerHTML = html;
+}
+
+// ── Trend chart: ONE metric at a time (chips are single-select), one line per
+//    fleet + a dashed City average (ratios) / total (volumes) reference line ──
+function renderCmpChart(fleets, periods, colsByFleet, cityCols) {
+  document.getElementById('cmp-metric-chips').innerHTML = FR_METRICS.map(m => {
+    const on = m.k === cmpSelectedMetric;
+    return `<button onclick="toggleCmpMetric('${m.k}')" style="display:inline-flex;align-items:center;gap:6px;
+      font-family:inherit;font-size:11px;font-weight:600;border-radius:14px;padding:4px 11px;cursor:pointer;
+      border:1px solid ${on ? m.color : 'var(--border)'};background:${on ? m.color + '18' : '#fff'};color:${on ? '#111' : '#9aa0a6'};">
+      <span style="width:9px;height:9px;border-radius:50%;background:${on ? m.color : '#ccc'};"></span>${m.label}</button>`;
+  }).join('');
+
+  const metric = FR_METRICS.find(m => m.k === cmpSelectedMetric) || FR_METRICS[0];
+  const cityLabel = metric.type === 'bar' ? 'City total' : 'City average';
+  document.getElementById('cmp-chart-subtitle').textContent =
+    `${metric.label} · one line per fleet, dashed = ${cityLabel.toLowerCase()}`;
+
+  const fmtPeriodCol = p => {
+    if (cmpGranularity === 'month') return p;
+    const d = new Date(p + 'T00:00:00');
+    return isNaN(d) ? p : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  };
+
+  const datasets = fleets.map((f, i) => ({
+    type: 'line', label: f,
+    data: periods.map(p => { const v = metric.val(colsByFleet[f][p]); return v == null ? null : v; }),
+    _fmt: metric.fmt,
+    borderColor: cmpColor(i), backgroundColor: cmpColor(i) + '22',
+    borderWidth: 2.5, pointRadius: periods.length < 12 ? 3 : 0, pointHoverRadius: 5,
+    tension: 0.3, spanGaps: true, fill: false,
+  }));
+  datasets.push({
+    type: 'line', label: cityLabel,
+    data: periods.map(p => { const v = metric.val(cityCols[p]); return v == null ? null : v; }),
+    _fmt: metric.fmt,
+    borderColor: '#111', backgroundColor: '#111', borderWidth: 2, borderDash: [6, 4],
+    pointRadius: 0, pointHoverRadius: 4, tension: 0.3, spanGaps: true, fill: false, order: -1,
+  });
+
+  if (charts['cmpMetricChart']) charts['cmpMetricChart'].destroy();
+  charts['cmpMetricChart'] = new Chart(document.getElementById('cmpMetricChart'), {
+    type: 'line',
+    data: { labels: periods.map(fmtPeriodCol), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { boxWidth: 10, boxHeight: 10, font: { size: 11, family: 'Inter' }, usePointStyle: true } },
+        datalabels: { display: false },
+        tooltip: { callbacks: { label: ctx => {
+          const v = ctx.parsed.y;
+          return v == null ? '' : ` ${ctx.dataset.label}: ${ctx.dataset._fmt(v)}`;
+        } } },
+      },
+      scales: {
+        x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa', maxRotation: 45, autoSkip: true, maxTicksLimit: 16 } },
+        y: { border: { display: false }, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10, family: 'Inter' }, color: '#aaa', callback: v => metric.fmt(v) } },
+      },
     }
   });
 }
