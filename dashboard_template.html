@@ -431,17 +431,17 @@
       <!-- Detail table: all FO groups for the selected period -->
       <div class="table-card">
         <div class="table-header">
-          <span class="table-title">Detail by FO group</span>
+          <span class="table-title">Detail by fleet</span>
           <div style="display:flex;align-items:center;gap:8px;">
             <select id="period-selector" onchange="renderTableFromSelector()"></select>
-            <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('perf-detail-thead'), document.getElementById('company-tbody'), 'fleets_review_detail_by_fo.csv')">⤓ CSV</button>
+            <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('perf-detail-thead'), document.getElementById('company-tbody'), 'fleets_review_detail.csv')">⤓ CSV</button>
           </div>
         </div>
         <table id="perf-detail-table">
           <thead id="perf-detail-thead">
             <tr>
               <th>#</th>
-              <th id="th-fo" class="sortable" onclick="sortTable('name')">FO Group</th>
+              <th id="th-fo" class="sortable" onclick="sortTable('name')">FO / Group</th>
               <th>Fleet type</th>
               <th>Cohort</th>
               <th class="r sortable" id="th-companies" onclick="sortTable('n')">Companies</th>
@@ -977,7 +977,7 @@ function renderAll() {
   if (document.getElementById('tab-fleet').classList.contains('active')) renderFleetReview();
 }
 
-// ══ FLEETS REVIEW (Detail by FO group) ══
+// ══ FLEETS REVIEW (Detail by fleet) ══
 // Shares the same granularity/City/FO/date-range state as Performance
 // (enrich() + the global `granularity`), just rendered in its own tab.
 function renderFleetsReviewTab() {
@@ -1483,8 +1483,10 @@ function renderTable(enriched, periods) {
     }
   }
 
-  // Build FO rows with all metrics
-  const list = Object.values(foMap).filter(g => g.isFO).map(g => {
+  // Build rows with all metrics. Every group shows — real FO groups (Strategic,
+  // named in Admin_Madrid/fo_groups.csv) AND Free Floating, which has no FO name
+  // there so it's bucketed by cohort instead (g.name falls back to r.cohort).
+  const list = Object.values(foMap).map(g => {
     const prevG  = prevFoMap[g.key];
     const wowAbs = prevG ? (g.oh - prevG.oh) : null;
     const wowPct = (prevG && prevG.oh > 0) ? ((g.oh - prevG.oh) / prevG.oh * 100) : null;
@@ -1505,7 +1507,7 @@ function renderTable(enriched, periods) {
   const pcl = periodChangeLabel();
   const arr = k => k === key ? (dir < 0 ? ' ↓' : ' ↑') : '';
   const setHdr = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
-  setHdr('th-fo',               'FO Group'     + arr('name'));
+  setHdr('th-fo',               'FO / Group'   + arr('name'));
   setHdr('th-companies',        'Companies'    + arr('n'));
   setHdr('th-oh',               'Online Hours' + arr('oh'));
   setHdr('th-period-change',     pcl           + arr('wowAbs'));
