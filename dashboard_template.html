@@ -104,6 +104,14 @@
   .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 800; }
   .no-data { text-align: center; padding: 32px; color: #ccc; font-size: 12px; }
 
+  /* ── INFO BADGE — small "ⓘ" that reveals a methodology-caveat tooltip on
+       hover. Two variants: default (for dark backgrounds, e.g. table headers)
+       and .dark (for light backgrounds, e.g. row labels / KPI cards). ── */
+  .info-badge { display: inline-flex; align-items: center; justify-content: center; width: 13px; height: 13px; border-radius: 50%; background: rgba(255,255,255,0.25); color: #fff; font-size: 9px; font-weight: 800; cursor: help; margin-left: 4px; position: relative; vertical-align: middle; }
+  .info-badge.dark { background: rgba(0,0,0,0.1); color: #666; }
+  .info-badge:hover::after { content: attr(data-tip); position: absolute; bottom: 145%; left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; font-size: 10.5px; font-weight: 500; line-height: 1.45; padding: 8px 10px; border-radius: 6px; width: 230px; text-align: left; white-space: normal; box-shadow: 0 4px 14px rgba(0,0,0,0.25); z-index: 300; pointer-events: none; }
+  .info-badge:hover::before { content: ''; position: absolute; bottom: calc(145% - 5px); left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--dark); z-index: 300; }
+
   select { font-size: 11px; font-family: inherit; font-weight: 500; color: #555; border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; background: #fff; cursor: pointer; outline: none; }
 
   /* ── TABS ── */
@@ -209,7 +217,8 @@
 
   <div class="tab-nav">
     <button class="tab-btn active" onclick="switchTab('performance',this)">Performance</button>
-    <button class="tab-btn" onclick="switchTab('fleet',this)">Fleet Review</button>
+    <button class="tab-btn" onclick="switchTab('fleetsreview',this)">Fleets Review</button>
+    <button class="tab-btn" onclick="switchTab('fleet',this)">Fleet Deep Dive</button>
     <button class="tab-btn" onclick="switchTab('comparison',this)">Fleets Comparison</button>
     <div class="date-range-wrap">
       <span class="date-range-label">City</span>
@@ -233,7 +242,7 @@
     <!-- KPIs -->
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-lbl">Online Hours · last period</div><div class="kpi-val" id="kpi-oh">—</div><div class="kpi-sub" id="kpi-oh-wow">—</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">EPH bruto</div><div class="kpi-val" id="kpi-eph">—</div><div class="kpi-sub" id="kpi-eph-wow">—</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">EPH bruto<span class="info-badge dark" data-tip="Citywide total, calibrated to match the reference Growth Dashboard exactly. Per-fleet EPH bruto elsewhere (Fleet Deep Dive, Fleets Comparison, Fleets Review) uses each fleet's own real GMV, so it won't roll up to exactly this number.">ⓘ</span></div><div class="kpi-val" id="kpi-eph">—</div><div class="kpi-sub" id="kpi-eph-wow">—</div></div>
       <div class="kpi-card"><div class="kpi-lbl">Active companies</div><div class="kpi-val" id="kpi-companies">—</div><div class="kpi-sub" id="kpi-weeks">—</div></div>
       <div class="kpi-card"><div class="kpi-lbl">Strategic OH</div><div class="kpi-val" id="kpi-strategic">—</div><div class="kpi-sub" id="kpi-strategic-pct">—</div></div>
       <div class="kpi-card"><div class="kpi-lbl">No agreement</div><div class="kpi-val" id="kpi-noag">—</div><div class="kpi-sub" id="kpi-noag-sub">—</div></div>
@@ -249,11 +258,11 @@
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <button class="gran-btn" id="yoy-toggle" onclick="toggleYoY(this)" title="Overlay the same period one year earlier">vs Last year</button>
-        <div class="gran-toggle">
-          <button class="gran-btn" onclick="setGranularity('day',this)">Day</button>
-          <button class="gran-btn active" onclick="setGranularity('week',this)">Week</button>
-          <button class="gran-btn" onclick="setGranularity('month',this)">Month</button>
-          <button class="gran-btn" onclick="setGranularity('quarter',this)">Quarter</button>
+        <div class="gran-toggle main-gran-toggle">
+          <button class="gran-btn" data-gran="day" onclick="setGranularity('day',this)">Day</button>
+          <button class="gran-btn active" data-gran="week" onclick="setGranularity('week',this)">Week</button>
+          <button class="gran-btn" data-gran="month" onclick="setGranularity('month',this)">Month</button>
+          <button class="gran-btn" data-gran="quarter" onclick="setGranularity('quarter',this)">Quarter</button>
         </div>
       </div>
     </div>
@@ -402,34 +411,51 @@
       </div>
     </div>
 
-    <!-- Table -->
-    <div class="table-card">
-      <div class="table-header">
-        <span class="table-title">Detail by FO group</span>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <select id="period-selector" onchange="renderTableFromSelector()"></select>
-          <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('perf-detail-thead'), document.getElementById('company-tbody'), 'performance_detail_by_fo.csv')">⤓ CSV</button>
+    </div>
+  </div>
+
+  <div id="tab-fleetsreview" class="tab-pane">
+    <div class="main">
+
+      <!-- Controls: granularity (Day / Week / Month / Quarter) — shared with Performance -->
+      <div class="controls-bar" style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Fleets review — filter with the City / FO controls above</div>
+        <div class="gran-toggle main-gran-toggle" id="frv-gran-toggle">
+          <button class="gran-btn" data-gran="day" onclick="setGranularity('day',this)">Day</button>
+          <button class="gran-btn active" data-gran="week" onclick="setGranularity('week',this)">Week</button>
+          <button class="gran-btn" data-gran="month" onclick="setGranularity('month',this)">Month</button>
+          <button class="gran-btn" data-gran="quarter" onclick="setGranularity('quarter',this)">Quarter</button>
         </div>
       </div>
-      <table id="perf-detail-table">
-        <thead id="perf-detail-thead">
-          <tr>
-            <th>#</th>
-            <th id="th-fo" class="sortable" onclick="sortTable('name')">FO Group</th>
-            <th>Fleet type</th>
-            <th>Cohort</th>
-            <th class="r sortable" id="th-companies" onclick="sortTable('n')">Companies</th>
-            <th class="r sortable" id="th-oh" onclick="sortTable('oh')">Online Hours</th>
-            <th class="r sortable" id="th-period-change" onclick="sortTable('wowAbs')">WoW</th>
-            <th class="r sortable" id="th-period-change-pct" onclick="sortTable('wowPct')">WoW %</th>
-            <th class="r sortable" id="th-eph" onclick="sortTable('eph')">EPH bruto</th>
-            <th class="r sortable" id="th-drivers" onclick="sortTable('partners')">Drivers</th>
-            <th class="r sortable" id="th-gmv" onclick="sortTable('gmv')">GMV</th>
-          </tr>
-        </thead>
-        <tbody id="company-tbody"></tbody>
-      </table>
-    </div>
+
+      <!-- Detail table: all FO groups for the selected period -->
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-title">Detail by FO group</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <select id="period-selector" onchange="renderTableFromSelector()"></select>
+            <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('perf-detail-thead'), document.getElementById('company-tbody'), 'fleets_review_detail_by_fo.csv')">⤓ CSV</button>
+          </div>
+        </div>
+        <table id="perf-detail-table">
+          <thead id="perf-detail-thead">
+            <tr>
+              <th>#</th>
+              <th id="th-fo" class="sortable" onclick="sortTable('name')">FO Group</th>
+              <th>Fleet type</th>
+              <th>Cohort</th>
+              <th class="r sortable" id="th-companies" onclick="sortTable('n')">Companies</th>
+              <th class="r sortable" id="th-oh" onclick="sortTable('oh')">Online Hours</th>
+              <th class="r sortable" id="th-period-change" onclick="sortTable('wowAbs')">WoW</th>
+              <th class="r sortable" id="th-period-change-pct" onclick="sortTable('wowPct')">WoW %</th>
+              <th class="r sortable" id="th-eph" onclick="sortTable('eph')">EPH bruto</th>
+              <th class="r sortable" id="th-drivers" onclick="sortTable('partners')">Drivers</th>
+              <th class="r sortable" id="th-gmv" onclick="sortTable('gmv')">GMV</th>
+            </tr>
+          </thead>
+          <tbody id="company-tbody"></tbody>
+        </table>
+      </div>
 
     </div>
   </div>
@@ -439,7 +465,7 @@
 
       <!-- Controls: granularity (Day / Week / Month) -->
       <div class="controls-bar" style="margin-bottom:16px;">
-        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Fleet review — filter with the City / FO controls above</div>
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;">Fleet Deep Dive — filter with the City / FO controls above</div>
         <div class="gran-toggle" id="fr-gran-toggle">
           <button class="gran-btn" onclick="setFRGranularity('day',this)">Day</button>
           <button class="gran-btn active" onclick="setFRGranularity('week',this)">Week</button>
@@ -648,6 +674,7 @@ function rerenderActive() {
   const pane = document.querySelector('.tab-pane.active');
   if (!pane) return;
   if (pane.id === 'tab-performance')      renderAll();
+  else if (pane.id === 'tab-fleetsreview') renderFleetsReviewTab();
   else if (pane.id === 'tab-fleet')       renderFleetReview();
   else if (pane.id === 'tab-comparison')  renderComparison();
 }
@@ -780,15 +807,23 @@ function loadPreloadedData() {
   // (period, city, FO, cohort, fleet type). No per-company lookup required.
   const mapRow = r => {
     const oh   = Number(r.oh) || 0;
-    const gmv  = Number(r.g)  || 0;
+    const gmv  = Number(r.g)  || 0;   // city-allocated GMV — city/aggregate TOTALS only (matches the reference dashboard)
+    const rides= Number(r.r)  || 0;   // city-allocated finished orders — same "totals only" caveat
+    // Real (non-allocated) GMV/finished, from the car-driver-city-hour rides mart.
+    // "g"/"r" above are the city total split proportionally by OH share, so any
+    // RATIO built from them (EPH bruto, RPH, ASP) collapses to the city average
+    // for every subgroup — these real values are what make those ratios actually
+    // vary per fleet/cohort. Falls back to g/r if the backend's real-rides fetch
+    // ever comes back all-zero (see fetch_car_rides_weekly() in gen_dashboard.py).
+    const realGmv     = Number(r.rg) || gmv;
+    const realFinished= Number(r.rr) || rides;
     const earn = Number(r.e)  || 0;   // NET driver earnings (real: gross − Bolt fees)
     const gEarn= Number(r.eg) || 0;   // GROSS driver earnings (real, ≈ fare)
     const bonus= Number(r.b)  || 0;   // driver incentive bonus
-    // Net income on the SAME (canonical) basis as EPH bruto: the fleet keeps its
-    // real take-home share (net/gross) of its canonically-attributed GMV, plus the
-    // incentive bonus. This replicates the official "Net EpH w/ Bonus" per fleet
-    // and stays consistent with EPH bruto (both use the canonical GMV / OH).
-    const netIncome = gmv * (gEarn > 0 ? earn / gEarn : 0) + bonus;
+    // Net income on the SAME basis as EPH bruto (now the real per-fleet GMV): the
+    // fleet keeps its real take-home share (net/gross) of its real GMV, plus the
+    // incentive bonus. This replicates the official "Net EpH w/ Bonus" per fleet.
+    const netIncome = realGmv * (gEarn > 0 ? earn / gEarn : 0) + bonus;
     return {
       week:          (r.w || '').slice(0, 10),
       fleetType:     FLEET_BY_CODE[r.f] || 'Free Floating',
@@ -796,16 +831,19 @@ function loadPreloadedData() {
       foGroup:       r.fo || null,
       city:          r.city || null,
       onlineHours:   oh,
-      // EPH bruto = GMV per online hour (official Growth Dashboard / Álvaro def).
-      eph:           oh > 0 ? gmv / oh : 0,
+      // EPH bruto = real GMV per online hour (official Growth Dashboard / Álvaro
+      // def at city level; real per-car GMV below city level — see above).
+      eph:           oh > 0 ? realGmv / oh : 0,
       // EPH neto (con bonus) = driver net income (take-home + bonus) per OH.
       ephNet:        oh > 0 ? netIncome / oh : 0,
       netIncome:     netIncome,
-      gmv:           gmv,
+      gmv:           gmv,           // city-allocated — use for city/aggregate TOTALS
+      realGmv:       realGmv,       // real — use for per-fleet GMV figures & ratios
+      rides:         rides,         // city-allocated — use for city/aggregate TOTALS
+      realFinished:  realFinished,  // real — use for per-fleet RPH/ASP
       bonus:         bonus,
       activeDrivers: Number(r.d) || 0,
       activeCars:    Number(r.c) || 0,
-      rides:         Number(r.r) || 0,
       companies:     Number(r.n) || 0,
       headroom:      Array.isArray(r.hr) ? r.hr.map(Number) : null,  // per-car OH upside by target
     };
@@ -933,12 +971,20 @@ function renderAll() {
   buildLegends();
   renderCharts(enriched, periods);
   renderTaxiWidget();
-  populatePeriodSelector(periods);
-  renderTable(enriched, periods);
 
   // (Top-left shows only the title now; the confusing data-range label was removed.)
 
   if (document.getElementById('tab-fleet').classList.contains('active')) renderFleetReview();
+}
+
+// ══ FLEETS REVIEW (Detail by FO group) ══
+// Shares the same granularity/City/FO/date-range state as Performance
+// (enrich() + the global `granularity`), just rendered in its own tab.
+function renderFleetsReviewTab() {
+  const enriched = enrich();
+  const periods  = sortPeriods([...new Set(enriched.map(r => r.period))]);
+  populatePeriodSelector(periods);
+  renderTable(enriched, periods);
 }
 
 // ══ KPIs ══
@@ -1064,7 +1110,7 @@ function fullOverallByPeriod(metric) {
     const b = bp[p];
     b.oh += r.onlineHours || 0;
     b.drivers += r.activeDrivers || 0;
-    b.rides += r.rides || 0;
+    b.rides += r.realFinished || 0;
     if (r.eph > 0) { b.wt += (r.onlineHours||0) * r.eph; b.ohE += r.onlineHours||0; }
   }
   const out = {};
@@ -1098,7 +1144,7 @@ function aggregateMetricBy(enriched, dim, metric) {
     if (!bp[r.period][r[dim]]) bp[r.period][r[dim]] = { oh:0, drivers:0, rides:0 };
     bp[r.period][r[dim]].oh      += r.onlineHours   || 0;
     bp[r.period][r[dim]].drivers += r.activeDrivers || 0;
-    bp[r.period][r[dim]].rides   += r.rides         || 0;
+    bp[r.period][r[dim]].rides   += r.realFinished  || 0;
   }
   const out = {};
   for (const [p, gs] of Object.entries(bp)) {
@@ -1122,15 +1168,25 @@ function shortLabel(g) {
   return g.replace(/^Strategic - /, 'S - ').replace(/^Free floating - /, 'FF - ');
 }
 
+// ── Info badge: small "ⓘ" that reveals a methodology-caveat tooltip on hover —
+//    flags known real-vs-canonical-basis mismatches without cluttering the UI
+//    (e.g. per-fleet GMV/Finished orders now real, city totals stay canonical).
+//    dark=true on light backgrounds (row labels, KPI cards); false on dark
+//    backgrounds (table headers). Excluded from CSV export (no text content).
+function infoBadge(tip, dark) {
+  return `<span class="info-badge${dark ? ' dark' : ''}" data-tip="${tip.replace(/"/g, '&quot;')}">ⓘ</span>`;
+}
+
 // ── CSV export: dump a <thead>+<tbody> pair as-displayed (cell text only —
 //    badges/dots/deltas collapse to their visible text) to a downloaded file. ──
 function exportTableToCSV(theadEl, tbodyEl, filename) {
   // Cells that embed a period-over-period delta (see frDeltaHTML) mark it with
   // class="cell-delta" — strip that out so each CSV cell holds only the metric
   // value itself (easy to paste/compute with), never the little variation line.
+  // Same for .info-badge (the "ⓘ" hover-tooltip markers) — pure UI, no data.
   const cellText = td => {
     const clone = td.cloneNode(true);
-    clone.querySelectorAll('.cell-delta').forEach(el => el.remove());
+    clone.querySelectorAll('.cell-delta, .info-badge').forEach(el => el.remove());
     let txt = (clone.textContent || '').replace(/\s+/g, ' ').trim();
     if (/[",\n]/.test(txt)) txt = '"' + txt.replace(/"/g, '""') + '"';
     return txt;
@@ -1160,7 +1216,7 @@ function overallByPeriod(enriched, metric) {
     const b = bp[r.period];
     b.oh += r.onlineHours || 0;
     b.drivers += r.activeDrivers || 0;
-    b.rides += r.rides || 0;
+    b.rides += r.realFinished || 0;
     if (r.eph > 0) { b.wt += (r.onlineHours||0) * r.eph; b.ohE += r.onlineHours||0; }
   }
   const out = {};
@@ -1411,7 +1467,7 @@ function renderTable(enriched, periods) {
     const key = r.foGroup || ('__'+r.cohort);
     if (!foMap[key]) foMap[key] = { key, name: r.foGroup||r.cohort, isFO:!!r.foGroup, fleetType:r.fleetType, cohort:r.cohort, n:0, oh:0, partners:0, gmv:0, sumOH:0, sumWt:0 };
     const g = foMap[key];
-    g.n+=(r.companies||0); g.oh+=r.onlineHours; g.partners+=(r.activeDrivers||0); g.gmv+=r.gmv;
+    g.n+=(r.companies||0); g.oh+=r.onlineHours; g.partners+=(r.activeDrivers||0); g.gmv+=(r.realGmv||0);
     if (r.eph>0) { g.sumOH+=r.onlineHours; g.sumWt+=r.onlineHours*r.eph; }
   }
 
@@ -1456,7 +1512,9 @@ function renderTable(enriched, periods) {
   setHdr('th-period-change-pct', pcl + ' %'    + arr('wowPct'));
   setHdr('th-eph',              'EPH bruto'     + arr('eph'));
   setHdr('th-drivers',          'Drivers'      + arr('partners'));
-  setHdr('th-gmv',              'GMV'          + arr('gmv'));
+  // th-gmv uses innerHTML (not setHdr's textContent) so the info-badge survives re-render.
+  const thGmv = document.getElementById('th-gmv');
+  if (thGmv) thGmv.innerHTML = 'GMV' + arr('gmv') + frMetricBadge('gmv', false);
 
   tbody.innerHTML = list.map((g, i) => {
     const sb = S_BADGES[g.fleetType] || S_BADGES['Free Floating'];
@@ -1478,6 +1536,9 @@ function renderTable(enriched, periods) {
 }
 
 // ══ CONTROLS ══
+// Performance and Fleets Review share this granularity — two toggle instances
+// in the DOM (one per tab), kept in sync via the shared "main-gran-toggle"
+// class + data-gran attribute (rather than just the clicked instance's siblings).
 function setGranularity(g, btn) {
   granularity = g;
   if (g === 'day' && dailyRows.length > 0) {
@@ -1485,9 +1546,9 @@ function setGranularity(g, btn) {
   } else if (g !== 'day' && _weeklyRows.length > 0) {
     lookerRows = _weeklyRows;
   }
-  btn.parentElement.querySelectorAll('.gran-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('.main-gran-toggle .gran-btn').forEach(b => b.classList.toggle('active', b.dataset.gran === g));
   renderAll();
+  if (document.getElementById('tab-fleetsreview').classList.contains('active')) renderFleetsReviewTab();
 }
 
 function fmtH(h)     { return Math.abs(h)>=1000?(h/1000).toFixed(1)+'k':Math.round(h).toString(); }
@@ -1498,7 +1559,8 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'fleet') renderFleetReview();
+  if (name === 'fleetsreview') renderFleetsReviewTab();
+  else if (name === 'fleet') renderFleetReview();
   else if (name === 'comparison') renderComparison();
 }
 
@@ -1670,7 +1732,7 @@ function renderFleetUpside() {
   const N = v => Math.round(v).toLocaleString('en');
   const oh       = rows.reduce((s, r) => s + r.onlineHours, 0);
   const cars     = rows.reduce((s, r) => s + r.activeCars, 0);
-  const finished = rows.reduce((s, r) => s + r.rides, 0);
+  const finished = rows.reduce((s, r) => s + (r.realFinished || 0), 0);
   const idx      = FLEET_TARGETS.indexOf(frTarget);
   const upOH     = rows.reduce((s, r) => s + ((r.headroom && idx >= 0) ? (r.headroom[idx] || 0) : 0), 0);
   const rph      = oh > 0 ? finished / oh : 0;
@@ -1699,6 +1761,20 @@ function renderFleetUpside() {
   } else {
     man.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Enter a licence count above to see this scenario.</div>';
   }
+}
+
+// GMV and Finished orders shown per fleet/FO here are the REAL (non-allocated)
+// figures — see mapRow() / frComputeCols() in this file and
+// fetch_car_rides_weekly() in gen_dashboard.py. Performance tab's city-level
+// totals stay on the canonical (city-hour-mart-allocated) basis so they keep
+// matching the reference Growth Dashboard exactly — so summing this fleet's
+// GMV/Finished across ALL fleets may not land exactly on that city total.
+const _REAL_VS_CANONICAL_TIP =
+  'This fleet’s real figure (own rides mart) — city-wide totals elsewhere use a different, ' +
+  'reference-dashboard-matched basis, so the two won’t sum to exactly the same total.';
+// dark=true → light background (row/entity label cells); false → table headers (dark bg).
+function frMetricBadge(metricKey, dark) {
+  return (metricKey === 'gmv' || metricKey === 'rides') ? infoBadge(_REAL_VS_CANONICAL_TIP, dark) : '';
 }
 
 // ── Fleet Review metric catalogue: numeric value (per period column `c`),
@@ -1763,7 +1839,12 @@ function frComputeCols(rows, spainTotalOH) {
   const avgDrivers = drvByWeek.length ? drvByWeek.reduce((a, b) => a + b, 0) / drvByWeek.length : null;
   const carByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeCars || 0), 0));
   const avgCars = carByWeek.length ? carByWeek.reduce((a, b) => a + b, 0) / carByWeek.length : null;
-  const rides = rows.reduce((s, r) => s + (r.rides || 0), 0);
+  // Real (non-allocated) finished orders/GMV — this function is ALWAYS a
+  // per-fleet/per-entity breakdown (Fleet Deep Dive, Fleets Comparison, Fleets
+  // Review), exactly where the city-allocated r.rides/r.gmv would be meaningless
+  // (see mapRow() for why). Performance-tab city/aggregate totals are unaffected —
+  // they don't go through this function.
+  const rides = rows.reduce((s, r) => s + (r.realFinished || 0), 0);
   const ohPerDriver = (avgDrivers > 0) ? totalOH / avgDrivers : null;
   const ohPerCar    = (avgCars > 0)    ? totalOH / avgCars    : null;
   const ephRows = rows.filter(r => r.eph > 0 && r.onlineHours > 0);
@@ -1772,7 +1853,7 @@ function frComputeCols(rows, spainTotalOH) {
   // EPH neto (con bonus) = Σ net income (take-home + bonus) ÷ Σ OH.
   const netIncomeSum = rows.reduce((s, r) => s + (r.netIncome || 0), 0);
   const netEphNet = totalOH > 0 ? netIncomeSum / totalOH : null;
-  const gmv = rows.reduce((s, r) => s + (r.gmv || 0), 0);
+  const gmv = rows.reduce((s, r) => s + (r.realGmv || 0), 0);
   const rph = totalOH > 0 ? rides / totalOH : null;   // rides per online hour
   const asp = rides > 0 ? gmv / rides : null;          // avg selling price / ride
   const gmvPerCar = (avgCars > 0) ? gmv / avgCars : null;
@@ -1837,7 +1918,7 @@ function renderT1FleetPerf(fleetRows) {
     const rowBg = i % 2 === 0 ? '#fff' : '#f9fafb';
     return `<tr style="background:${rowBg};">
       <td style="font-weight:700;font-size:11px;padding:8px 14px;color:#333;white-space:nowrap;background:${rowBg};${STK_C}">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color};margin-right:6px;"></span>${m.label}</td>
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color};margin-right:6px;"></span>${m.label}${frMetricBadge(m.k, true)}</td>
       ${cols.map((c, j) => {
         const v = m.val(c);
         const delta = j > 0 ? frDeltaHTML(m, v, m.val(cols[j-1])) : '';
@@ -2038,7 +2119,7 @@ function renderCmpSnapshot(fleets, periods, colsByFleet, cityCols) {
   let html = '';
   FR_METRICS.forEach((m, mi) => {
     const rowBg = mi % 2 === 0 ? '#fff' : '#f9fafb';
-    html += entityRow(`<b>${m.label}</b> — City avg / total`, m.color, 0,
+    html += entityRow(`<b>${m.label}</b>${frMetricBadge(m.k, true)} — City avg / total`, m.color, 0,
       p => m.val(cityCols[p]), m.fmt, m, rowBg, mi > 0);
     fleets.forEach((f, fi) => {
       html += entityRow(f, cmpColor(fi), 14,

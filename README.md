@@ -65,3 +65,32 @@ Luego sírvelo: `python -m http.server 4173 --directory docs` y abre http://loca
 
 `DATABRICKS_HOST`, `DATABRICKS_HTTP_PATH`, `DATABRICKS_TOKEN` como GitHub Secrets.
 (Opcional: `SHEET_CSV_URL` para el sync automático del grouping.)
+
+### Workspace de Databricks (importante si el build falla con "Invalid access token" o "Invalid access to Org")
+
+Estos 3 secrets deben apuntar a un SQL Warehouse de tu **workspace normal de Databricks**
+(el "common workspace" al que tienes acceso por defecto) — **no** al workspace interno
+`data` (id `1552831219997577`), que es exclusivo del equipo de Data Platform y al que no
+deberíamos tener acceso (nos lo confirmaron en agosto 2026 tras un incidente: el pipeline
+llevaba tiempo corriendo con acceso a ese workspace "por error").
+
+Si el `DATABRICKS_TOKEN` caduca o el build falla con un error de acceso:
+1. En tu workspace normal → **SQL Warehouses** → el warehouse que uses → pestaña
+   **Connection details** → copia **Server hostname** y **HTTP path** →
+   actualiza `DATABRICKS_HOST` y `DATABRICKS_HTTP_PATH` si han cambiado.
+2. Genera un token nuevo desde ESE MISMO workspace (Settings → Developer → Access
+   tokens) → actualiza `DATABRICKS_TOKEN`.
+3. Relanza el workflow manualmente (Actions → 🔄 Generar Dashboard → Run workflow)
+   para confirmar que funciona antes de esperar al cron.
+
+Si tras esto el error cambia a uno de permisos/tabla no encontrada, pide a Data
+Platform `SELECT` sobre estas 6 tablas (las únicas que toca `gen_dashboard.py`):
+
+```
+main.int_models.int_driver_car_city_hour_earnings_and_fees_metrics_eur_local
+main.core_models.dim_car
+main.mart_models.mart_city_hour_local_rides
+main.mart_models.mart_driver_city_hour_supply_spend_local
+main.mart_models.mart_fleet_company_daily_history
+main.stg_models.stg_car_branding_periods_car_branding_periods
+```

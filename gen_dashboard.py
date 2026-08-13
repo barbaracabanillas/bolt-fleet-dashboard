@@ -339,6 +339,46 @@ def fetch_car_weekly_data() -> pd.DataFrame:
     return df
 
 
+# Real (non-allocated) per-car GMV + finished orders, from the SAME rides-metrics
+# family/column names as the city-level canonical mart (mart_city_hour_local_rides
+# uses rides_gmv_before_discounts_eur_local / sum_driver_order_time_seconds_local
+# etc. too) — just broken out to car/driver grain instead of city grain. This is
+# what lets EPH bruto / RPH / ASP be genuinely different per fleet: OH/GMV/Finished
+# at (week, city, FO, cohort) are otherwise all proportionally redistributed from a
+# single city total by OH share (see _distribute_city / decision doc "Auditoria de
+# fuentes vs Alvaro"), which makes any GMV-or-Finished-based RATIO collapse to the
+# city average for every subgroup — a car's/company's real OH still varies, but the
+# ratio to a value that's ITSELF built as (car's OH share × city constant) can't.
+# Wrapped defensively: a failure here must not break the whole nightly build — the
+# caller falls back to the canonical (previously-existing) numbers if this is empty.
+def fetch_car_rides_weekly() -> pd.DataFrame:
+    """Real per-car weekly GMV + finished-order-tries (Spain), from
+    main.mart_models.mart_car_driver_city_hour_local."""
+    sql = f"""
+    SELECT
+        DATE_TRUNC('week', calendar_date_local)          AS week_start,
+        COALESCE(driver_company_id, -1)                   AS company_id,
+        car_id,
+        SUM(rides_gmv_before_discounts_eur_local)          AS real_gmv_eur,
+        SUM(rides_order_tries_in_finished_state_local)     AS real_finished
+    FROM main.mart_models.mart_car_driver_city_hour_local
+    WHERE car_country_id = 67   -- Spain (all cities)
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2, 3
+    """
+    try:
+        df = run_query(sql)
+    except Exception as e:
+        print(f"[car_rides_real] ⚠️  Could not fetch real per-car GMV/finished orders "
+              f"({str(e)[:200]}) — EPH bruto/RPH/ASP at fleet level will fall back to "
+              f"the city-allocated basis (same as before this fix).")
+        return pd.DataFrame(columns=["week_start", "company_id", "car_id", "real_gmv_eur", "real_finished"])
+    print(f"[car_rides_real] Fetched {len(df):,} car-week rows | real GMV={df['real_gmv_eur'].sum():,.0f} "
+          f"| real finished={df['real_finished'].sum():,.0f}")
+    return df
+
+
 def fetch_m30_data(core38_ids: set = None) -> pd.DataFrame:
     """Daily company-level data for the last 30 days (Daily granularity view).
     Also carries `is_core38` (1 if the car is one of the Colorado Core-38 licences)
@@ -369,6 +409,37 @@ def fetch_m30_data(core38_ids: set = None) -> pd.DataFrame:
     """
     df = run_query(sql)
     print(f"[m30] Fetched {len(df):,} rows")
+    return df
+
+
+def fetch_real_rides_daily(core38_ids: set = None) -> pd.DataFrame:
+    """Real per-company daily GMV + finished-order-tries (Day granularity view) —
+    see fetch_car_rides_weekly() for why this exists. Grouped by is_core38 too so
+    it lines up with m30_df's Colorado Core-38/Resto split."""
+    core38_ids = core38_ids or set()
+    core38_clause = (
+        "CASE WHEN car_id IN (" + ",".join(str(i) for i in core38_ids) + ") THEN 1 ELSE 0 END"
+    ) if core38_ids else "0"
+    sql = f"""
+    SELECT
+        calendar_date_local                                AS date,
+        COALESCE(driver_company_id, -1)                     AS company_id,
+        {core38_clause}                                     AS is_core38,
+        SUM(rides_gmv_before_discounts_eur_local)           AS real_gmv_eur,
+        SUM(rides_order_tries_in_finished_state_local)      AS real_finished
+    FROM main.mart_models.mart_car_driver_city_hour_local
+    WHERE car_country_id = 67   -- Spain (all cities)
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2, 3
+    """
+    try:
+        df = run_query(sql)
+    except Exception as e:
+        print(f"[real_rides_daily] ⚠️  Could not fetch real per-company daily GMV/finished "
+              f"({str(e)[:200]}) — falling back to the city-allocated basis for the Day view.")
+        return pd.DataFrame(columns=["date", "company_id", "is_core38", "real_gmv_eur", "real_finished"])
+    print(f"[real_rides_daily] Fetched {len(df):,} rows | real GMV={df['real_gmv_eur'].sum():,.0f}")
     return df
 
 
@@ -553,24 +624,32 @@ def fetch_taxi_vtc_weekly() -> pd.DataFrame:
     return df
 
 
-def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.DataFrame:
+def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict,
+                              real_rides_daily_lookup: dict = None) -> pd.DataFrame:
     """
     Convert daily company-level M30 data into the same shape as fleet_performance
     (cohort-tagged), keyed by day_date. Keeps ACTIVE online hours as the weight;
     OH/GMV/finished/partners are overwritten with the city-hour mart values in
     main(). Active drivers & cars are the daily distinct counts from the M30 data.
+
+    real_rides_daily_lookup: {(date10, company_id_str, is_core38): (real_gmv_eur,
+    real_finished)} — from fetch_real_rides_daily(), same lookup-dict idiom as
+    aggregate_weekly_by_cohort's real_rides_lookup.
     """
     if m30_df.empty:
         return pd.DataFrame()
+    real_rides_daily_lookup = real_rides_daily_lookup or {}
 
     rows = []
     for _, row in m30_df.iterrows():
         cid = str(row["company_id"])
         ag  = agreements.get(cid, {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL})
         fo = ag.get("g") or ""
+        is_core38 = int(row.get("is_core38", 0) or 0)
         # Colorado split for the Day view (is_core38 comes from m30's car-level flag).
         if fo == COLORADO_FO:
-            fo = CORE38_FO if int(row.get("is_core38", 0) or 0) == 1 else RESTO_FO
+            fo = CORE38_FO if is_core38 == 1 else RESTO_FO
+        real_gmv, real_finished = real_rides_daily_lookup.get((str(row["date"])[:10], cid, is_core38), (0.0, 0.0))
         rows.append({
             "day_date":           str(row["date"]),
             "company_id":         cid,
@@ -585,6 +664,9 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
             "bonus_eur":          row.get("bonus_eur", 0),
             "active_drivers":     row.get("active_drivers", 0),
             "active_cars":        row.get("active_cars", 0),
+            # Real (non-allocated) GMV/finished — see fetch_real_rides_daily().
+            "real_gmv_eur":       real_gmv,
+            "real_finished":      real_finished,
         })
 
     result = (
@@ -598,6 +680,8 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict) -> pd.Data
              bonus_eur=("bonus_eur", "sum"),
              active_drivers=("active_drivers", "sum"),
              active_cars=("active_cars", "sum"),
+             real_gmv_eur=("real_gmv_eur", "sum"),
+             real_finished=("real_finished", "sum"),
              n=("company_id", "nunique"))
     )
     print(f"[daily] {len(result):,} day-city-FO-cohort rows for 'Day' granularity view")
@@ -742,7 +826,8 @@ def _split_colorado_fo(fo, car_id, core38_ids):
 def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
                                 agreements: dict,
                                 branded_cars: set = None,
-                                core38_ids: set = None) -> pd.DataFrame:
+                                core38_ids: set = None,
+                                real_rides_lookup: dict = None) -> pd.DataFrame:
     """
     Roll up car-level weekly data to company+cohort level. Cohort is assigned
     PER CAR: strategic companies use the Sheet cohort; free floating cars
@@ -756,11 +841,17 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
     (week, city, FO, cohort, fleetType) shape. Attaching drivers at the car
     level would multiply them across a company's many car rows.
 
+    real_rides_lookup: {(week10, company_id_str, car_id): (real_gmv_eur, real_finished)}
+    — from fetch_car_rides_weekly(), looked up per car (same idiom as dw_lookup /
+    bonus_lookup elsewhere in this file, rather than a pandas merge, so a missing/
+    empty lookup just defaults every row to 0 with no dtype/merge risk).
+
     Returns columns: week_date, company_id, cohort, invoicing_strategy,
                      city, fo, online_hours, earnings_eur, gmv_eur, active_cars
     """
     branded_cars = branded_cars or set()
     core38_ids   = core38_ids or set()
+    real_rides_lookup = real_rides_lookup or {}
     total_oh_input = car_df["online_hours"].sum()
     print(f"[aggregate] Total OH in car_df before aggregation: {total_oh_input:,.0f}")
 
@@ -780,6 +871,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
             cohort = FF_BRANDED if car_id in branded_cars else FF_NOT_BRANDED
         city = ag.get("city") or (row["city_name"] if has_city_col else None)
         fo   = _split_colorado_fo(ag.get("g") or "", car_id, core38_ids)
+        real_gmv, real_finished = real_rides_lookup.get((str(row["week_start"])[:10], cid, car_id), (0.0, 0.0))
         rows.append({
             "week_date":          row["week_start"],
             "company_id":         cid,
@@ -792,6 +884,12 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
             "earnings_eur":       row["earnings_eur"],
             "gross_earnings_eur": row["gross_earnings_eur"],
             "gmv_eur":            row["gmv_eur"],
+            # Real (non-allocated) GMV/finished for this car — see
+            # fetch_car_rides_weekly(). 0 if that car/week has no match (fetch
+            # failed, or genuinely no real-mart data) — main() applies a
+            # canonical fallback if the WHOLE lookup came back empty.
+            "real_gmv_eur":       real_gmv,
+            "real_finished":      real_finished,
         })
 
     result = pd.DataFrame(rows)
@@ -810,6 +908,8 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
              earnings_eur=("earnings_eur", "sum"),
              gross_earnings_eur=("gross_earnings_eur", "sum"),
              gmv_eur=("gmv_eur", "sum"),
+             real_gmv_eur=("real_gmv_eur", "sum"),
+             real_finished=("real_finished", "sum"),
              active_cars=("car_id", "nunique"))
     )
     total_oh_output = result["online_hours"].sum()
@@ -975,6 +1075,11 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "c":    int(d.get("active_cars") or 0),
             "r":    round(float(d.get("rides") or 0)),
             "n":    int(d.get("n") or 0),
+            # Real (non-allocated) GMV/finished-orders — for EPH bruto/RPH/ASP at
+            # fleet level, where "g"/"r" above (city-allocated) collapse to the
+            # city average for any subgroup. See fetch_car_rides_weekly().
+            "rg":   round(float(d.get("real_gmv_eur") or 0)),
+            "rr":   round(float(d.get("real_finished") or 0)),
         }
         # Per-car OH upside at each FLEET_TARGETS level (weekly rows only).
         if ("hr%d" % FLEET_TARGETS[0]) in d:
@@ -1037,9 +1142,24 @@ def main():
     core38_ids   = fetch_core38_car_ids()   # Colorado "Core 38" licences → car_ids
     car_df       = fetch_car_weekly_data()
     m30_df       = fetch_m30_data(core38_ids)
+
+    # Real (non-allocated) per-car GMV/finished — fixes EPH bruto/RPH/ASP at fleet
+    # level (see fetch_car_rides_weekly()). Built as a lookup dict, same idiom as
+    # dw_lookup/bonus_lookup below, so a failed/empty fetch just defaults to
+    # (0, 0) everywhere with no merge/dtype risk to the rest of the pipeline.
+    real_rides_lookup = {}
+    for r in fetch_car_rides_weekly().itertuples(index=False):
+        try:
+            key = (str(r.week_start)[:10], str(int(r.company_id)), int(r.car_id))
+        except (ValueError, TypeError):
+            continue
+        real_rides_lookup[key] = (float(r.real_gmv_eur or 0), float(r.real_finished or 0))
+    print(f"[car_rides_real] {len(real_rides_lookup):,} (week, company, car) keys in real-rides lookup")
+
     # Attach driver bonus per (day, company). m30 is split by is_core38, so a
     # company can have two rows per day — spread its bonus across them by OH share
     # (otherwise the merge would duplicate the full bonus onto each).
+    real_rides_daily_lookup = {}
     if not m30_df.empty:
         _bonus_d = fetch_bonus_daily()
         m30_df["company_id"] = m30_df["company_id"].astype("int64")
@@ -1053,6 +1173,14 @@ def main():
         m30_df["bonus_eur"] = m30_df["bonus_eur"].fillna(0.0)
         _grp_oh = m30_df.groupby(["date", "company_id"])["online_hours"].transform("sum")
         m30_df["bonus_eur"] = m30_df["bonus_eur"] * (m30_df["online_hours"] / _grp_oh.where(_grp_oh > 0, 1))
+
+        for r in fetch_real_rides_daily(core38_ids).itertuples(index=False):
+            try:
+                key = (str(r.date)[:10], str(int(r.company_id)), int(r.is_core38))
+            except (ValueError, TypeError):
+                continue
+            real_rides_daily_lookup[key] = (float(r.real_gmv_eur or 0), float(r.real_finished or 0))
+        print(f"[real_rides_daily] {len(real_rides_daily_lookup):,} (date, company, is_core38) keys in real-rides lookup")
     branded_cars = fetch_branded_cars()
 
     # 3. Build EMBEDDED_AGREEMENTS (one entry per company). A free floating company
@@ -1065,7 +1193,7 @@ def main():
     agreements = build_embedded_agreements(car_df, cohort_map, fo_map, branded_companies)
 
     # 4. Aggregate weekly OH by company+cohort (per-car cohort split for free floating)
-    weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars, core38_ids)
+    weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars, core38_ids, real_rides_lookup)
 
     # 4·SUPPLY. OH, GMV, Finished orders and Active partners ALL come from the
     #   city-hour rides mart (the SAME source as the reference dashboard → they
@@ -1132,11 +1260,24 @@ def main():
                  rides=("finished_rides", "sum"),
                  active_cars=("active_cars", "sum"),
                  active_drivers=("active_drivers", "sum"),
+                 real_gmv_eur=("real_gmv_eur", "sum"),
+                 real_finished=("real_finished", "sum"),
                  n=("company_id", "nunique"))
         )
         print(f"[aggregate] {len(weekly_df):,} week-city-FO-cohort rows (stage 2) "
               f"| Total OH: {weekly_df['online_hours'].sum():,.0f} "
-              f"| Total finished rides: {weekly_df['rides'].sum():,.0f}")
+              f"| Total finished rides: {weekly_df['rides'].sum():,.0f} "
+              f"| Real GMV: {weekly_df['real_gmv_eur'].sum():,.0f} (canonical GMV: {weekly_df['gmv_eur'].sum():,.0f}) "
+              f"| Real finished: {weekly_df['real_finished'].sum():,.0f}")
+
+        # Safety net: if the real-rides fetch failed or came back empty (0 total),
+        # fall back to the canonical (city-allocated) figures so EPH bruto/RPH/ASP
+        # degrade to the pre-fix behaviour instead of showing €0 / blank everywhere.
+        if weekly_df["real_gmv_eur"].sum() <= 0:
+            print("[car_rides_real] ⚠️  Real GMV/finished totals are 0 — falling back to "
+                  "the canonical (city-allocated) values for EPH bruto/RPH/ASP at fleet level.")
+            weekly_df["real_gmv_eur"] = weekly_df["gmv_eur"]
+            weekly_df["real_finished"] = weekly_df["rides"]
 
         # Per-car OH upside (headroom to each weekly target) merged onto the rows.
         # Each car's active OH is scaled to its group's DISPLAYED online hours.
@@ -1163,7 +1304,7 @@ def main():
 
     # 4b. Daily (for 'Day' granularity): OH/GMV/finished/partners from the
     #     city-hour mart (by day, city); drivers & cars from the earnings M30.
-    daily_df = aggregate_daily_by_cohort(m30_df, agreements)
+    daily_df = aggregate_daily_by_cohort(m30_df, agreements, real_rides_daily_lookup)
     if daily_df is not None and not daily_df.empty:
         city_d = fetch_city_supply_daily()
         d_oh, d_gmv, d_fin = {}, {}, {}
@@ -1178,7 +1319,15 @@ def main():
         daily_df = _distribute_city(daily_df, "day_date", d_oh,  "_w", "online_hours")
         daily_df = _distribute_city(daily_df, "day_date", d_gmv, "_w", "gmv_eur")
         daily_df = _distribute_city(daily_df, "day_date", d_fin, "_w", "rides")
-        print(f"[daily] OH {daily_df['online_hours'].sum():,.0f} | finished {daily_df['rides'].sum():,.0f}")
+        print(f"[daily] OH {daily_df['online_hours'].sum():,.0f} | finished {daily_df['rides'].sum():,.0f} "
+              f"| Real GMV: {daily_df['real_gmv_eur'].sum():,.0f} | Real finished: {daily_df['real_finished'].sum():,.0f}")
+
+        # Same canonical fallback as the weekly path (see above) — see fetch_car_rides_weekly().
+        if daily_df["real_gmv_eur"].sum() <= 0:
+            print("[real_rides_daily] ⚠️  Real GMV/finished totals are 0 — falling back to "
+                  "the canonical (city-allocated) values for the Day view's EPH bruto/RPH/ASP.")
+            daily_df["real_gmv_eur"] = daily_df["gmv_eur"]
+            daily_df["real_finished"] = daily_df["rides"]
 
     # 4c. Taxi vs VTC GMV per week+city (for the Taxi vs VTC widget)
     taxi_df = fetch_taxi_vtc_weekly()
