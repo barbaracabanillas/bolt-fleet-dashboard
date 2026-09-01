@@ -1,513 +1,746 @@
 Company,Company ID,FO,Fleet Type,Cohort
-Madrid Fleet Pablo Acaso Lopez-Bosch,59137,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet INVERSIONES DIAL 1899 SL,61335,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Sergio Vega Fernandez,47030,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Monica Madrigal De Segovia,53698,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Mahureen Daniela Lopez,54713,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Francisco Rodriguez Mansilla,47031,LA CIUDAD DEL TAXI,Strategic,No Agreement
-OLD Madrid Fleet JAVIER BENITO AVISON,51450,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Ana Belen Carrasquilla,51491,LA CIUDAD DEL TAXI,Strategic,No Agreement
-OLD Madrid Fleet Camila Castillo Parra,47278,LA CIUDAD DEL TAXI,Strategic,No Agreement
-OLD Madrid Fleet CARLOS ALGOM SL,49488,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Andrea Masedo Minguez,47570,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Jose Luis Bencosme,46935,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet JESUS SERRANO DIEZ,51176,LA CIUDAD DEL TAXI,Strategic,No Agreement
-OLD Madrid Fleet Rawa Capital One SL,46586,LA CIUDAD DEL TAXI,Strategic,No Agreement
-OLD Madrid Fleet Wellcab Travel Deluxe SL,46667,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Accesible Trans SC,46582,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Elena Gude Jacob,56200,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Carlos Alvarez Gomez,55375,LA CIUDAD DEL TAXI,Strategic,No Agreement
-OLD Madrid Fleet Laura Claudia Giurgiu,64889,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet Felipe Ramos Fernandez,46606,LA CIUDAD DEL TAXI,Strategic,No Agreement
-Madrid Fleet ENOL MOBILITY SL,45876,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet maría ángeles perez sanchez,52438,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet ABM 5 TRANSPORTE SL,58554,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet AFRICA HIPOLITO SANCHEZ-CASCADO,58519,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet AGRACARS MADRID SL,59868,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Alberto Toledo Fernandez,47653,VTC Plus,Strategic,Branding
-Madrid Fleet ALEJANDRO ARACIL CABALLERO,46983,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Taxi Beatriz Isabel Llabres Ripoll,50983,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet BEST RENTAL CARS DRIVERS SL,47079,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Juan Velasco Gonzalez,118040,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet DAVID LOPEZ GOMEZ,53524,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet DAVID MORENO ROJANO,56280,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet ESTELA BARRIO GONZALEZ,47221,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet GINRO MOBILITY SL,61931,BCM Dinamica Y Gestion,Strategic,No Agreement
-"Madrid Fleet INVERSIONES DULZAINA, S.L.",55891,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet JACK MOBILITY SL,48913,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet JOSE LUIS SANCHEZ SANCHEZ,57883,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet JOSE UBALDO RODRIGUEZ MARTIN,47347,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet JUAN MANUEL MIGUEL JORDAN,49058,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Juan Pedro Juárez Blázquez,48003,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet KINALASPORT SL,49059,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet LUIS FELIPE GOMEZ PASTRANA,58333,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MACRAY ASSET MANAGEMENT,47356,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MACUYA CARS MADRID S.L,54810,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MADRID EXPLORE SL,49331,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MARIA ESTHER MANSO BERMUDEZ,47609,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MARIA JOSE BOLIVAR HISPAN,46980,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MARIA JOSE GARCIA FUERTES,47312,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Maria Isabel Prieto Garrido,57253,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MARIA DEL SOL BARDERAS CASADO,47596,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MARIA SOL FERNANDEZ ALONSO,62192,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MARTA GARCIA GARCIA,56283,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MIRIAN LOZANO SANCHEZ,47655,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MONBEDAFAR70 SL,50400,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet NELSON LIMA RUEDA,47597,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet NOVILLO & HERNANDEZ SL,47602,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet NOVO ECO MOBILITY SL,46896,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet PINMAR MOBILITY SL,47813,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet PLANTEAMIENTO DE DESARROLLOS RENOVABLES SL,47600,BCM Dinamica Y Gestion,Strategic,No Agreement
+La Coruna Fleet ENOL MOBILITY S.L.,220605,Doublecab,Strategic,Locked Supply
+A Coruña Fleet ENDEAVOUR MEDIA S.L,235884,Doublecab,Strategic,Locked Supply
+A Coruña Fleet GARRIDO MOBILITY MADRID S.L,251548,Doublecab,Strategic,Locked Supply
+A Coruña Fleet GARRIDO CAR MADRID S.L,287262,Doublecab,Strategic,Locked Supply
+A Coruña Fleet LYRA VENTURES S.L,292270,Doublecab,Strategic,Locked Supply
+A Coruña Fleet RODO MOBILITY S.L,306348,Doublecab,Strategic,Locked Supply
+A Coruña Fleet JOAQUIM IBERN BOSCH,319892,Doublecab,Strategic,Locked Supply
+A Coruña Fleet IRENE IRAVEDRA CUÑARRO,342274,Doublecab,Strategic,Locked Supply
+A Coruña Fleet SHEA CORUÑA SLU,344794,Doublecab,Strategic,Locked Supply
+A Coruña Fleet NORTH WESTERN IBERICA S.L,348729,Doublecab,Strategic,Locked Supply
+Alicante Fleet Muhammad Qasim Said,284315,GVTM,Strategic,Fleet agreement
+Alicante Fleet abderrahim lamrabet,291416,GVTM,Strategic,Fleet agreement
+Alicante Fleet Miguel Angel Garcia Garcia,304722,GVTM,Strategic,Fleet agreement
+Alicante Fleet awais Ahmed Kahloon,307227,GVTM,Strategic,Fleet agreement
+Alicante Fleet VTC ELX MOBILITY SL,318233,GVTM,Strategic,Fleet agreement
+"Alicante Fleet MELMONT CAPITAL, S.L (ALC)",318597,GVTM,Strategic,Fleet agreement
+Alicante Fleet BIL PROFITS SL (ALC),318623,GVTM,Strategic,Fleet agreement
+Alicante Fleet BIL PROFITS SL (ALC),318623,GVTM,Strategic,Fleet agreement
+Alicante Fleet SAAD MAHIOUS KACI,323761,GVTM,Strategic,Fleet agreement
+Alicante Fleet AHMED CUIRA AL BAITAR,324288,GVTM,Strategic,Fleet agreement
+Alicante Fleet MOHAMED CHAFAI MADJOUR,327538,GVTM,Strategic,Fleet agreement
+Valencia Fleet A&J LUX INVESMENTS SL,284639,Publicars,Strategic,Fleet agreement
+Valencia Fleet GEORGE ALLAN LOPEZ ESPINOZA,284997,Publicars,Strategic,Fleet agreement
+Valencia Fleet Dolores Moreno Amaya,285765,Publicars,Strategic,Fleet agreement
+Alicante Fleet Joseline Shiomara Agurto Espinoza,289879,Publicars,Strategic,Fleet agreement
+Alicante Fleet Rocamar E.R.V.,284970,Rocamar,Strategic,Fleet agreement
+Alicante Fleet VISIONGREEN BVR SL,285922,Rocamar,Strategic,Fleet agreement
+Alicante Fleet RAWA CAPITAL SL,286831,Rocamar,Strategic,Fleet agreement
+Alicante Fleet Laura Claudia Giurgiu,324080,Rocamar,Strategic,Fleet agreement
+Alicante Fleet HENCOK GROUP 2023 SL,325533,Rocamar,Strategic,Fleet agreement
+Alicante Fleet REXMED LEVANTE SL,326188,Rocamar,Strategic,Fleet agreement
+Alicante Fleet COLORADO STEEL SLU,279818,Colorado Steel,Strategic,Locked Supply
+"Alicante Fleet ENOL MOBILITY, S.L.",281154,Doublecab,Strategic,Locked Supply
+Alicante Fleet GARRIDO CAR MADRID S.L,281203,Doublecab,Strategic,Locked Supply
+Alicante Fleet ENDEAVOUR MEDIA S.L,281219,Doublecab,Strategic,Locked Supply
+Alicante Fleet Eduardo Martin Gomez De Villalba,286627,Doublecab,Strategic,Locked Supply
+Alicante Fleet BEST MOBILITY EXPERIENCE SL,292383,Doublecab,Strategic,Locked Supply
+Alicante Fleet NZ FIVE COMP 2023 SL,319876,Doublecab,Strategic,Locked Supply
+Alicante Fleet DANIEL VIDAL ZAMORA,319893,Doublecab,Strategic,Locked Supply
+Alicante Fleet DANIEL CASTELLO PEREZ,319896,Doublecab,Strategic,Locked Supply
+Barcelona Fleet TIBUS LUXURY SERVICES SL,329430,Tibus,Strategic,Fleet agreement
+Barcelona Fleet FREETOWN BUSINESS BARCELONA S.L.,63777,Cibeles,Strategic,No Agreement
+Bilbao Fleet Jorge Lejo Valle,333299,Tecnitel,Strategic,Fleet agreement
+Bilbao Fleet Jorge Lejo Garcia,337059,Tecnitel,Strategic,Fleet agreement
+Bilbao Fleet Mª CARMEN VALLE ERRIBAS,337114,Tecnitel,Strategic,Fleet agreement
+"Bilbao Fleet TECNITELCARS, S.L.U",337117,Tecnitel,Strategic,Fleet agreement
+Bilbao Fleet COLORADO STEEL .SLU,312723,Colorado Steel,Strategic,Locked Supply
+Bilbao Fleet ROAD TRAVELLERS MOBILITY .S.L,312743,Doublecab,Strategic,Locked Supply
+Madrid Fleet Sergio Sergio Charneco,66833,Angel Ibañez,Strategic,Branding
+Madrid Fleet ANGEL IBAÑEZ CEBRIAN,68177,Angel Ibañez,Strategic,Branding
+Madrid Fleet MIGUEL ANGEL DEL CERRO GUZMAN,72775,Angel Ibañez,Strategic,Branding
+Madrid Fleet ROCIO CEBRIAN LEON,88990,Angel Ibañez,Strategic,Branding
+Madrid Fleet Fernando Sergio Carnerero,95831,Angel Ibañez,Strategic,Branding
+Madrid Fleet Luz Angelica Alvarez Alvarez,105946,Angel Ibañez,Strategic,Branding
+Madrid Fleet Sophya Vanessa Acosta Perez,112193,Angel Ibañez,Strategic,Branding
+Madrid Fleet Sara Carbone Ballesteros,192248,Angel Ibañez,Strategic,Branding
+Madrid Fleet Ignacio Aguilar Gómez,101960,Daniel León,Strategic,Branding
+Madrid Fleet Manuel Valbuena Diaz,218923,Daniel León,Strategic,Branding
+Madrid Fleet DAVID DELFA DE LA MORENA,46349,David Delfa,Strategic,Branding
 "Madrid Fleet PRIME CARS VTC, S.L",47611,David Delfa,Strategic,Branding
-Madrid Fleet REDECOM SOLUCIONES INFORMATICAS PARA EMPRESAS SL,47654,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet RESOLVALIA SL,61066,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet RAUL SANCHEZ MENDEZ,60389,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet SANTIAGO CRUZ FERNANDEZ,47348,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet SERVITUR CONSULTING SL,47314,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Taxi Susana Hernandez Neira,55113,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet ACEROSCAR SL (ccruz),67260,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet VALMER MOBILITY SL,67483,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Luis Rodrigo Toche Parres,65595,BCM Dinamica Y Gestion,Strategic,No Agreement
-Graumann,63743,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet LAURA DEL CASTILLO-OLIVARES LANERO,67733,BCM Dinamica Y Gestion,Strategic,No Agreement
-Marta salvadores,64161,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Giuseppe Ines Marino,77021,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Vicente Jesus Lopez Gomez,77075,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Luis Navarro Buitrago,73261,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet REAVIVALIA SL,67831,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Raul Hidalgo Treviño,167877,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet HIDEM VTC SL,167887,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Olga Demidkova Demidkova,79139,BCM Dinamica Y Gestion,Strategic,No Agreement
-"Madrid Fleet Lanzadera Shuttle Airport Services, S.L",47040,Jose Luis Funes,Strategic,Branding
+Madrid Fleet Eva María Palacios Llorente,95326,David Delfa,Strategic,Branding
+Madrid Fleet Maria Isabel Valero Nuñez,105381,David Delfa,Strategic,Branding
+Madrid Fleet David Murcia Pacheco,108127,David Delfa,Strategic,Branding
+Madrid Fleet Ana Belen Padilla Almarcha,108524,David Delfa,Strategic,Branding
+Madrid Fleet Gema Albarrán García,119741,David Delfa,Strategic,Branding
+Madrid Fleet Malgorzata Beata Krynicka,119913,David Delfa,Strategic,Branding
+Madrid Fleet Juan Jose Jiménez Valero,122425,David Delfa,Strategic,Branding
+Madrid Fleet Lorena Martínez Prats,46355,Eduardo González,Strategic,Branding
+Madrid Fleet Eduardo González Bartolomé,46663,Eduardo González,Strategic,Branding
+Madrid Fleet Daniel Fernandez Mendez,62452,Eduardo González,Strategic,Branding
+Madrid Fleet Ruben Cerqueira Dominguez,86182,Eduardo González,Strategic,Branding
+Madrid Fleet Julio Nieto Gavilan,89627,Eduardo González,Strategic,Branding
+Madrid Fleet Gustavo Garcia Olmo,92634,Eduardo González,Strategic,Branding
+Madrid Fleet Manuel Abiega Vizcaya,105040,Eduardo González,Strategic,Branding
+Madrid Fleet Manuel Justicia López,105998,Eduardo González,Strategic,Branding
+Madrid Fleet José Paulino Peñas Pinilla,106852,Eduardo González,Strategic,Branding
+Madrid Fleet Marta Mazo Rodriguez,120870,Eduardo González,Strategic,Branding
+Madrid Fleet Cedric Damien Philippe Sauvage,47605,Javier Martinez Velayos,Strategic,Branding
+Madrid Fleet Maria Begoña Fernandez Gonzalez,57171,Javier Martinez Velayos,Strategic,Branding
+Madrid Fleet CEDACTIVITY S.L,80460,Javier Martinez Velayos,Strategic,Branding
+Madrid Fleet Javier Martinez Velayos,89460,Javier Martinez Velayos,Strategic,Branding
+"Madrid Fleet SUITABLE TRANSFER, S.L.",269553,Javier Martinez Velayos,Strategic,Branding
+Madrid Fleet Cristian Seves Cubo,46660,Jose Luis Funes,Strategic,Branding
 "Madrid Fleet TAXI PRIVEE, S.L",46841,Jose Luis Funes,Strategic,Branding
+"Madrid Fleet Lanzadera Shuttle Airport Services, S.L",47040,Jose Luis Funes,Strategic,Branding
 "Madrid Fleet AEREOTANSFER MADRID TXI, SL",47169,Jose Luis Funes,Strategic,Branding
 "Madrid Fleet Lanzadera F75, S.L",47233,Jose Luis Funes,Strategic,Branding
 Madrid Fleet Moverse por Madrid con Chofer SL,47614,Jose Luis Funes,Strategic,Branding
 "Madrid Fleet LANZADERA RENT A CAR, S.L",48851,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Daniel Canales Martinez,48987,OTTOCABS SL,Strategic,Fleet Agreement
-OLD Madrid Fleet VICTORIA HERNAN PORTAL,48986,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet OTTOCABS SL,45968,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet PLANCK VIAJES Y PAQUETES SL,49158,OTTOCABS SL,Strategic,Fleet Agreement
-"Madrid Fleet YOURCABMOVE, S.L",49157,OTTOCABS SL,Strategic,Fleet Agreement
-OLD Madrid Fleet JACABLAN.S.L.U,49163,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet POWERFULL PRESTIGE S.L,49153,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet ALAMEDO FLEETS S.L.,49323,Rarotonga,Strategic,Branding
-Madrid Fleet RAROTONGA VENTURES VTC,46343,Rarotonga,Strategic,Branding
-Madrid Fleet JORGE RUIZ PEREZ,49367,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet PARSEC INVESTMENT GLOBAL SL,66665,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Eduardo Gaja Rubio,71501,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet INGENIERIA TECNICAS INFORMATICAS Y SERVICIOS SA,77550,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet ZAHGAR TOUR SA,77720,OTTOCABS SL,Strategic,Fleet Agreement
-"Madrid Fleet DELAVEGA VTC, S.L",78912,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Felipe Ignacio Rivas Rivas,84963,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Salcedo Del Olmo,87798,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet LEGEND COMMERCER SL,89481,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Oscar Sacedo Del Olmo,86083,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Maria Del Carmen San Pablo De La Cruz,85237,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet LITOSCAR DREAM S.L,46374,LITOSCAR DREAM S.L,Strategic,No Agreement
-Madrid Fleet AUTOS DRIVECAR S.L,46373,LITOSCAR DREAM S.L,Strategic,No Agreement
-Madrid Fleet SERVICIOS MOBILITY MADRID SLU,46366,Servicios Mobility,Strategic,Branding
-Malaga Fleet RODRIGUEZ MOBILITY,57489,Servicios Mobility,Strategic,Branding
-Madrid Fleet DELUXSE MADRID SL,47365,Servicios Mobility,Strategic,Branding
-Madrid Fleet IMOBILITY SL,49489,Servicios Mobility,Strategic,Branding
-Madrid Fleet RODRIGUEZ MOBILITY,51327,Servicios Mobility,Strategic,Branding
-Madrid Fleet MARVEL BM TRANSFERS SL,68375,Servicios Mobility,Strategic,Branding
-Madrid Fleet MARVEL MOBILITY SL,68377,Servicios Mobility,Strategic,Branding
-OLD Madrid Fleet  FIRST EMILIAN SL,49487,Servicios Mobility,Strategic,Branding
-Madrid Fleet TECNITEL CARS SLU,45965,TECNITEL CARS SLU,Strategic,Branding
-Madrid Fleet AUTOS LAUCAR SLU,46174,LAUCAR,Strategic,No Agreement
-Madrid Fleet SOM autos ocampo,47287,SOM Autos Campo,Strategic,No Agreement
-Madrid Fleet Mobile car automoción SL,46649,SOM Autos Campo,Strategic,No Agreement
-Madrid Fleet Sergio Ocampo Martin,46828,SOM Autos Campo,Strategic,No Agreement
-Madrid Fleet JYM Moon Black SL,46243,JYM Moon Black SL,Strategic,No Agreement
-Madrid Fleet TOP CLASS AUTOS S.L,46287,TOP CLASS AUTOS SL,Strategic,No Agreement
-Madrid Fleet SHUTTLE GESTION S.L.,46377,Shuttle Gestion,Strategic,No Agreement
-Madrid Fleet Fidel Bellido maestre,47092,Fidel Bellido,Strategic,No Agreement
-OLD Madrid Fleet José Antonio lázaro barbero,47091,Fidel Bellido,Strategic,No Agreement
-Madrid Fleet Montserrat Bellido maestre,47090,Fidel Bellido,Strategic,No Agreement
-Madrid Fleet Autos Frutos Madrid SL,47297,Autos Frutos Madrid SL,Strategic,No Agreement
-"Madrid Fleet Euro Vans & Cars, S.A.",47563,Euro Vans & Cars SA,Strategic,No Agreement
-"Madrid Fleet Intereuropa Car, S.L.U.",47568,Euro Vans & Cars SA,Strategic,No Agreement
-Madrid Fleet AGENCIA NEGOCIADORA TRANSFERS S.L.,47745,"Agencia Negociadora Transfers, S.L.",Strategic,No Agreement
-Madrid Fleet TORROCO MOBILITY S.L.,46781,TORROCO MOBILITY S.L.,Strategic,No Agreement
-Madrid Fleet ALTHIA LIMO S.L.,49232,Fernando - Althia Limo SL,Strategic,No Agreement
-Madrid Fleet Sonia Calvo Checa,48659,Gescab (Miguel),Strategic,No Agreement
-Madrid Fleet Irubus,48965,ALSA (Miguel) - Flota ALSA,Strategic,No Agreement
-Madrid Fleet ORTIZ Y VARON SL,49275,Gescab (Miguel),Strategic,No Agreement
-OLD +Madrid Fleet VTC 1 DESARROLLO 2015,51963,Gescab (Miguel),Strategic,No Agreement
-OLD Madrid Fleet BLACK CABS SL,62515,Gescab (Miguel),Strategic,No Agreement
-Madrid Fleet Diego Morente Fuentes,46988,Gescab (Miguel),Strategic,No Agreement
-OLD Madrid Fleet Hector Herrero Barrios,71500,Gescab (Miguel),Strategic,No Agreement
-OLD Madrid Fleet Yabadu Cars,61115,Gescab (Miguel),Strategic,No Agreement
-Madrid Fleet Tibus Luxury Service,65906,Caverel,Strategic,No Agreement
-Madrid Fleet INTERCAMBIADORES EUROPEOS SL,49188,ALSA (Broncotrans),Strategic,Fleet Agreement
-Madrid Fleet Marcos Moreno,68480,ALSA (Broncotrans),Strategic,Fleet Agreement
-Madrid Fleet Jose Carlos Salazar Varga,58091,Gescab,Strategic,No Agreement
-Madrid Fleet MOBILITY DRIVER SL,64516,Gescab,Strategic,No Agreement
-OLD Madrid Fleet Christian Cester,68163,Gescab,Strategic,No Agreement
-OLD Madrid Fleet Maria Florencia Pistani,69720,Gescab,Strategic,No Agreement
-"Madrid Fleet Nuvicar Inversiones, SL",71833,Gescab,Strategic,No Agreement
-"Madrid Fleet Shared Transfer, SL",74869,Gescab,Strategic,No Agreement
-Madrid Fleet Richar Ramon Rivas de la Cruz,53133,Gescab,Strategic,No Agreement
-"OLD Madrid Fleet Sekiz Fiesta Omnibus, SL",47929,Gescab,Strategic,No Agreement
-"Madrid Fleet BARAJAS TRANSFERS, SL",63274,Gescab,Strategic,No Agreement
-Madrid Fleet FUTURAUTO MADRID SL,47561,FUTURAUTO,Strategic,No Agreement
-Madrid Fleet Vehiculos de Abono Special Car Service,47360,VASCAR,Strategic,No Agreement
-Madrid Fleet Autos carazo servicio de trans especial sl,48223,Carazo,Strategic,No Agreement
-"Madrid Fleet VITTA CAR 2021, S.L.",48458,Carazo,Strategic,No Agreement
-"Madrid Fleet RENTAVAN MB, S.L.",47979,RENT A VAN,Strategic,No Agreement
-Madrid Fleet AFM PORTAL DEL TRANSPORTE S.L.,56299,Cibeles,Strategic,No Agreement
-Madrid Fleet AUTOS AGRIMONY BACH TRANSPORTATION S.L.,56300,Cibeles,Strategic,No Agreement
-"Madrid Fleet AUTOS ARARAT TRANSPORTATION, S.L.",56302,Cibeles,Strategic,No Agreement
-Madrid Fleet AUTOS LA MARUCA DA SERPE S.L.,56303,Cibeles,Strategic,No Agreement
-Madrid Fleet AUTOS MIRAZ LA BELLA S.L.,56305,Cibeles,Strategic,No Agreement
-Madrid Fleet CIBELES COMFORT CARS S.L,56307,Cibeles,Strategic,No Agreement
-"Madrid Fleet CLEMATIS BACH TRANSPORTATION SERVICES, SL",56306,Cibeles,Strategic,No Agreement
-Madrid Fleet DO THE RIGHT THING CARS S.L.,56297,Cibeles,Strategic,No Agreement
-"Madrid Fleet GEST VTC SERVICE, SOCIEDAD LIMITADA",56296,Cibeles,Strategic,No Agreement
-"Madrid Fleet ICEBERG SMART CAB, SOCIEDAD LIMITADA",56294,Cibeles,Strategic,No Agreement
-Madrid Fleet UNAUTO VTC INICIATIVAS Y DESARROLLO S.L.,58673,Cibeles gestionada,Strategic,No Agreement
-"Madrid Fleet VTC FELP TRANFER, SOCIEDAD LIMITADA",56295,Cibeles,Strategic,No Agreement
-"Madrid Fleet VTC KICO CAR, SOCIEDAD LIMITADA",56293,Cibeles,Strategic,No Agreement
-Madrid FleetVTC TRANSFER SOCIALITY SL,56291,Cibeles,Strategic,No Agreement
-Madrid Fleet ZATER TRANSPORTATION SERVICES 1525 S.L,56292,Cibeles,Strategic,No Agreement
-Madrid Fleet José Fernández de Gamboa Chavarri,57118,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet Wedrive S.L,60514,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet Rivas&Mein S.L.,60593,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet Swift Transports CRT S.L,47910,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Acamar 17 S.L.,57125,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet SOLUCIONES DE VENTA DIRECTA Y MARKETING SL,46897,Moober Class,Strategic,Branding
-Madrid Fleet Inertia Mobility S.L.,66252,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet Andres Fernando Bustamante Alvear,74340,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet SHUTTLE VIP-MADRID S.L.,68398,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet Mindworld Project S.L.,74328,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet VATAC INVERSIONES S.L,76006,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet DIGITAL DOERS SL,76007,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet ONLY INNOVATION SL,47088,Cibeles gestionada,Strategic,No Agreement
-Arecheta SL,82987,Cibeles gestionada,Strategic,No Agreement
-"Madrid Fleet PALMETTO CAPITAL PARTNERS, S.L.",82280,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet VETRANSCO 2023 SL,87832,Cibeles gestionada,Strategic,No Agreement
-Madrid Fleet ELIFRAN PROYECTOS GLOBALES SL,45871,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet GARRIDO MOBILITY MADRID S.L.,55482,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet BORA BORA ALLIANCE SL,89289,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet SHEA GROUP IBERICA SL,87337,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet MADMOBILITY TECH SL,47905,Madmobility,Strategic,Fleet Agreement
-OLD TRADAMA LOGISTICA GLOBAL SL,52208,LAUCAR,Strategic,No Agreement
-OLD UÇ Fiesta OMNIBUS,71819,LAUCAR,Strategic,No Agreement
-Madrid Fleet Carlos Azorin Fuentes,65039,Global Transport,Strategic,Branding
-Madrid Fleet SERVICAR 25 VIP MADRID SL,46009,SERVICAR 25,Strategic,Branding
-Madrid Fleet SERVICAR 25 TRANSPORTE DE VIAJEROS SL,46136,SERVICAR 25,Strategic,Branding
-Madrid Fleet Leihwagen  S.L,46250,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet MEDUSA CAR 25 SL,46092,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet JuliaCar 24 Horas S.L.,48873,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet Maria Ernestina Paolini Ibarra,51344,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet María Isabel Cabrero Sanz,54715,SERVICAR 25,Strategic,Branding
-Madrid Fleet Felipe Martin Saiz,59293,SERVICAR 25,Strategic,Branding
-Madrid Fleet INCAZAM GESTION SL,51488,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet MIJOR AUTOS TRANSPORT SL,58993,SERVICAR 25,Strategic,Branding
-Madrid Fleet LORPOCAR SL,60015,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet TOP LIFE REAL ESTATE,47288,SERVICAR 25,Strategic,Branding
-Madrid Fleet Oscar Segovia Del Pozo,65666,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet Yaiza Segovia Freire,71647,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet Fernando Freire Canovas,71502,SERVICAR 25,Strategic,Branding
-OLD Madrid Fleet JOJUCAR SL,47051,SERVICAR 25,Strategic,Branding
 Madrid Fleet Alberto Castañera Yepes,49666,Jose Luis Funes,Strategic,Branding
 Madrid Fleet Martin Alfonso Nevado Nevado,55437,Jose Luis Funes,Strategic,Branding
-Madrid Fleet MERCURY ALLIANCE SL,45873,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet DESTINY ISS MEDIA SL,45870,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet GARRIDO CAR MADRID SL,45872,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Eduardo Martin Gomez De Villalba,80631,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet COLORADO STEEL SL,87336,DOUBLECAB (SPV),Strategic,Locked Supply
-Madrid Fleet GRAUMANN SOLUTIONS SL,67405,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Jose Alberto Pereira Araujo,70219,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Francisco Javier Triviño Padilla,76387,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Alfonso Lopez Fraile,76869,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Taxi Marta Maillo Martinez,77443,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Taxi Juan Velasco Gonzalez,76152,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet LAS DELICIAS CJ SERVICIOS SL,72394,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Manuel Gomez Royer,77444,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet KOTSUKIKAN SL,73953,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet ALI BENOMAR BENOMAR,55176,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Abdelouahed Abbou Belkaid,64219,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Francisco Javier Gil Sastre,81977,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet MARTA SALVADORES CABEZAS,67832,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Alvaro Villanueva Fernandez,75951,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Julian Lavandero Garcia,81375,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Yolanda Dominguez Rojas,81173,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet EMILIO TORRENTE LUJAN,82788,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Ignacio Sàez Roco,74209,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Fernando Hernando Aylagas,89718,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Nura Kassab Sanz,84998,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet GRAN VIA RENT A CAR SL,85184,Jose María,Strategic,No Agreement
-Madrid Fleet AUTOS JOSE MARIA SL,83879,Jose María,Strategic,No Agreement
-Madrid Fleet TRAJANO DESARROLLO EMPRESARIAL SL,48535,Trajano,Strategic,No Agreement
-Madrid Fleet PIEDRA DE TACO S.L.,46876,Piedra de Taco,Strategic,Branding
-"Madrid Fleet URBAN MOVE PREMIUM, S.L.",87157,Piedra de Taco,Strategic,Branding
-"OLD Madrid Fleet RAMOS LOPEZ CONFORT TRAVEL, S.L.",87877,Piedra de Taco,Strategic,Branding
-Madrid Fleet Maria del Pilar Molina Fernandez,65045,Daniel León,Strategic,No Agreement
-Madrid Fleet Manuel Valbuena Diaz,218923,Daniel León,Strategic,Branding
-Madrid Fleet Ana Cristina Hernandez Asensio,96244,Rarotonga,Strategic,Branding
-Madrid Fleet MOBILITI TAXI VTC GETS CAES SL,97130,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet METROPOLIS BLACK CAB,97127,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet FUENTE DEL BERRO VTC CARS,97124,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Carolina Robles Rodríguez,98287,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Siria Ronderos Gonzalez,98448,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Pablo Lamata Nuñez,98653,DOUBLEDIGIT,Strategic,Fleet Agreement
-OLD Madrid Fleet Israel Medel Martinez,72407,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Jose Manuel Sanchez Maleubre,98542,Daniel León,Strategic,No Agreement
-Madrid Fleet Cesar Novillo Sanchez,99287,BCM Dinamica Y Gestion,Strategic,No Agreement
-"Madrid Fleet PANDIELLO Y SENA, SOCIEDAD LIMITADA",55207,ALSA (Broncotrans),Strategic,Fleet Agreement
-OLD Madrid Fleet Marta Valiente Moreno,99857,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Said El Ajjali,99319,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Petrica popescu,62148,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet PAO GESTIONES TURISTICAS SL,99691,SERVICAR 25,Strategic,Branding
-Madrid Fleet EVA MARIA VAZQUEZ MORALEDA,47313,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Raquel Mendo Pedrajas,98753,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Alicia Molina Martín,101449,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet ÁLVARO RODRÍGUEZ MOLINA,102754,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Gema Alonso Moreno,91934,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Emilio Torrente Lujan,82788,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Gema Alonso Moreno,91934,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet JESUS POZUELO BARRAGAN,69027,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Carlos Paredes Fernandez,92637,Servicios Mobility,Strategic,Branding
-Madrid Fleet Javier Rodríguez Molina,103437,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet CEVIGOCAR SL,97824,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet David Felipe Castañeda Estévez,103175,Jose Luis Funes,Strategic,Branding
+Madrid Fleet ELECTRIC TAXIPRIVEE CARS SL,90366,Jose Luis Funes,Strategic,Branding
 Madrid Fleet Paula Castañeda Estevez,103174,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Jose Maria Angel Ortega,105443,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet ALEXTRENADO S.L,87971,Global Transport,Strategic,Branding
-Madrid Fleet Gerardo Roiz de la Parra,105723,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Maria Teresa Arias Toribio,106174,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Juan Carlos Garcia Rivera,104798,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Alba Martin Clemente,94529,DOUBLECAB,Strategic,Locked Supply
-"Madrid Fleet FREETOWN BUSINESS, S.L.",106591,Cibeles,Strategic,No Agreement
-Madrid Fleet PROINVERTIA MADRID S.L.,106556,Cibeles,Strategic,No Agreement
-Madrid Fleet AUTOS LAVAPIES S.L.,106557,Cibeles,Strategic,No Agreement
-Madrid Fleet AUTOS PUERTA DEL SOL SL,106769,Cibeles,Strategic,No Agreement
-"Madrid Fleet DRIVIFY, S.L.",74513,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet LIBREOCUPADO SL,107050,Cibeles,Strategic,No Agreement
-Madrid Fleet Ignacio Aguilar Gómez,101960,Daniel León,Strategic,Branding
-OLD Madrid Fleet Jorge Gregorio Arranz Liras,59943,Servicios Mobility,Strategic,Branding
-Madrid Fleet OSCAR DEL AMO ORTEGA,57169,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet RAUL OCURRELE CEJUDO,108126,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet ZEESHAN SIDDIQUE PERVEEN,108124,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Muhammad Ishaq Bibi,107894,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Najib Bourmani Touil,104259,Campofis,Strategic,Branding
-Madrid Fleet DAVID LLORENTE GUTIERREZ,111298,Campofis,Strategic,Branding
-Madrid Fleet NORMA ANTONIA MARTINEZ BAEZ,108676,Campofis,Strategic,Branding
-Madrid Fleet WIL ZETA CARS SL,47599,Campofis,Strategic,Branding
-Madrid Fleet VTC ALCOSER S.L,91985,Campofis,Strategic,Branding
-Madrid Fleet Roberto Holguin Albacete,55307,Campofis,Strategic,Branding
-Madrid Fleet Pierre Remi Jean Forget,79005,Campofis,Strategic,Branding
-Madrid Fleet PEDRO ANTONIO LOPEZ PEREZ,48741,Campofis,Strategic,Branding
-Madrid Fleet Paola Andrea Osorio Henao,51559,Campofis,Strategic,Branding
-Madrid Fleet Nuria Álvarez Alvarez,53926,Campofis,Strategic,Branding
-Madrid Fleet Najib Bourmani Touil,104259,Campofis,Strategic,Branding
-Madrid Fleet Marko Ciric,47811,Campofis,Strategic,Branding
-Madrid Fleet Marcilak Hilario Ferreira Libera,54000,Campofis,Strategic,Branding
-Madrid Fleet Manuel Martín Hernández,68843,Campofis,Strategic,Branding
-"Madrid Fleet MADRID TRANSFER GROUP D.A.L. SL.,",63619,Campofis,Strategic,Branding
-Madrid Fleet Luis Martin Agurto Palacios,77655,Campofis,Strategic,Branding
-Madrid Fleet Luis Felipe Maña González,65240,Campofis,Strategic,Branding
-Madrid Fleet Lucas Arcila Guiral,75969,Campofis,Strategic,Branding
-Madrid Fleet Leslie Alessandra Zegarra Barrero,73445,Campofis,Strategic,Branding
-Madrid Fleet LARRY MILTON LOPEZ DIAZ,59944,Campofis,Strategic,Branding
-Madrid Fleet Juan ignacio Estrada Arango,81761,Campofis,Strategic,Branding
-Madrid Fleet Juan carlos toquica segura,47713,Campofis,Strategic,Branding
-Madrid Fleet Juan Antonio Garcia Martin,46650,Campofis,Strategic,Branding
-Madrid Fleet Jose Ramon Celestino Serrano,87344,Campofis,Strategic,Branding
-Madrid Fleet JOSE ORTIZ CONTRERAS,60071,Campofis,Strategic,Branding
-Madrid Fleet Jorge Federico Del Rosario,70617,Campofis,Strategic,Branding
-Madrid Fleet JOGUSAL CAR SL,97515,Campofis,Strategic,Branding
-Madrid Fleet Joel Toquica Barquilla,85158,Campofis,Strategic,Branding
-Madrid Fleet Javier Alonso Galvez,91428,Campofis,Strategic,Branding
-Madrid Fleet Izmargestion SL,54708,Daniel León,Strategic,No Agreement
-Madrid Fleet Hector Rodriguez Gea,49931,Campofis,Strategic,Branding
-Madrid Fleet Hamza Saidi Abakhti,53998,Campofis,Strategic,Branding
-Madrid Fleet Gabriel Ortega Ramos,51829,Campofis,Strategic,Branding
-Madrid Fleet Eleuterio Gonzalez,83356,Campofis,Strategic,Branding
-Madrid Fleet Classy Mobility SPN,46276,Campofis,Strategic,Branding
-Madrid Fleet Cesar Miguel Alcoser Satian,53994,Campofis,Strategic,Branding
-"Madrid Fleet CASTRO DIAZ Y DEL CURA, S.L.",46831,Campofis,Strategic,Branding
-Madrid Fleet BYRON OROZCO CEPEDA,69297,Campofis,Strategic,Branding
-Madrid Fleet Business Resolution SV SL,46362,Campofis,Strategic,Branding
-Madrid Fleet Autos Algete sociedad cooperativa,47879,Campofis,Strategic,Branding
-Madrid Fleet Ángel Obregón Yañez,47617,Campofis,Strategic,Branding
-Madrid Fleet ALEXANDRU FLORIN MATEI,53618,Campofis,Strategic,Branding
-Madrid Fleet PABLO FERRERES LOZA,108523,BCM Dinamica Y Gestion,Strategic,No Agreement
-"Madrid Fleet INTERNATIONAL BUSINESS LIMOUSINES, S.A. (IBL)",108683,ALSA (directo),Strategic,Fleet Agreement
-Madrid Fleet Gonzalo Sanchez-Mora del Pozo,108098,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Fernando Calvo García,104016,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Liseth Lopez Sanchez,91337,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Francisco Jesus Fructuoso Camacho,111062,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet David Felipe Castañeda Estévez,103175,Jose Luis Funes,Strategic,Branding
+Madrid Fleet Carmen Collado Sánchez,108267,Jose Luis Funes,Strategic,Branding
 Madrid Fleet TXI CONSULTING MADRID SL,111250,Jose Luis Funes,Strategic,Branding
-Madrid Fleet KANDRY CARS SL,111359,Servicios Mobility,Strategic,Branding
-OLD Madrid Fleet MASHA PLANET SL,46376,SERVICAR 25,Strategic,Branding
-Madrid Fleet MPE GEST CARS SL,104180,Gescab,Strategic,No Agreement
-Madrid Fleet Endeavour Media S.L.,58428,DOUBLECAB,Strategic,Locked Supply
-OLD Madrid Fleet Emilio Torrente Lujan,64143,BCM Dinamica Y Gestion,Strategic,No Agreement
-"Madrid Fleet  MOVILIDAD MULTIMODAL, S.L.",112579,ALSA (directo),Strategic,Fleet Agreement
-Madrid Fleet RAUL NOVO GONZALEZ,112771,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet WEINA DU,113041,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Diego De La Torre Rebate,112430,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Bodaliacars sl,113922,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Israel Medel Martinez,114363,DOUBLEDIGIT,Strategic,Fleet Agreement
 Madrid Fleet Ricardo Sanchez Montenegro,115739,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Lucía Bolonio Gomez,83211,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Gabriela Bolonio Gomez,85751,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Luis Ortiz Armillas,116554,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Wilber Dante Alzate Saldarriada,116954,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet INTEGRACION SOCIAL DE MINUSVALIDOS SL,111383,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet MIGUEL ANGEL DEL CERRO GUZMAN,72775,Angel Ibañez,Strategic,Branding
-Madrid Fleet Luz Angelica Alvarez Alvarez,105946,Angel Ibañez,Strategic,Branding
-Madrid Fleet ROCIO CEBRIAN LEON,88990,Angel Ibañez,Strategic,Branding
-Madrid Fleet ANGEL IBAÑEZ CEBRIAN,68177,Angel Ibañez,Strategic,Branding
-Madrid Fleet Sophya Vanessa Acosta Perez,112193,Angel Ibañez,Strategic,Branding
-Madrid Fleet Sergio Sergio Charneco,66833,Angel Ibañez,Strategic,Branding
-Madrid Fleet Sandra Lara Ubierna,114118,VTC Plus,Strategic,Branding
-Madrid Fleet Ahmed Ouled Ali Idir,116555,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Enrique Jorge izquierdo,72708,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet WILMER EDGARDO ZEGARRA CARPIO,47604,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Marta Valiente Moreno,117187,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet VTCOLME,117902,Gescab,Strategic,No Agreement
-Madrid Fleet Jorge Sanchez Caballero,75667,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet OTTOFLEETS. SL,52566,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Roberto Cabezas Herrero,118186,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Alvaro Marcos Diaz,119170,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Walter Abdala Castañeda Chaves,120580,Jose Luis Funes,Strategic,Branding
+Madrid Fleet Víctor San Jose Escaño,147917,Jose Luis Funes,Strategic,Branding
+Madrid Fleet Jose Luis Funes Moran,185186,Jose Luis Funes,Strategic,Branding
+Madrid Fleet MOOBER CLASS SL,47084,Jose Luis Moober,Strategic,Branding
+Madrid Fleet GARMENAL SL,185146,Jose Luis Moober,Strategic,Branding
+Madrid Fleet SOLUCIONES DE VENTA DIRECTA Y MARKETING SL,46897,Moober Class,Strategic,Branding
+Madrid Fleet Ignacio Oscar Lario santiago,67805,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Alberto Diaz Blanco,71244,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet DEMETRIO VEGA CARVAJAL,75625,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Ignacio Oscar Lario santiago,67805,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Saskia Armesto Martin,90246,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet David Rodriguez,90997,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet CAR AVENIU S.L,92709,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Carlos Calleja López,93094,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Jorge de Mingo Varela,94729,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Carlos Gallego Vera,94826,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Ana Isabel Rodriguez Pachon,94849,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Jorge de Mingo Varela,94729,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Olga del Pozo López,96498,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet David Picon Aragon,96499,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Mbshelby company,97493,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet ANGEL RODRÍGUEZ TORRES,99472,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Alvaro Garcia Castillo,96644,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Jose Bernardo García Martín,96691,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Mbshelby company,97493,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet ANGEL RODRÍGUEZ TORRES,99472,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Eva Campos Gonzalez,100804,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Manuel Angel Del Bosque Huerta,103819,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Fernando Lopez Fando Fiestas,103825,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Tatiana Álvarez Swirgsde,105349,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Miguel herranz Alonso,105676,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet IVAN PEREZ BARRIOS,108593,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Diego Nieto,108559,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Francisco David Diaz Lopez,106096,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet CASTILLO MADRID DRIVE S.L,107443,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Diego Nieto,108559,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet IVAN PEREZ BARRIOS,108593,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Javier Rodriguez Freire,114158,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Mariana Gonzalez Fernandez,114272,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Mohammad Hassan Ibrahim Heni,116758,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Deborah Sarah Maria Eterovic Vervuurt,117164,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet LA CASA DE PAPEL S.L.,117704,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet ANGEL ESPAÑA ALVAREZ,118244,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Eva Maria Rodriguez Pachon,119257,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Andrea Monleon Lopez,119258,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Isabel de Mingo Varela,119463,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Israel García Aristegui,120759,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Veronica Valverde Sanchez,125656,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Raul Gomez Del Amo,126798,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Pedro Jambrina Castro,128210,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Cristina Romero Durán,128299,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet David Barrio Grau,129650,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Óscar Ranz Sánchez,129667,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Jose Maria Vilanueva Ortin,130224,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Ricardo Lopez De Guereñu Rodrigo,134724,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet VTCPANCETAS SL,137668,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Esther Fuentes Frutos,138264,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Francesc Ros Melero,140312,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Elena Guerrero Ruiz,148408,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet José María Rodríguez Piedehierro,148426,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Margarita García García,152775,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Teresa Peralbo Acuña,175553,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet María Maricella Moreira Miranda,177079,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet RAUL MARTINEZ GOMEZ,179928,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Eliseo Jorge Tersse Arce,179963,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Marta Blanco Vara,180132,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Marta Campo Ruano,181343,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Wafae Taibi,185073,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Serrano Marin Susana Maria,230532,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Elena Ofelia Lario Santiago,243604,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Natascha Lefebvre,248139,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Mónica Manzanares Martínez,249249,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Maria Begoña Pereira Garcia,249274,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Rufino Pachon Cobo,249683,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Concepción Montero Rodríguez,253574,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Diego Miguel Gutierrez Porteiro,256176,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Roberto Martinez Martinez,256391,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Javier Rueda Martínez,258175,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Álvaro Ignacio Rueda Llamas,270216,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Maria Virginia Robledo Valero,270337,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Alberto Bernardez Gomez,270948,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Alvaro Moreno Lobo,273444,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Fernando Garcia Gutierrez,277957,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Pablo Sanchez Ortiz,293200,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Almudena Virginia Landaluce de la Fuente,302861,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Lucas Diaz Castro,311596,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Miguel Angel Eleno Toledo,323084,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet SERGIO MARTINEZ GOMEZ,327536,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Sergio Perelli Barriocanal,328423,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet JUAN JOSE DIAZ LOPEZ,334748,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet PIEDRA DE TACO S.L.,46876,Piedra de Taco,Strategic,Branding
+"Madrid Fleet URBAN MOVE PREMIUM, S.L.",87157,Piedra de Taco,Strategic,Branding
+"OLD Madrid Fleet RAMOS LOPEZ CONFORT TRAVEL, S.L.",87877,Piedra de Taco,Strategic,Branding
+"Madrid Fleet DRESNICAR, S.L.U.",225577,Preservealco,Strategic,Branding
+"Madrid Fleet PRESERVEALCO, S.L.U.",225617,Preservealco,Strategic,Branding
+Madrid Fleet RAROTONGA VENTURES VTC,46343,Rarotonga,Strategic,Branding
+Madrid Fleet ALAMEDO FLEETS S.L.,49323,Rarotonga,Strategic,Branding
+Madrid Fleet Ana Cristina Hernandez Asensio,96244,Rarotonga,Strategic,Branding
+Madrid Fleet VOLTAJE SOBRE RUEDAS E INVERSIONES SL,343682,Rarotonga,Strategic,Branding
+Madrid Fleet SERVICAR 25 VIP MADRID SL,46009,Servicar,Strategic,Branding
+OLD Madrid Fleet MEDUSA CAR 25 SL,46092,Servicar,Strategic,Branding
+Madrid Fleet SERVICAR 25 TRANSPORTE DE VIAJEROS SL,46136,Servicar,Strategic,Branding
+Madrid Fleet Leihwagen  S.L,46250,Servicar,Strategic,Branding
+OLD Madrid Fleet MASHA PLANET SL,46376,Servicar,Strategic,Branding
+OLD Madrid Fleet JOJUCAR SL,47051,Servicar,Strategic,Branding
+OLD Madrid Fleet TOP LIFE REAL ESTATE,47288,Servicar,Strategic,Branding
+OLD Madrid Fleet JuliaCar 24 Horas S.L.,48873,Servicar,Strategic,Branding
+OLD Madrid Fleet Maria Ernestina Paolini Ibarra,51344,Servicar,Strategic,Branding
+Madrid Fleet INCAZAM GESTION SL,51488,Servicar,Strategic,Branding
+OLD Madrid Fleet María Isabel Cabrero Sanz,54715,Servicar,Strategic,Branding
+OLD Madrid Fleet MIJOR AUTOS TRANSPORT SL,58993,Servicar,Strategic,Branding
+Madrid Fleet Felipe Martin Saiz,59293,Servicar,Strategic,Branding
+Madrid Fleet LORPOCAR SL,60015,Servicar,Strategic,Branding
+Madrid Fleet Oscar Segovia Del Pozo,65666,Servicar,Strategic,Branding
+OLD Madrid Fleet Fernando Freire Canovas,71502,Servicar,Strategic,Branding
+OLD Madrid Fleet Yaiza Segovia Freire,71647,Servicar,Strategic,Branding
+Madrid Fleet PAO GESTIONES TURISTICAS SL,99691,Servicar,Strategic,Branding
+Madrid Fleet Alberto Toledo Fernandez,47653,VTC Plus,Strategic,Branding
 Madrid Fleet Roberto Baena Rodríguez,108891,VTC Plus,Strategic,Branding
 Madrid Fleet Alberto Serrano Ramírez,109555,VTC Plus,Strategic,Branding
 Madrid Fleet María de los Ángeles Vicente Moranchel,109559,VTC Plus,Strategic,Branding
 Madrid Fleet Borja Rodríguez Martínez,109649,VTC Plus,Strategic,Branding
-Madrid Fleet Francisco David Diaz Lopez,106096,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Elena Zancajo Montiel,114481,VTC Plus,Strategic,Branding
-Madrid Fleet Mariana Gonzalez Fernandez,114272,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet Sandra Lara Ubierna,114118,VTC Plus,Strategic,Branding
 Madrid Fleet Ruth Martin Muñoz,114265,VTC Plus,Strategic,Branding
-Madrid Fleet Javier Rodriguez Freire,114158,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Deborah Sarah Maria Eterovic Vervuurt,117164,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet LA CASA DE PAPEL S.L.,117704,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet ANGEL ESPAÑA ALVAREZ,118244,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Mohammad Hassan Ibrahim Heni,116758,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Manuel Abiega Vizcaya,105040,Eduardo González,Strategic,Branding
-Madrid Fleet Eduardo González Bartolomé,46663,Eduardo González,Strategic,Branding
-Madrid Fleet Gustavo Garcia Olmo,92634,Eduardo González,Strategic,Branding
-Madrid Fleet José Paulino Peñas Pinilla,106852,Eduardo González,Strategic,Branding
-Madrid Fleet Julio Nieto Gavilan,89627,Eduardo González,Strategic,Branding
-Madrid Fleet Lorena Martínez Prats,46355,Eduardo González,Strategic,Branding
-Madrid Fleet Manuel Justicia López,105998,Eduardo González,Strategic,Branding
-Madrid Fleet Ruben Cerqueira Dominguez,86182,Eduardo González,Strategic,Branding
-Madrid Fleet DAVID DELFA DE LA MORENA,46349,David Delfa,Strategic,Branding
-Madrid Fleet Eva María Palacios Llorente,95326,David Delfa,Strategic,Branding
-Madrid Fleet Maria Isabel Valero Nuñez,105381,David Delfa,Strategic,Branding
-Madrid Fleet Ana Belen Padilla Almarcha,108524,David Delfa,Strategic,Branding
-Madrid Fleet David Murcia Pacheco,108127,David Delfa,Strategic,Branding
-Madrid Fleet IGNACIO BERMEJO GRANDE,107552,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Walter Abdala Castañeda Chaves,120580,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Juan De Dios Rodrigo Imedio,114540,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Marta Mazo Rodriguez,120870,Eduardo González,Strategic,Branding
-Madrid Fleet MARIA REGLA VILLALOBOS RAMILA,117325,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Alberto Hernandez Sanz,121568,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Carmen Collado Sánchez,108267,Jose Luis Funes,Strategic,Branding
-Madrid Fleet URBEX HISPÁNICA SL,122298,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Juan Jose Jiménez Valero,122425,David Delfa,Strategic,Branding
+Madrid Fleet Elena Zancajo Montiel,114481,VTC Plus,Strategic,Branding
+Madrid Fleet Marta Yolanda Muñoz Sande,172522,VTC Plus,Strategic,Branding
+Madrid Fleet Raquel María Torres Serrano de la Cruz,174660,VTC Plus,Strategic,Branding
+Madrid Fleet Christian Anguas Jiménez,174670,VTC Plus,Strategic,Branding
+Madrid Fleet Eider Ródriguez Martínez,186715,VTC Plus,Strategic,Branding
+Madrid Fleet Marcos García Machuca,190177,VTC Plus,Strategic,Branding
+Madrid Fleet Pedro Valderas Postigo,190729,VTC Plus,Strategic,Branding
+Madrid Fleet Eugenia Paz Latrille Ramírez,203946,VTC Plus,Strategic,Branding
+Madrid Fleet Yolanda Tebar Murillo,211950,VTC Plus,Strategic,Branding
+Madrid Fleet Marta Olivares Aires,211982,VTC Plus,Strategic,Branding
+Madrid Fleet Navalazarza Martín Constanza,215096,VTC Plus,Strategic,Branding
+Madrid Fleet Raúl Vega Carbajal,221987,VTC Plus,Strategic,Branding
+Madrid Fleet Esperanza Baeza Fernández,289295,VTC Plus,Strategic,Branding
+Madrid Fleet Lourdes Martín Álvarez,290198,VTC Plus,Strategic,Branding
+Madrid Fleet Irene Romero Martín,292134,VTC Plus,Strategic,Branding
+Madrid Fleet Ivan Fernandez Gracia,294721,VTC Plus,Strategic,Branding
+Madrid Fleet Miriam Sainz Ezquerra Sánchez,301089,VTC Plus,Strategic,Branding
+Madrid Fleet CCI 2020 INTERNATIONAL SL.,329240,VTC Plus,Strategic,Branding
+"Madrid Fleet INTERNATIONAL BUSINESS LIMOUSINES, S.A. (IBL)",108683,Alsa (IBL and Movilidad Multimodal),Strategic,Fleet Agreement
+"Madrid Fleet  MOVILIDAD MULTIMODAL, S.L.",112579,Alsa (IBL and Movilidad Multimodal),Strategic,Fleet Agreement
+Madrid Fleet INTERCAMBIADORES EUROPEOS SL,49188,Broncotrans,Strategic,Fleet Agreement
+"Madrid Fleet PANDIELLO Y SENA, SOCIEDAD LIMITADA",55207,Broncotrans,Strategic,Fleet Agreement
+Madrid Fleet LARRAÑO SL,62238,Broncotrans,Strategic,Fleet Agreement
+Madrid Fleet Marcos Moreno,68480,Broncotrans,Strategic,Fleet Agreement
+Madrid Fleet DIVEROCIO MADRID SL,95066,Broncotrans,Strategic,Fleet Agreement
+Madrid Fleet EXECUTIVE BLACK CARS S L,118063,Broncotrans,Strategic,Fleet Agreement
+Madrid Fleet BARAHONA GRAN TURISMO SL,125653,Broncotrans,Strategic,Fleet Agreement
+Madrid Fleet DIVEROCIO MADRID SL,293779,Broncotrans,Strategic,Fleet Agreement
+Madrid Fleet Classy Mobility SPN,46276,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Business Resolution SV SL,46362,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Juan Antonio Garcia Martin,46650,Campofis,Strategic,Fleet Agreement
+"Madrid Fleet CASTRO DIAZ Y DEL CURA, S.L.",46831,Campofis,Strategic,Fleet Agreement
+Madrid Fleet WIL ZETA CARS SL,47599,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Ángel Obregón Yañez,47617,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Juan carlos toquica segura,47713,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Marko Ciric,47811,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Autos Algete sociedad cooperativa,47879,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Easy Motor Chamberí S.L.,48325,Campofis,Strategic,Fleet Agreement
+Madrid Fleet APALUNA MOVILIDAD S.L.,48357,Campofis,Strategic,Fleet Agreement
+Madrid Fleet PEDRO ANTONIO LOPEZ PEREZ,48741,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Hector Rodriguez Gea,49931,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Paola Andrea Osorio Henao,51559,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Gabriel Ortega Ramos,51829,Campofis,Strategic,Fleet Agreement
+Madrid Fleet ALEXANDRU FLORIN MATEI,53618,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Nuria Álvarez Alvarez,53926,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Cesar Miguel Alcoser Satian,53994,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Hamza Saidi Abakhti,53998,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Marcilak Hilario Ferreira Libera,54000,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Roberto Holguin Albacete,55307,Campofis,Strategic,Fleet Agreement
+Madrid Fleet LARRY MILTON LOPEZ DIAZ,59944,Campofis,Strategic,Fleet Agreement
+Madrid Fleet JOSE ORTIZ CONTRERAS,60071,Campofis,Strategic,Fleet Agreement
+"Madrid Fleet MADRID TRANSFER GROUP D.A.L. SL.,",63619,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Luis Felipe Maña González,65240,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Manuel Martín Hernández,68843,Campofis,Strategic,Fleet Agreement
+Madrid Fleet BYRON OROZCO CEPEDA,69297,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Jorge Federico Del Rosario,70617,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Alberto Andres Balsamo Barreiro,72449,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Leslie Alessandra Zegarra Barrero,73445,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Lucas Arcila Guiral,75969,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Luis Martin Agurto Palacios,77655,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Pierre Remi Jean Forget,79005,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Juan ignacio Estrada Arango,81761,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Eleuterio Gonzalez,83356,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Joel Toquica Barquilla,85158,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Jose Ramon Celestino Serrano,87344,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Javier Alonso Galvez,91428,Campofis,Strategic,Fleet Agreement
+Madrid Fleet VTC ALCOSER S.L,91985,Campofis,Strategic,Fleet Agreement
+Madrid Fleet JOGUSAL CAR SL,97515,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Najib Bourmani Touil,104259,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Najib Bourmani Touil,104259,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Jesus Miguel Paz Garcia,108336,Campofis,Strategic,Fleet Agreement
+Madrid Fleet NORMA ANTONIA MARTINEZ BAEZ,108676,Campofis,Strategic,Fleet Agreement
+Madrid Fleet DAVID LLORENTE GUTIERREZ,111298,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Ruben Martin Jimenez,113744,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Carlos Valentin Aquino Sencion,119267,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Wei Chen,130675,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Nicholas Laurentiu Ilie,131841,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Oscar Garcia Lopez,134020,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Oscar Garcia Lopez,138398,Campofis,Strategic,Fleet Agreement
+"Madrid Fleet BRIMALIAGROUP, S.L.",140388,Campofis,Strategic,Fleet Agreement
+Madrid Fleet YEWANG LUXMOBIL S.L.,146139,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Yan Zheng,161204,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Sergio José Pérez Otero,207838,Campofis,Strategic,Fleet Agreement
+Madrid Fleet Sergio José Pérez Oteo,216423,Campofis,Strategic,Fleet Agreement
+Madrid Fleet EDUARDO BRIÑAS GATOO,244461,Campofis,Strategic,Fleet Agreement
+Madrid Fleet MERCURY ALLIANCE SL,45873,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet OSCAR DEL AMO ORTEGA,57169,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Carolina Robles Rodríguez,98287,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Pablo Lamata Nuñez,98653,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Raquel Mendo Pedrajas,98753,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Gerardo Roiz de la Parra,105723,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Gonzalo Sanchez-Mora del Pozo,108098,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Diego De La Torre Rebate,112430,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Israel Medel Martinez,114363,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Juan De Dios Rodrigo Imedio,114540,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Marta Valiente Moreno,117187,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet MARIA REGLA VILLALOBOS RAMILA,117325,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Borja Javier Beneyto Antoñanzas,126720,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Alvaro Petri Otero,126880,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Rana Mohammad Naeem,129169,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Laura Delia Zepeda Tiznado,129641,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Mario Muñoz Mula,129826,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Ignacio Garcia Aramendi,131004,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Gonzaga Alonso Jurado,133823,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet SM INGENIERIA Y SERVICIOS SL.,134505,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Maria Rosario Hernandez Lahera,138935,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Mónica Rodriguez Gordo,142766,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet ATLANTIS MEDIA SL,156034,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Rosendo Marín Robles,158325,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Juan Luis Ayuso Buenaposada,165548,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Francisco Javier Villena Borrego,167850,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet MAGELLAN INVESTMENTS SL ,171446,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Jose Aranda Alvarez,174356,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Maria Nieves Luengo Bosque,178606,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Maria Carmen Perera Vicente,179936,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Javier Herrero Hernanz ,185101,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Christian Gardelli,191783,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet David Martinez Caballero,208960,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Stella Vara Penelas,212950,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet LOZOYA GLOBAL SL,230795,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Magel Elizabeth Navarro Montes De Oca,245858,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Betty Llagaira Lopez Avalos,268863,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Bruno Peligro Sanchez,282709,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Miriam Mendez Moreno,284025,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Ignacio Rafael Gamo Infante,305646,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Alexandra Zumalacarregui Errandonea,317077,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Javier Martinez Fernandez,317088,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Sylvie Kambau Mujinga,317090,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Sharon Mangue Obiang Bindang,317105,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Ashley- ocomo Obiang Bingdang,317109,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Mariola Bindang Obiang Eyang,317111,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Antonio Martin Torcuato,317123,Double Digit,Strategic,Fleet Agreement
+Madrid Fleet Álvaro Carlos Zambrano Trillo,47732,Global Transport,Strategic,Fleet Agreement
+Madrid Fleet Carlos Azorin Fuentes,65039,Global Transport,Strategic,Fleet Agreement
+Madrid Fleet ALEXTRENADO S.L,87971,Global Transport,Strategic,Fleet Agreement
+Madrid Fleet Marcos González Ochoa,93471,Global Transport,Strategic,Fleet Agreement
+Madrid Fleet AEROGATE TRAVEL S.L,202022,Global Transport,Strategic,Fleet Agreement
+Madrid Fleet AUTOS CARAZO SERVICIO DE TRANSPORTE ESPECIAL SL,220826,Global Transport,Strategic,Fleet Agreement
+Madrid Fleet José Antonio Ramos Hernández,223891,Global Transport,Strategic,Fleet Agreement
+Madrid Fleet MADMOBILITY TECH SL,47905,Madmobility,Strategic,Fleet Agreement
+Madrid Fleet OTTOCABS SL,45968,OTTOCABS SL,Strategic,Fleet Agreement
+OLD Madrid Fleet VICTORIA HERNAN PORTAL,48986,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Daniel Canales Martinez,48987,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet POWERFULL PRESTIGE S.L,49153,OTTOCABS SL,Strategic,Fleet Agreement
+"Madrid Fleet YOURCABMOVE, S.L",49157,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet PLANCK VIAJES Y PAQUETES SL,49158,OTTOCABS SL,Strategic,Fleet Agreement
+OLD Madrid Fleet JACABLAN.S.L.U,49163,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet JORGE RUIZ PEREZ,49367,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet OTTOFLEETS. SL,52566,OTTOCABS SL,Strategic,Fleet Agreement
 Madrid Fleet David Trujillo Arean,59942,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Malgorzata Beata Krynicka,119913,David Delfa,Strategic,Branding
-Madrid Fleet Hina Adnan,124430,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Latifa Uarda,86008,BCM Dinamica Y Gestion,Strategic,No Agreement
-"Madrid Fleet BOROM DARROU MOUKHTY, SL",124942,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Mariola Bindang Obiang Eyang,125482,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet BARAHONA GRAN TURISMO SL,125653,ALSA (Broncotrans),Strategic,Fleet Agreement
-Madrid Fleet Monica Garrote Barrio,127473,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet El Khalid Ben Moussa Akourtal,127023,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Carlos Olias Merino,127888,Daniel León,Strategic,No Agreement
-Madrid Fleet EXECUTIVE BLACK CARS S L,118063,ALSA (Broncotrans),Strategic,Fleet Agreement
-Madrid Fleet Borja Javier Beneyto Antoñanzas,126720,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Alvaro Petri Otero,126880,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet RAMOS LOPEZ CONFORT TRAVEL SL,115619,Daniel León,Strategic,No Agreement
-Madrid Fleet Antonio Peña Esteban,128456,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Laura Delia Zepeda Tiznado,129641,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet FERLINA ITINERIS SL,53561,Francisco Javier (Ferlina),Strategic,No Agreement
-Madrid Fleet Javier Fernandez Lucas,59311,Francisco Javier (Ferlina),Strategic,No Agreement
+Madrid Fleet PARSEC INVESTMENT GLOBAL SL,66665,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Eduardo Gaja Rubio,71501,OTTOCABS SL,Strategic,Fleet Agreement
+OLD Madrid Fleet Israel Medel Martinez,72407,OTTOCABS SL,Strategic,Fleet Agreement
+"Madrid Fleet DRIVIFY, S.L.",74513,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Jorge Sanchez Caballero,75667,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet INGENIERIA TECNICAS INFORMATICAS Y SERVICIOS SA,77550,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet ZAHGAR TOUR SA,77720,OTTOCABS SL,Strategic,Fleet Agreement
+"Madrid Fleet DELAVEGA VTC, S.L",78912,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Lucía Bolonio Gomez,83211,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Felipe Ignacio Rivas Rivas,84963,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Maria Del Carmen San Pablo De La Cruz,85237,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Gabriela Bolonio Gomez,85751,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Oscar Sacedo Del Olmo,86083,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Salcedo Del Olmo,87798,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet LEGEND COMMERCER SL,89481,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet FUENTE DEL BERRO VTC CARS,97124,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet METROPOLIS BLACK CAB,97127,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet MOBILITI TAXI VTC GETS CAES SL,97130,OTTOCABS SL,Strategic,Fleet Agreement
+OLD Madrid Fleet Marta Valiente Moreno,99857,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet IGNACIO BERMEJO GRANDE,107552,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Francisco Jesus Fructuoso Camacho,111062,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet INTEGRACION SOCIAL DE MINUSVALIDOS SL,111383,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Roberto Cabezas Herrero,118186,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Alvaro Marcos Diaz,119170,OTTOCABS SL,Strategic,Fleet Agreement
 Madrid Fleet Alvaro Menendez Feito,120802,OTTOCABS SL,Strategic,Fleet Agreement
 Madrid Fleet Lidia Martin Ibeas,121566,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Said Lakrih,129585,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Gema Hernando Aylagas,129654,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Mario Muñoz Mula,129826,DOUBLEDIGIT,Strategic,Fleet Agreement
-Barcelona Fleet FREETOWN BUSINESS BARCELONA S.L.,63777,Cibeles,Strategic,No Agreement
-Madrid Fleet Israel García Aristegui,120759,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Ignacio Garcia Aramendi,131004,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Ignacio Garcia Melero,110937,Servicios Mobility,Strategic,Branding
-Madrid Fleet Diego Leopardo De Cardenas Van Aerssen Beyeren,131231,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Maria Pilar Cortes Rivas,131505,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet JOSE IVAN FERNANDEZ ALONSO,57563,Jose Ivan ,Strategic,No Agreement
-Madrid Fleet Paulino Lucas Gonzalez,46302,Jose Ivan ,Strategic,No Agreement
+Madrid Fleet Virginia Valdemoro Madariaga,123634,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Antonio Peña Esteban,128456,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Nerea Saez Jimenez,137345,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Rocio Buendía Gamboa,161012,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Marta Lucia Peña Esteban,165923,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet NEPTUNO PRIVATE CAB SLU,169628,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet JARDINES DE SABATINI EXCLUSIVE CARS,169630,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet POSTALES DE MADRID LUXURY CARS,169631,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet VENUS PRIVATE CAB,169633,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Carmen Fenoll Abella,185454,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Antonio Cordon Martinez,191796,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Carlota Gomez Fernandez,193873,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Alexander Camil Martin Fraile,194472,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Paloma San Pablo De La Cruz,196035,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Paola Gómez Fernandez,200848,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Molleda Herrero Carolina Electra,233137,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet INGENIERIA TECNICAS INFORMATICAS Y SERVICIOS SA,247358,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Jose Alberto De La Vega Martin,251063,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Maria Luisa Godoy Pareja,251069,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Drazen Primorac,251079,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Hector Manuel Peña Esteban,253457,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Beatriz Ramos Perez Polo,253461,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet ROBERTO CARLOS BELTRAN ESCRIBANO,269737,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet INES DE LA HIGUERA MONTEJANO,293930,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet MORE MINUTES COMMUNICATIONS SL,308705,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet JONATHAN IVAN MUSEYRI META,332255,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet Xenia Caterina Martin Fraile,352394,OTTOCABS SL,Strategic,Fleet Agreement
+Madrid Fleet SERVICIOS MOBILITY MADRID SLU,46366,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet DELUXSE MADRID SL,47365,Servicios Mobility,Strategic,Fleet Agreement
+OLD Madrid Fleet  FIRST EMILIAN SL,49487,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet IMOBILITY SL,49489,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet RODRIGUEZ MOBILITY,51327,Servicios Mobility,Strategic,Fleet Agreement
+OLD Madrid Fleet Jorge Gregorio Arranz Liras,59943,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet MARVEL BM TRANSFERS SL,68375,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet MARVEL MOBILITY SL,68377,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet Carlos Paredes Fernandez,92637,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet Ignacio Garcia Melero,110937,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet KANDRY CARS SL,111359,Servicios Mobility,Strategic,Fleet Agreement
+Madrid Fleet TECNITEL CARS SLU,45965,Tecnitel,Strategic,Fleet Agreement
+Madrid Fleet COLORADO STEEL SL,87336,Colorado Steel,Strategic,Locked Supply
+Madrid Fleet ELIFRAN PROYECTOS GLOBALES SL,45871,Doublecab,Strategic,Locked Supply
+Madrid Fleet GARRIDO CAR MADRID SL,45872,Doublecab,Strategic,Locked Supply
+Madrid Fleet ENOL MOBILITY SL,45876,Doublecab,Strategic,Locked Supply
+Madrid Fleet Cristhian Nahun Ramos Mejia,47449,Doublecab,Strategic,Locked Supply
+Madrid Fleet PLANTEAMIENTO DE DESARROLLOS RENOVABLES SL,47600,Doublecab,Strategic,Locked Supply
+Madrid Fleet SWIFT TRANSPORTS CRT S.L,47910,Doublecab,Strategic,Locked Supply
+Madrid Fleet GARRIDO MOBILITY MADRID S.L.,55482,Doublecab,Strategic,Locked Supply
+Madrid Fleet ENDEAVOUR MEDIA SL,58428,Doublecab,Strategic,Locked Supply
+Madrid Fleet Cristian Vaquero García,68557,Doublecab,Strategic,Locked Supply
+Madrid Fleet Alvaro Sánchez Pulido,78926,Doublecab,Strategic,Locked Supply
+Madrid Fleet Eduardo Martin Gomez De Villalba,80631,Doublecab,Strategic,Locked Supply
+Madrid Fleet SHEA GROUP IBERICA S.L.U.,87337,Doublecab,Strategic,Locked Supply
+Madrid Fleet BORA BORA ALLIANCE SL,89289,Doublecab,Strategic,Locked Supply
+Madrid Fleet Alba Martin Clemente,94529,Doublecab,Strategic,Locked Supply
+Madrid Fleet Carlos Garcia Garcia,96548,Doublecab,Strategic,Locked Supply
+Madrid Fleet Siria Ronderos Gonzalez,98448,Doublecab,Strategic,Locked Supply
+Madrid Fleet DAYEI VTC Y TAXI SL,98539,Doublecab,Strategic,Locked Supply
+Madrid Fleet Alicia Molina Martín,101449,Doublecab,Strategic,Locked Supply
+Madrid Fleet Álvaro Rodríguez Molina,102754,Doublecab,Strategic,Locked Supply
+Madrid Fleet Javier Rodríguez Molina,103437,Doublecab,Strategic,Locked Supply
+Madrid Fleet Fernando Calvo García,104016,Doublecab,Strategic,Locked Supply
+Madrid Fleet URBEX HISPÁNICA SL,122298,Doublecab,Strategic,Locked Supply
+Madrid Fleet Mariola Bindang Obiang Eyang,125482,Doublecab,Strategic,Locked Supply
+Madrid Fleet Monica Garrote Barrio,127473,Doublecab,Strategic,Locked Supply
+Madrid Fleet SIRON AUTO S.L.,136480,Doublecab,Strategic,Locked Supply
+Madrid Fleet Sylvie Kambau Mujinga,137394,Doublecab,Strategic,Locked Supply
+Madrid Fleet ALBA RUIZ GARROTE,137558,Doublecab,Strategic,Locked Supply
+Madrid Fleet Eva Maria Gonzalez Rodriguez,156102,Doublecab,Strategic,Locked Supply
+Madrid Fleet Estela Ruiz Garrote,158544,Doublecab,Strategic,Locked Supply
+Madrid Fleet DRIVE TRANSFER 2007 S.L,158818,Doublecab,Strategic,Locked Supply
+Madrid Fleet Raul Hidalgo Treviño,167877,Doublecab,Strategic,Locked Supply
+Madrid Fleet HIDEM VTC SL,167887,Doublecab,Strategic,Locked Supply
+Madrid Fleet LYRA VENTURES SL,169255,Doublecab,Strategic,Locked Supply
+Madrid Fleet Ana Belen Anton Ruiz,178624,Doublecab,Strategic,Locked Supply
+Madrid Fleet Felipe Caparros Canabal,179028,Doublecab,Strategic,Locked Supply
+Madrid Fleet Rafael Serrano Zurron,184904,Doublecab,Strategic,Locked Supply
+Madrid Fleet RODO MOBILITY S.L,192088,Doublecab,Strategic,Locked Supply
+Madrid Fleet Fernando Calvo García 2,194406,Doublecab,Strategic,Locked Supply
+Madrid Fleet CARBALLO MOBILITY EXPERIENCE SL,195899,Doublecab,Strategic,Locked Supply
+Madrid Fleet Carlos Castro Costal,195990,Doublecab,Strategic,Locked Supply
+Madrid Fleet Maria Valverde Quintana Lopez,200490,Doublecab,Strategic,Locked Supply
+Madrid Fleet Antonio Martin Torcuato,212616,Doublecab,Strategic,Locked Supply
+Madrid Fleet Javier Martinez Fernandez,215254,Doublecab,Strategic,Locked Supply
+Madrid Fleet Jesús del Cañizo Martínez,215809,Doublecab,Strategic,Locked Supply
+Madrid Fleet Javier Julian Lopez Radigales,219550,Doublecab,Strategic,Locked Supply
+Madrid Fleet Eduard Florín Iordache Mihalcea,223464,Doublecab,Strategic,Locked Supply
+Madrid Fleet Alexandra Zumalacarregui Errandonea,224387,Doublecab,Strategic,Locked Supply
+Madrid Fleet Sharon Mangue Obiang Bindang,233481,Doublecab,Strategic,Locked Supply
+Madrid Fleet SERGIO CABALLO GONZALEZ,236734,Doublecab,Strategic,Locked Supply
+Madrid Fleet Nahum Marcos Castro,249112,Doublecab,Strategic,Locked Supply
+Madrid Fleet Alvaro Humbrias,257354,Doublecab,Strategic,Locked Supply
+Madrid Fleet ASHLEY OBIANG BINDANG,257410,Doublecab,Strategic,Locked Supply
+Madrid Fleet JULIO ONSURBE ROMAN,286615,Doublecab,Strategic,Locked Supply
+Madrid Fleet MIGUEL ANGEL BENLLOCH PATON,286638,Doublecab,Strategic,Locked Supply
+Madrid Fleet DAMIAN FERNANDEZ JIMENEZ,292911,Doublecab,Strategic,Locked Supply
+Madrid Fleet Andres Rico Libano,295455,Doublecab,Strategic,Locked Supply
+Madrid Fleet Carmen Herrero Carrasco,305125,Doublecab,Strategic,Locked Supply
+Madrid Fleet ALVARO SANCHEZ PULIDO,312744,Doublecab,Strategic,Locked Supply
+Madrid Fleet MARIA ALMUDENA MARTINEZ HERRADOR,314766,Doublecab,Strategic,Locked Supply
+Madrid Fleet MARIA ROSARIO HERAS CARRASCO,322313,Doublecab,Strategic,Locked Supply
+"Madrid Fleet BLAI LIMOUSINES, S.L.",326963,Doublecab,Strategic,Locked Supply
+Madrid Fleet Miguel Bonet Carmona,327548,Doublecab,Strategic,Locked Supply
+Madrid Fleet LUIS DOMINGO DE GUSTIN,335058,Doublecab,Strategic,Locked Supply
+Madrid Fleet GARRIDO HER AUTOMOCION SL,342530,Doublecab,Strategic,Locked Supply
+Madrid Fleet SHEA 2 MADRID SLU,344544,Doublecab,Strategic,Locked Supply
+Madrid Fleet GARRIDO MOTOR VTC SL,345101,Doublecab,Strategic,Locked Supply
+Madrid Fleet MARIA GEMA QUINTANA LOPEZ,345670,Doublecab,Strategic,Locked Supply
+Madrid Fleet Alonso Dario Alvarez Pulido,352110,Doublecab,Strategic,Locked Supply
+Madrid Fleet TIBUS BUSINESS CARS SL,63530,TIBUS,Strategic,Locked Supply
+"Madrid Fleet TIBUS LUXURY SERVICES, S.L.",143626,TIBUS,Strategic,Locked Supply
+Madrid Fleet AGENCIA NEGOCIADORA TRANSFERS S.L.,47745,"Agencia Negociadora Transfers, S.L.",Strategic,No Agreement
+Madrid Fleet Irubus,48965,Alsa (Miguel) - Flota ALSA,Strategic,No Agreement
+Madrid Fleet Autos Frutos Madrid SL,47297,Autos Frutos Madrid SL,Strategic,No Agreement
+"Madrid Fleet Delicias le car, S.L.",51890,Avatel,Strategic,No Agreement
+Madrid Fleet VAIIA CARS MOBILITY SL,131040,Avatel,Strategic,No Agreement
+Madrid Fleet DESTINY ISS MEDIA SL,45870,BCM,Strategic,No Agreement
+Madrid Fleet NOVO ECO MOBILITY SL,46896,BCM,Strategic,No Agreement
+Madrid Fleet MARIA JOSE BOLIVAR HISPAN,46980,BCM,Strategic,No Agreement
+Madrid Fleet ALEJANDRO ARACIL CABALLERO,46983,BCM,Strategic,No Agreement
+Madrid Fleet BEST RENTAL CARS DRIVERS SL,47079,BCM,Strategic,No Agreement
+Madrid Fleet ESTELA BARRIO GONZALEZ,47221,BCM,Strategic,No Agreement
+Madrid Fleet MARIA JOSE GARCIA FUERTES,47312,BCM,Strategic,No Agreement
+Madrid Fleet EVA MARIA VAZQUEZ MORALEDA,47313,BCM,Strategic,No Agreement
+Madrid Fleet SERVITUR CONSULTING SL,47314,BCM,Strategic,No Agreement
+Madrid Fleet JOSE UBALDO RODRIGUEZ MARTIN,47347,BCM,Strategic,No Agreement
+Madrid Fleet SANTIAGO CRUZ FERNANDEZ,47348,BCM,Strategic,No Agreement
+Madrid Fleet MACRAY ASSET MANAGEMENT,47356,BCM,Strategic,No Agreement
+Madrid Fleet MARIA DEL SOL BARDERAS CASADO,47596,BCM,Strategic,No Agreement
+Madrid Fleet NELSON LIMA RUEDA,47597,BCM,Strategic,No Agreement
+Madrid Fleet NOVILLO & HERNANDEZ SL,47602,BCM,Strategic,No Agreement
+Madrid Fleet WILMER EDGARDO ZEGARRA CARPIO,47604,BCM,Strategic,No Agreement
+Madrid Fleet MARIA ESTHER MANSO BERMUDEZ,47609,BCM,Strategic,No Agreement
+Madrid Fleet REDECOM SOLUCIONES INFORMATICAS PARA EMPRESAS SL,47654,BCM,Strategic,No Agreement
+Madrid Fleet MIRIAN LOZANO SANCHEZ,47655,BCM,Strategic,No Agreement
+Madrid Fleet PINMAR MOBILITY SL,47813,BCM,Strategic,No Agreement
+Madrid Fleet Juan Pedro Juárez Blázquez,48003,BCM,Strategic,No Agreement
+Madrid Fleet JACK MOBILITY SL,48913,BCM,Strategic,No Agreement
+Madrid Fleet JUAN MANUEL MIGUEL JORDAN,49058,BCM,Strategic,No Agreement
+Madrid Fleet KINALASPORT SL,49059,BCM,Strategic,No Agreement
+Madrid Fleet MADRID EXPLORE SL,49331,BCM,Strategic,No Agreement
+Madrid Fleet MONBEDAFAR70 SL,50400,BCM,Strategic,No Agreement
+Madrid Fleet Taxi Beatriz Isabel Llabres Ripoll,50983,BCM,Strategic,No Agreement
+Madrid Fleet maría ángeles perez sanchez,52438,BCM,Strategic,No Agreement
+Madrid Fleet DAVID LOPEZ GOMEZ,53524,BCM,Strategic,No Agreement
+Madrid Fleet MACUYA CARS MADRID S.L,54810,BCM,Strategic,No Agreement
+Madrid Fleet Taxi Susana Hernandez Neira,55113,BCM,Strategic,No Agreement
+Madrid Fleet ALI BENOMAR BENOMAR,55176,BCM,Strategic,No Agreement
+"Madrid Fleet INVERSIONES DULZAINA, S.L.",55891,BCM,Strategic,No Agreement
+Madrid Fleet DAVID MORENO ROJANO,56280,BCM,Strategic,No Agreement
+Madrid Fleet MARTA GARCIA GARCIA,56283,BCM,Strategic,No Agreement
+Madrid Fleet Maria Isabel Prieto Garrido,57253,BCM,Strategic,No Agreement
+Madrid Fleet JOSE LUIS SANCHEZ SANCHEZ,57883,BCM,Strategic,No Agreement
+Madrid Fleet LUIS FELIPE GOMEZ PASTRANA,58333,BCM,Strategic,No Agreement
+Madrid Fleet AFRICA HIPOLITO SANCHEZ-CASCADO,58519,BCM,Strategic,No Agreement
+Madrid Fleet ABM 5 TRANSPORTE SL,58554,BCM,Strategic,No Agreement
+Madrid Fleet AGRACARS MADRID SL,59868,BCM,Strategic,No Agreement
+Madrid Fleet RAUL SANCHEZ MENDEZ,60389,BCM,Strategic,No Agreement
+Madrid Fleet RESOLVALIA SL,61066,BCM,Strategic,No Agreement
+Madrid Fleet GINRO MOBILITY SL,61931,BCM,Strategic,No Agreement
+Madrid Fleet Petrica popescu,62148,BCM,Strategic,No Agreement
+Madrid Fleet MARIA SOL FERNANDEZ ALONSO,62192,BCM,Strategic,No Agreement
+Madrid Fleet GRAUMANN SOLUTIONS SL,63743,BCM,Strategic,No Agreement
+OLD Madrid Fleet Emilio Torrente Lujan,64143,BCM,Strategic,No Agreement
+Madrid Fleet Marta Salvadores Cabezas,64161,BCM,Strategic,No Agreement
+Madrid Fleet Abdelouahed Abbou Belkaid,64219,BCM,Strategic,No Agreement
+Madrid Fleet Luis Rodrigo Toche Parres,65595,BCM,Strategic,No Agreement
+Madrid Fleet ACEROSCAR SL (ccruz),67260,BCM,Strategic,No Agreement
+Madrid Fleet GRAUMANN SOLUTIONS SL,67405,BCM,Strategic,No Agreement
+Madrid Fleet VALMER MOBILITY SL,67483,BCM,Strategic,No Agreement
+Madrid Fleet LAURA DEL CASTILLO-OLIVARES LANERO,67733,BCM,Strategic,No Agreement
+Madrid Fleet REAVIVALIA SL,67831,BCM,Strategic,No Agreement
+Madrid Fleet MARTA SALVADORES CABEZAS,67832,BCM,Strategic,No Agreement
+Madrid Fleet JESUS POZUELO BARRAGAN,69027,BCM,Strategic,No Agreement
+Madrid Fleet Jose Alberto Pereira Araujo,70219,BCM,Strategic,No Agreement
+Madrid Fleet LAS DELICIAS CJ SERVICIOS SL,72394,BCM,Strategic,No Agreement
+Madrid Fleet Enrique Jorge izquierdo,72708,BCM,Strategic,No Agreement
+Madrid Fleet Luis Navarro Buitrago,73261,BCM,Strategic,No Agreement
+Madrid Fleet KOTSUKIKAN SL,73953,BCM,Strategic,No Agreement
+Madrid Fleet Ignacio Sàez Roco,74209,BCM,Strategic,No Agreement
+Madrid Fleet Alvaro Villanueva Fernandez,75951,BCM,Strategic,No Agreement
+Madrid Fleet Taxi Juan Velasco Gonzalez,76152,BCM,Strategic,No Agreement
+Madrid Fleet Francisco Javier Triviño Padilla,76387,BCM,Strategic,No Agreement
+Madrid Fleet Alfonso Lopez Fraile,76869,BCM,Strategic,No Agreement
+Madrid Fleet Giuseppe Ines Marino,77021,BCM,Strategic,No Agreement
+Madrid Fleet Vicente Jesus Lopez Gomez,77075,BCM,Strategic,No Agreement
+Madrid Fleet Taxi Marta Maillo Martinez,77443,BCM,Strategic,No Agreement
+Madrid Fleet Manuel Gomez Royer,77444,BCM,Strategic,No Agreement
+Madrid Fleet Olga Demidkova Demidkova,79139,BCM,Strategic,No Agreement
+Madrid Fleet Yolanda Dominguez Rojas,81173,BCM,Strategic,No Agreement
+Madrid Fleet Julian Lavandero Garcia,81375,BCM,Strategic,No Agreement
+Madrid Fleet Francisco Javier Gil Sastre,81977,BCM,Strategic,No Agreement
+Madrid Fleet EMILIO TORRENTE LUJAN,82788,BCM,Strategic,No Agreement
+Madrid Fleet Emilio Torrente Lujan,82788,BCM,Strategic,No Agreement
+Madrid Fleet Nura Kassab Sanz,84998,BCM,Strategic,No Agreement
+Madrid Fleet Latifa Uarda,86008,BCM,Strategic,No Agreement
+Madrid Fleet Olena Zablotska,87987,BCM,Strategic,No Agreement
+Madrid Fleet Fernando Hernando Aylagas,89718,BCM,Strategic,No Agreement
+Madrid Fleet VCMAD SOCIEDAD LIMITADA,90401,BCM,Strategic,No Agreement
+Madrid Fleet Liseth Lopez Sanchez,91337,BCM,Strategic,No Agreement
+Madrid Fleet Gema Alonso Moreno,91934,BCM,Strategic,No Agreement
+Madrid Fleet Gema Alonso Moreno,91934,BCM,Strategic,No Agreement
+Madrid Fleet Oscar Alvarez Perez,93838,BCM,Strategic,No Agreement
+Madrid Fleet Hanan Ben Larbi Mellahi,97685,BCM,Strategic,No Agreement
+Madrid Fleet CEVIGOCAR SL,97824,BCM,Strategic,No Agreement
+Madrid Fleet Cesar Novillo Sanchez,99287,BCM,Strategic,No Agreement
+Madrid Fleet Said El Ajjali,99319,BCM,Strategic,No Agreement
+Madrid Fleet Juan Carlos Garcia Rivera,104798,BCM,Strategic,No Agreement
+Madrid Fleet Jose Maria Angel Ortega,105443,BCM,Strategic,No Agreement
+Madrid Fleet Maria Teresa Arias Toribio,106174,BCM,Strategic,No Agreement
+Madrid Fleet Muhammad Ishaq Bibi,107894,BCM,Strategic,No Agreement
+Madrid Fleet ZEESHAN SIDDIQUE PERVEEN,108124,BCM,Strategic,No Agreement
+Madrid Fleet RAUL OCURRELE CEJUDO,108126,BCM,Strategic,No Agreement
+Madrid Fleet PABLO FERRERES LOZA,108523,BCM,Strategic,No Agreement
+Madrid Fleet RAUL NOVO GONZALEZ,112771,BCM,Strategic,No Agreement
+Madrid Fleet WEINA DU,113041,BCM,Strategic,No Agreement
+Madrid Fleet Bodaliacars sl,113922,BCM,Strategic,No Agreement
+Madrid Fleet Luis Ortiz Armillas,116554,BCM,Strategic,No Agreement
+Madrid Fleet Ahmed Ouled Ali Idir,116555,BCM,Strategic,No Agreement
+Madrid Fleet Wilber Dante Alzate Saldarriada,116954,BCM,Strategic,No Agreement
+Madrid Fleet Juan Velasco Gonzalez,118040,BCM,Strategic,No Agreement
+Madrid Fleet Alberto Hernandez Sanz,121568,BCM,Strategic,No Agreement
+Madrid Fleet Hina Adnan,124430,BCM,Strategic,No Agreement
+"Madrid Fleet BOROM DARROU MOUKHTY, SL",124942,BCM,Strategic,No Agreement
+Madrid Fleet El Khalid Ben Moussa Akourtal,127023,BCM,Strategic,No Agreement
+Madrid Fleet Said Lakrih,129585,BCM,Strategic,No Agreement
+Madrid Fleet Gema Hernando Aylagas,129654,BCM,Strategic,No Agreement
+Madrid Fleet Diego Leopardo De Cardenas Van Aerssen Beyeren,131231,BCM,Strategic,No Agreement
+Madrid Fleet Maria Pilar Cortes Rivas,131505,BCM,Strategic,No Agreement
+Madrid Fleet Hakim Hannaoui Slafti,174757,BCM,Strategic,No Agreement
+Madrid Fleet Ameer Muhammad Bibi,176316,BCM,Strategic,No Agreement
+Madrid Fleet  Hermela Muñoz Garrido,185070,BCM,Strategic,No Agreement
+Madrid Fleet El Hocaien El Khomci,198479,BCM,Strategic,No Agreement
+Madrid Fleet Sonia Martinez Alcazar,203139,BCM,Strategic,No Agreement
+Madrid Fleet Vanessa Maria Bauzan Perez,318370,BCM,Strategic,No Agreement
+Madrid Fleet AITUDIA SL,351633,BCM,Strategic,No Agreement
+Madrid Fleet AEROGATE TRAVEL S.L,,BCM,Strategic,No Agreement
+Madrid Fleet Autos carazo servicio de trans especial sl,48223,Carazo,Strategic,No Agreement
+"Madrid Fleet VITTA CAR 2021, S.L.",48458,Carazo,Strategic,No Agreement
+Madrid Fleet Tibus Luxury Service,65906,Caverel,Strategic,No Agreement
+Madrid FleetVTC TRANSFER SOCIALITY SL,56291,Cibeles,Strategic,No Agreement
+Madrid Fleet ZATER TRANSPORTATION SERVICES 1525 S.L,56292,Cibeles,Strategic,No Agreement
+"Madrid Fleet VTC KICO CAR, SOCIEDAD LIMITADA",56293,Cibeles,Strategic,No Agreement
+"Madrid Fleet ICEBERG SMART CAB, SOCIEDAD LIMITADA",56294,Cibeles,Strategic,No Agreement
+"Madrid Fleet VTC FELP TRANFER, SOCIEDAD LIMITADA",56295,Cibeles,Strategic,No Agreement
+"Madrid Fleet GEST VTC SERVICE, SOCIEDAD LIMITADA",56296,Cibeles,Strategic,No Agreement
+Madrid Fleet DO THE RIGHT THING CARS S.L.,56297,Cibeles,Strategic,No Agreement
+Madrid Fleet AFM PORTAL DEL TRANSPORTE S.L.,56299,Cibeles,Strategic,No Agreement
+Madrid Fleet AUTOS AGRIMONY BACH TRANSPORTATION S.L.,56300,Cibeles,Strategic,No Agreement
+"Madrid Fleet AUTOS ARARAT TRANSPORTATION, S.L.",56302,Cibeles,Strategic,No Agreement
+Madrid Fleet AUTOS LA MARUCA DA SERPE S.L.,56303,Cibeles,Strategic,No Agreement
+Madrid Fleet AUTOS MIRAZ LA BELLA S.L.,56305,Cibeles,Strategic,No Agreement
+"Madrid Fleet CLEMATIS BACH TRANSPORTATION SERVICES, SL",56306,Cibeles,Strategic,No Agreement
+Madrid Fleet CIBELES COMFORT CARS S.L,56307,Cibeles,Strategic,No Agreement
+Madrid Fleet PROINVERTIA MADRID S.L.,106556,Cibeles,Strategic,No Agreement
+Madrid Fleet AUTOS LAVAPIES S.L.,106557,Cibeles,Strategic,No Agreement
+"Madrid Fleet FREETOWN BUSINESS, S.L.",106591,Cibeles,Strategic,No Agreement
+Madrid Fleet AUTOS PUERTA DEL SOL SL,106769,Cibeles,Strategic,No Agreement
+Madrid Fleet LIBREOCUPADO SL,107050,Cibeles,Strategic,No Agreement
+Madrid Fleet ONLY INNOVATION SL,47088,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet José Fernández de Gamboa Chavarri,57118,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet Acamar 17 S.L.,57125,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet UNAUTO VTC INICIATIVAS Y DESARROLLO S.L.,58673,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet Wedrive S.L,60514,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet Rivas&Mein S.L.,60593,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet Inertia Mobility S.L.,66252,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet SHUTTLE VIP-MADRID S.L.,68398,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet Mindworld Project S.L.,74328,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet Andres Fernando Bustamante Alvear,74340,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet VATAC INVERSIONES S.L,76006,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet DIGITAL DOERS SL,76007,Cibeles gestionada,Strategic,No Agreement
+"Madrid Fleet PALMETTO CAPITAL PARTNERS, S.L.",82280,Cibeles gestionada,Strategic,No Agreement
+OLD Madrid Fleet ARECHETA SL,82987,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet VETRANSCO 2023 SL,87832,Cibeles gestionada,Strategic,No Agreement
+Madrid Fleet Izmargestion SL,54708,Daniel León,Strategic,No Agreement
+Madrid Fleet Maria del Pilar Molina Fernandez,65045,Daniel León,Strategic,No Agreement
+Madrid Fleet Jose Manuel Sanchez Maleubre,98542,Daniel León,Strategic,No Agreement
+Madrid Fleet RAMOS LOPEZ CONFORT TRAVEL SL,115619,Daniel León,Strategic,No Agreement
+Madrid Fleet Carlos Olias Merino,127888,Daniel León,Strategic,No Agreement
+Madrid Fleet Rebeca Sanz Barriuso,168266,Daniel León,Strategic,No Agreement
+Madrid Fleet Victor Sanchez Perez,202232,Daniel León,Strategic,No Agreement
+Madrid Fleet Juan Luis Jimenez Fernandez,205081,Daniel León,Strategic,No Agreement
+Madrid Fleet Borja Hernandez Pozo,216344,Daniel León,Strategic,No Agreement
+Madrid Fleet E DRIVERS 2015 SL,46642,E Drivers,Strategic,No Agreement
+"Madrid Fleet Euro Vans & Cars, S.A.",47563,Euro Vans & Cars SA,Strategic,No Agreement
+"Madrid Fleet Intereuropa Car, S.L.U.",47568,Euro Vans & Cars SA,Strategic,No Agreement
+Madrid Fleet ALTHIA LIMO S.L.,49232,Fernando - Althia Limo SL,Strategic,No Agreement
+Madrid Fleet Montserrat Bellido maestre,47090,Fidel Bellido,Strategic,No Agreement
+OLD Madrid Fleet José Antonio lázaro barbero,47091,Fidel Bellido,Strategic,No Agreement
+Madrid Fleet Fidel Bellido maestre,47092,Fidel Bellido,Strategic,No Agreement
+Madrid Fleet FERLINA ITINERIS SL,53561,Francisco Javier (Ferlina),Strategic,No Agreement
+Madrid Fleet Javier Fernandez Lucas,59311,Francisco Javier (Ferlina),Strategic,No Agreement
+Madrid Fleet FUTURAUTO MADRID SL,47561,FUTURAUTO,Strategic,No Agreement
+"OLD Madrid Fleet Sekiz Fiesta Omnibus, SL",47929,Gescab,Strategic,No Agreement
+Madrid Fleet Richar Ramon Rivas de la Cruz,53133,Gescab,Strategic,No Agreement
+Madrid Fleet Jose Carlos Salazar Varga,58091,Gescab,Strategic,No Agreement
+"Madrid Fleet BARAJAS TRANSFERS, SL",63274,Gescab,Strategic,No Agreement
+Madrid Fleet MOBILITY DRIVER SL,64516,Gescab,Strategic,No Agreement
+OLD Madrid Fleet Christian Cester,68163,Gescab,Strategic,No Agreement
+OLD Madrid Fleet Maria Florencia Pistani,69720,Gescab,Strategic,No Agreement
+"Madrid Fleet Nuvicar Inversiones, SL",71833,Gescab,Strategic,No Agreement
+"Madrid Fleet Shared Transfer, SL",74869,Gescab,Strategic,No Agreement
+Madrid Fleet MPE GEST CARS SL,104180,Gescab,Strategic,No Agreement
+Madrid Fleet VTCOLME,117902,Gescab,Strategic,No Agreement
+Madrid Fleet Diego Morente Fuentes,46988,Gescab (Miguel),Strategic,No Agreement
+Madrid Fleet Sonia Calvo Checa,48659,Gescab (Miguel),Strategic,No Agreement
+Madrid Fleet ORTIZ Y VARON SL,49275,Gescab (Miguel),Strategic,No Agreement
+OLD +Madrid Fleet VTC 1 DESARROLLO 2015,51963,Gescab (Miguel),Strategic,No Agreement
+OLD Madrid Fleet Yabadu Cars,61115,Gescab (Miguel),Strategic,No Agreement
+OLD Madrid Fleet BLACK CABS SL,62515,Gescab (Miguel),Strategic,No Agreement
+OLD Madrid Fleet Hector Herrero Barrios,71500,Gescab (Miguel),Strategic,No Agreement
 Madrid Fleet Carolina de Los Angeles muñoz carmona,46258,Jose Ivan ,Strategic,No Agreement
-OLD Madrid Fleet GONZALO MERCHAN VALLES,56882,Jose Ivan ,Strategic,No Agreement
+Madrid Fleet Paulino Lucas Gonzalez,46302,Jose Ivan ,Strategic,No Agreement
 Madrid Fleet SERGIO CADIERNO LOZANO,56879,Jose Ivan ,Strategic,No Agreement
-Madrid Fleet Patricia Rodríguez Ovejero,95448,Jose Ivan ,Strategic,No Agreement
+OLD Madrid Fleet GONZALO MERCHAN VALLES,56882,Jose Ivan ,Strategic,No Agreement
+Madrid Fleet JOSE IVAN FERNANDEZ ALONSO,57563,Jose Ivan ,Strategic,No Agreement
 Madrid Fleet MARGARITA GEMA RODRIGO PLAZA,64206,Jose Ivan ,Strategic,No Agreement
 Madrid Fleet Beatriz Redondo Devesa,77826,Jose Ivan ,Strategic,No Agreement
+Madrid Fleet Patricia Rodríguez Ovejero,95448,Jose Ivan ,Strategic,No Agreement
 Madrid Fleet Henry García Flores,104957,Jose Ivan ,Strategic,No Agreement
-Madrid Fleet Gonzaga Alonso Jurado,133823,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet VAIIA CARS MOBILITY SL,131040,Avatel,Strategic,No Agreement
-Madrid Fleet Oscar Garcia Lopez,138398,Campofis,Strategic,Branding
-Madrid Fleet SM INGENIERIA Y SERVICIOS SL.,134505,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Isabel de Mingo Varela,119463,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet SIRON AUTO S.L.,136480,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet VCMAD SOCIEDAD LIMITADA,90401,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet ALBA RUIZ GARROTE,137558,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Jose Maria Vilanueva Ortin,130224,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Andrea Monleon Lopez,119258,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Óscar Ranz Sánchez,129667,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Raul Gomez Del Amo,126798,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Ricardo Lopez De Guereñu Rodrigo,134724,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Veronica Valverde Sanchez,125656,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Cristina Romero Durán,128299,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet David Barrio Grau,129650,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Eva Maria Rodriguez Pachon,119257,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Maria Rosario Hernandez Lahera,138935,DOUBLEDIGIT,Strategic,Fleet Agreement
 Madrid Fleet José Luis Corbalan Moreno,109201,Jose Luis Corbalan,Strategic,No Agreement
-Madrid Fleet Sylvie Kambau Mujinga,137394,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Esther Fuentes Frutos,138264,Nueva Cooperativa,Strategic,Branding
+Madrid Fleet AUTOS JOSE MARIA SL,83879,Jose María,Strategic,No Agreement
+Madrid Fleet GRAN VIA RENT A CAR SL,85184,Jose María,Strategic,No Agreement
+Madrid Fleet JYM Moon Black SL,46243,JYM Moon Black SL,Strategic,No Agreement
+Madrid Fleet Accesible Trans SC,46582,LA CIUDAD DEL TAXI,Strategic,No Agreement
+OLD Madrid Fleet Rawa Capital One SL,46586,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Felipe Ramos Fernandez,46606,LA CIUDAD DEL TAXI,Strategic,No Agreement
+OLD Madrid Fleet Wellcab Travel Deluxe SL,46667,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Jose Luis Bencosme,46935,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Sergio Vega Fernandez,47030,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Francisco Rodriguez Mansilla,47031,LA CIUDAD DEL TAXI,Strategic,No Agreement
+OLD Madrid Fleet Camila Castillo Parra,47278,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Andrea Masedo Minguez,47570,LA CIUDAD DEL TAXI,Strategic,No Agreement
+OLD Madrid Fleet CARLOS ALGOM SL,49488,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet JESUS SERRANO DIEZ,51176,LA CIUDAD DEL TAXI,Strategic,No Agreement
+OLD Madrid Fleet JAVIER BENITO AVISON,51450,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Ana Belen Carrasquilla,51491,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Monica Madrigal De Segovia,53698,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Mahureen Daniela Lopez,54713,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Carlos Alvarez Gomez,55375,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Elena Gude Jacob,56200,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet Pablo Acaso Lopez-Bosch,59137,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet INVERSIONES DIAL 1899 SL,61335,LA CIUDAD DEL TAXI,Strategic,No Agreement
+OLD Madrid Fleet Laura Claudia Giurgiu,64889,LA CIUDAD DEL TAXI,Strategic,No Agreement
+Madrid Fleet AUTOS LAUCAR SLU,46174,LAUCAR,Strategic,No Agreement
+OLD Madrid Fleet TRADAMA LOGISTICA GLOBAL SL,52208,LAUCAR,Strategic,No Agreement
+"OLD Madrid Fleet UÇ FIESTA OMNIBUS, S.L.",71819,LAUCAR,Strategic,No Agreement
+Madrid Fleet AUTOS DRIVECAR S.L,46373,LITOSCAR DREAM S.L,Strategic,No Agreement
+Madrid Fleet LITOSCAR DREAM S.L,46374,LITOSCAR DREAM S.L,Strategic,No Agreement
 Madrid Autónomos,24664,Madrid Autónomos,Strategic,No Agreement
-Madrid Fleet Daniel Fernandez Mendez,62452,Eduardo González,Strategic,Branding
-"Madrid Fleet BRIMALIAGROUP, S.L.",140388,Campofis,Strategic,Branding
-Madrid Fleet Mónica Rodriguez Gordo,142766,DOUBLEDIGIT,Strategic,Fleet Agreement
-"Madrid Fleet TIBUS LUXURY SERVICES, S.L.",143626,TIBUS,Strategic,Locked Supply
 "Madrid Fleet MOBILITY VTC SPAIN, S.L.",146340,Manuel Peña,Strategic,No Agreement
 Madrid Fleet FOREVER CARS SL,146342,Manuel Peña,Strategic,No Agreement
-Madrid Fleet ELECTRIC TAXIPRIVEE CARS SL,90366,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Fernando Sergio Carnerero,95831,Angel Ibañez,Strategic,Branding
-Madrid Fleet DAYEI VTC Y TAXI SL,98539,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Cristhian Nahun Ramos Mejia,47449,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Margarita García García,152775,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet E DRIVERS 2015 SL,46642,E Drivers,Strategic,No Agreement
-Madrid Fleet ATLANTIS MEDIA SL,156034,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Elena Guerrero Ruiz,148408,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet José María Rodríguez Piedehierro,148426,Nueva Cooperativa,Strategic,Branding
 Madrid Fleet Jaime Mata Arnaiz,105055,Pablo Gonzalez Sanchez,Strategic,No Agreement
 Madrid Fleet Luis Perea Hernández,115935,Pablo Gonzalez Sanchez,Strategic,No Agreement
 Madrid Fleet Carla Carrascosa García,124118,Pablo Gonzalez Sanchez,Strategic,No Agreement
@@ -516,195 +749,122 @@ Madrid Fleet David Fornies Aquilino,133766,Pablo Gonzalez Sanchez,Strategic,No A
 Madrid Fleet Lemarcab SL,133918,Pablo Gonzalez Sanchez,Strategic,No Agreement
 Madrid Fleet David Soria Solis ,143553,Pablo Gonzalez Sanchez,Strategic,No Agreement
 Madrid Fleet Juana Solís Rodríguez,148921,Pablo Gonzalez Sanchez,Strategic,No Agreement
-"Madrid Fleet Delicias le car, S.L.",51890,Avatel,Strategic,No Agreement
-Madrid Fleet Rosendo Marín Robles,158325,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Estela Ruiz Garrote,158544,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Rocio Buendía Gamboa,161012,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet DRIVE TRANSFER 2007 S.L,158818,DOUBLECAB,Strategic,Locked Supply
 Madrid Fleet Juan Antonio Arranz Nieto,158033,Pablo Gonzalez Sanchez,Strategic,No Agreement
-Madrid Fleet Yan Zheng,161204,Campofis,Strategic,Branding
-Madrid Fleet Oscar Alvarez Perez,93838,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Eva Maria Gonzalez Rodriguez,156102,DOUBLECAB,Strategic,Locked Supply
 Madrid Fleet Juan Antonio Manrique Antequera,158209,Pablo Gonzalez Sanchez,Strategic,No Agreement
-Madrid Fleet Cedric Damien Philippe Sauvage,47605,Javier Martinez Velayos,Strategic,Branding
-Madrid Fleet Maria Begoña Fernandez Gonzalez,57171,Javier Martinez Velayos,Strategic,Branding
-Madrid Fleet CEDACTIVITY S.L,80460,Javier Martinez Velayos,Strategic,Branding
-Madrid Fleet Javier Martinez Velayos,89460,Javier Martinez Velayos,Strategic,Branding
-Madrid Fleet Juan Luis Ayuso Buenaposada,165548,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Cristian Vaquero García,68557,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Francisco Javier Villena Borrego,167850,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet NEPTUNO PRIVATE CAB SLU,169628,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet JARDINES DE SABATINI EXCLUSIVE CARS,169630,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet POSTALES DE MADRID LUXURY CARS,169631,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet VENUS PRIVATE CAB,169633,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Rebeca Sanz Barriuso,168266,Daniel León,Strategic,No Agreement
-Madrid Fleet MAGELLAN INVESTMENTS SL ,171446,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Jose Aranda Alvarez,174356,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Carlos Garcia Garcia,96548,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Teresa Peralbo Acuña,175553,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Ameer Muhammad Bibi,176316,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Maria Nieves Luengo Bosque,178606,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Ana Belén Anton Ruiz,178624,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Maria Carmen Perera Vicente,179936,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Felipe Caparros Canabal,179028,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Eliseo Jorge Tersse Arce,179963,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Marta Campo Ruano,181343,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet RAUL MARTINEZ GOMEZ,179928,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet María Maricella Moreira Miranda,177079,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Javier Herrero Hernanz ,185101,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Pedro Jambrina Castro,128210,Nueva Cooperativa,Strategic,Branding
-Marta Lucia Peña Esteban,165923,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Rafael Serrano Zurron,184904,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Rana Mohammad Naeem,129169,DOUBLEDIGIT,Strategic,Branding
-Madrid Fleet Antonio Cordon Martinez,191796,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet RODO MOBILITY S.L,192088,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Carlota Gomez Fernandez,193873,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Marcos González Ochoa,93471,Global Transport,Strategic,Branding
-Madrid Fleet Fernando Calvo García 2,194406,DOUBLECAB,Strategic,Locked Supply
-Murcia Fleet COLORADO STEEL SLU,194679,DOUBLECAB (SPV),Strategic,Locked Supply
-Murcia Fleet ROAD TRAVELLERS MOBILITY SL,195107,DOUBLECAB,Strategic,Locked Supply
-Murcia Fleet BEST MOBILITY EXPERIENCE SL,195182,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Sara Carbone Ballesteros,192248,Angel Ibañez,Strategic,Branding
-Madrid Fleet Carmen Fenoll Abella,185454,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Alexander Camil Martin Fraile,194472,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet CARBALLO MOBILITY EXPERIENCE SL,195899,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Carlos Castro Costal,195990,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Víctor San Jose Escaño,147917,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Maria Valverde Quintana Lopez,200490,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Eider Ródriguez Martínez,186715,VTC Plus,Strategic,Branding
-Madrid Fleet Pedro Valderas Postigo,190729,VTC Plus,Strategic,Branding
-Madrid Fleet Raquel María Torres Serrano de la Cruz,174660,VTC Plus,Strategic,Branding
-Madrid Fleet Marcos García Machuca,190177,VTC Plus,Strategic,Branding
-Madrid Fleet Christian Anguas Jiménez,174670,VTC Plus,Strategic,Branding
-Madrid Fleet Marta Yolanda Muñoz Sande,172522,VTC Plus,Strategic,Branding
-Madrid Fleet Paola Gómez Fernandez,200848,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Eugenia Paz Latrille Ramírez,203946,VTC Plus,Strategic,Branding
-Madrid Fleet Victor Sanchez Perez,202232,Daniel León,Strategic,No Agreement
-Madrid Fleet Paloma San Pablo De La Cruz,196035,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Juan Luis Jimenez Fernandez,205081,Daniel León,Strategic,No Agreement
-Madrid Fleet Sergio José Pérez Otero,207838,Campofis,Strategic,Branding
-Madrid Fleet David Martinez Caballero,208960,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Yolanda Tebar Murillo,211950,VTC Plus,Strategic,Branding
-Madrid Fleet Antonio Martin Torcuato ,212616,DOUBLECAB,Strategic,Locked Supply
-Toledo Fleet COLORADO STEEL S.L,208276,DOUBLECAB (SPV),Strategic,Locked Supply
-Madrid Fleet AEROGATE TRAVEL S.L,202022,Global Transport,Strategic,Branding
-Madrid Fleet AEROGATE TRAVEL S.L,,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Javier Martinez Fernandez,215254,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Jesús del Cañizo Martínez,215809,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Marta Olivares Aires,211982,VTC Plus,Strategic,Branding
-Madrid Fleet Navalazarza Martín Constanza,215096,VTC Plus,Strategic,Branding
-Madrid Fleet Marta Blanco Vara,180132,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet MOOBER CLASS SL,47084,Jose Luis Moober,Strategic,Branding
-Madrid Fleet GARMENAL SL,185146,Jose Luis Moober,Strategic,Branding
-Madrid Fleet Christian Gardelli,191783,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Stella Vara Penelas,212950,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet AUTOS CARAZO SERVICIO DE TRANSPORTE ESPECIAL SL,220826,Global Transport,Strategic,Branding
-Madrid Fleet Javier Julian Lopez Radigales,219550,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Easy Motor Chamberí S.L.,48325,Campofis,Strategic,Branding
-Madrid Fleet APALUNA MOVILIDAD S.L.,48357,Campofis,Strategic,Branding
-Madrid Fleet Alberto Andres Balsamo Barreiro,72449,Campofis,Strategic,Branding
-Madrid Fleet Jesus Miguel Paz Garcia,108336,Campofis,Strategic,Branding
-Madrid Fleet Ruben Martin Jimenez,113744,Campofis,Strategic,Branding
-Madrid Fleet Carlos Valentin Aquino Sencion,119267,Campofis,Strategic,Branding
-Madrid Fleet Wei Chen,130675,Campofis,Strategic,Branding
-Madrid Fleet Nicholas Laurentiu Ilie,131841,Campofis,Strategic,Branding
-Madrid Fleet Oscar Garcia Lopez,134020,Campofis,Strategic,Branding
-Madrid Fleet El Hocaien El Khomci,198479,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Hakim Hannaoui Slafti,174757,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Hanan Ben Larbi Mellahi,97685,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet  Hermela Muñoz Garrido,185070,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Olena Zablotska,87987,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Sonia Martinez Alcazar,203139,BCM Dinamica Y Gestion,Strategic,No Agreement
-Madrid Fleet Eduard Florín Iordache Mihalcea,223464,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Alexandra Zumalarregui Errandonea,224387,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Sergio José Pérez Oteo,216423,Campofis,Strategic,Branding
-"Madrid Fleet DRESNICAR, S.L.U.",225577,Preservealco,Strategic,Branding
-"Madrid Fleet PRESERVEALCO, S.L.U.",225617,Preservealco,Strategic,Branding
-Madrid Fleet Raúl Vega Carbajal,221987,VTC Plus,Strategic,Branding
+"Madrid Fleet RENTAVAN MB, S.L.",47979,RENT A VAN,Strategic,No Agreement
 Madrid Fleet Roberto Heras Chavidas,72705,Roberto Heras,Strategic,No Agreement
 Madrid Fleet MADRID MOBILITY INVESTMENTS S.L.,86572,Roberto Heras,Strategic,No Agreement
 Madrid Fleet Miguel Angel Gallego Gomez,90452,Roberto Heras,Strategic,No Agreement
 Madrid Fleet Angela Valbuena Perez,96109,Roberto Heras,Strategic,No Agreement
-Madrid Fleet José Antonio Ramos Hernández,223891,Global Transport,Strategic,Branding
-Madrid Fleet Borja Hernandez Pozo,216344,Daniel León,Strategic,No Agreement
-La Coruna Fleet ENOL MOBILITY S.L.,220605,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet LOZOYA GLOBAL SL,230795,DOUBLEDIGIT,Strategic,Fleet Agreement
-Pamplona Fleet BEST MOBILITY EXPERIENCE S.L,231848,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Sharon Mangue Obiang Bindang,233481,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Molleda Herrero Carolina Electra,233137,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet VTCPANCETAS SL,137668,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Serrano Marin Susana Maria,230532,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Gema Albarrán García,119741,David Delfa,Strategic,Branding
-Madrid Fleet SERGIO CABALLO GONZALEZ,236734,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet EDUARDO BRIÑAS GATOO,244461,Campofis,Strategic,Branding
-Madrid Fleet Maria Begoña Pereira Garcia,249274,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Rufino Pachon Cobo,249683,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Mónica Manzanares Martínez,249249,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Nahum Marcos Castro,249112,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Magel Elizabeth Navarro Montes De Oca,245858,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet INGENIERIA TECNICAS INFORMATICAS Y SERVICIOS SA,247358,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet YEWANG LUXMOBIL S.L.,146139,Campofis,Strategic,Branding
-Madrid Fleet TIBUS BUSINESS CARS SL,63530,TIBUS,Strategic,Locked Supply
-Madrid Fleet Elena Ofelia Lario Santiago,243604,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Concepción Montero Rodríguez,253574,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Natascha Lefebvre,248139,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Diego Miguel Gutierrez Porteiro,256176,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Maria Luisa Godoy Pareja,251069,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Jose Alberto De La Vega Martin,251063,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Hector Manuel Peña Esteban,253457,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Drazen Primorac,251079,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Beatriz Ramos Perez Polo,253461,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Javier Rueda Martínez,258175,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet ASHLEY OBIANG BINDANG,257410,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Betty Llagaira Lopez Avalos,268863,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Alvaro Humbrias,257354,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Alberto Bernardez Gomez,270948,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Álvaro Ignacio Rueda Llamas,270216,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet LYRA VENTURES SL,169255,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Alvaro Moreno Lobo,273444,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Maria Virginia Robledo Valero,270337,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Fernando Garcia Gutierrez,277957,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet ROBERTO CARLOS BELTRAN ESCRIBANO,269737,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Álvaro Carlos Zambrano Trillo,47732,Global Transport,Strategic,Branding
-Madrid Fleet Bruno Peligro Sanchez,282709,DOUBLEDIGIT,Strategic,Fleet Agreement
-"Madrid Fleet SUITABLE TRANSFER, S.L.",269553,Javier Martinez Velayos,Strategic,Branding
-Madrid Fleet Miriam Mendez Moreno,284025,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Esperanza Baeza Fernández,289295,VTC Plus,Strategic,Branding
-Madrid Fleet DAMIAN FERNANDEZ JIMENEZ,292911,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Andres Rico Libano,295455,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Pablo Sanchez Ortiz,293200,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet INES DE LA HIGUERA MONTEJANO,293930,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Almudena Virginia Landaluce de la Fuente,302861,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Lourdes Martín Álvarez,290198,VTC Plus,Strategic,Branding
-Madrid Fleet Francesc Ros Melero,140312,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Carmen Herrero Carrasco,305125,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet Miriam Sainz Ezquerra Sánchez,301089,VTC Plus,Strategic,Branding
-Madrid Fleet Irene Romero Martín,292134,VTC Plus,Strategic,Branding
-Madrid Fleet Ignacio Rafael Gamo Infante,305646,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Ivan Fernandez Gracia,294721,VTC Plus,Strategic,Branding
-Madrid Fleet Lucas Diaz Castro,311596,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Jose Luis Funes Moran,185186,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Cristian Seves Cubo,46660,Jose Luis Funes,Strategic,Branding
-Madrid Fleet Alexandra Zumalacarregui Errandonea,317077,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Antonio Martin Torcuato,317123,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Javier Martinez Fernandez,317088,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Sylvie Kambau Mujinga,317090,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Sharon Mangue Obiang Bindang,317105,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Ashley- ocomo Obiang Bingdang,317109,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet Mariola Bindang Obiang Eyang,317111,DOUBLEDIGIT,Strategic,Fleet Agreement
-Madrid Fleet MORE MINUTES COMMUNICATIONS SL,308705,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Virginia Valdemoro Madariaga,123634,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Miguel Angel Eleno Toledo,323084,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Alvaro Sánchez Pulido,312744,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet SERGIO MARTINEZ GOMEZ,327536,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Sergio Perelli Barriocanal,328423,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Alvaro Sánchez Pulido,78926,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet JUAN JOSE DIAZ LOPEZ,334748,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Roberto Martinez Martinez,256391,Nueva Cooperativa,Strategic,Branding
-Madrid Fleet Nerea Saez Jimenez,137345,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet Wafae Taibi,185073,Nueva Cooperativa,Strategic,Branding
-JONATHAN IVAN MUSEYRI META,332255,OTTOCABS SL,Strategic,Fleet Agreement
-Madrid Fleet DIVEROCIO MADRID SL,293779,ALSA (Broncotrans),Strategic,Fleet Agreement
-Madrid Fleet CCI 2020 INTERNATIONAL SL.,329240,VTC Plus,Strategic,Branding
-Madrid Fleet GARRIDO HER AUTOMOCION SL,342530,DOUBLECAB,Strategic,Locked Supply
-Madrid Fleet LARRAÑO SL,62238,ALSA (Broncotrans),Strategic,Fleet Agreement
+Madrid Fleet SHUTTLE GESTION S.L.,46377,Shuttle Gestion,Strategic,No Agreement
+Madrid Fleet Mobile car automoción SL,46649,SOM Autos Campo,Strategic,No Agreement
+Madrid Fleet Sergio Ocampo Martin,46828,SOM Autos Campo,Strategic,No Agreement
+Madrid Fleet SOM autos ocampo,47287,SOM Autos Campo,Strategic,No Agreement
+Madrid Fleet TOP CLASS AUTOS S.L,46287,TOP CLASS AUTOS SL,Strategic,No Agreement
+Madrid Fleet TORROCO MOBILITY S.L.,46781,TORROCO MOBILITY S.L.,Strategic,No Agreement
+Madrid Fleet TRAJANO DESARROLLO EMPRESARIAL SL,48535,Trajano,Strategic,No Agreement
+Madrid Fleet Vehiculos de Abono Special Car Service,47360,VASCAR,Strategic,No Agreement
+Malaga Fleet Sergio Aranda Luque,48195,Publicars,Strategic,Fleet agreement
+Malaga Fleet Jose Ramon Diaz Lopez,48200,Publicars,Strategic,Fleet agreement
+Malaga Fleet Samuel Palomo Periñán,57789,Publicars,Strategic,Fleet agreement
+Malaga Fleet AMAYA MOBILITY SL,60631,Publicars,Strategic,Fleet agreement
+Malaga Fleet Sandra Aguayo Lopez,68757,Publicars,Strategic,Fleet agreement
+Malaga Fleet Palmira Naranjo Soto,83876,Publicars,Strategic,Fleet agreement
+Malaga Fleet Moises Amaya Heredia,102678,Publicars,Strategic,Fleet agreement
+Malaga Fleet Jose Lucas Rodriguez,107450,Publicars,Strategic,Fleet agreement
+Malaga Fleet Jose Antonio Quero España,108344,Publicars,Strategic,Fleet agreement
+Malaga Fleet Soraya Santiago Reyes,114046,Publicars,Strategic,Fleet agreement
+Malaga Fleet PUBLICARS TRANSFERS Y MARKETING SL,116659,Publicars,Strategic,Fleet agreement
+Malaga Fleet Antonia Carmona Fernandez,132073,Publicars,Strategic,Fleet agreement
+Malaga Fleet Basilio Plantón Torres,135610,Publicars,Strategic,Fleet agreement
+Malaga Fleet Daniel Montero David,150735,Publicars,Strategic,Fleet agreement
+Malaga Fleet Jesús Miguel Jurado Ruiz,158284,Publicars,Strategic,Fleet agreement
+Malaga Fleet Victoria Utrera Carbonell,169724,Publicars,Strategic,Fleet agreement
+Malaga Fleet Norberto Bruña Albino,183369,Publicars,Strategic,Fleet agreement
+Malaga Fleet Jose Vargas Madrid,185719,Publicars,Strategic,Fleet agreement
+Malaga Fleet Antoni Raul Cegri Sanchez,186712,Publicars,Strategic,Fleet agreement
+Malaga Fleet Ouazzani Semmari Afrae,187546,Publicars,Strategic,Fleet agreement
+Malaga Fleet Francisco Jesús Cuevas Expósito,190951,Publicars,Strategic,Fleet agreement
+Malaga Fleet Manuel Fernandez Santiago,192243,Publicars,Strategic,Fleet agreement
+Malaga Fleet Elena Fioravanti,195196,Publicars,Strategic,Fleet agreement
+Malaga Fleet Rawand Benabdellah,200949,Publicars,Strategic,Fleet agreement
+Malaga Fleet Ignacio De Ema Mena,221415,Publicars,Strategic,Fleet agreement
+Malaga Fleet Ester Valarino Luque,222722,Publicars,Strategic,Fleet agreement
+Malaga Fleet Carmen Jesús Ruiz Maldonado,250921,Publicars,Strategic,Fleet agreement
+Malaga Fleet MARIA DEL VALLE SANTIAGO CASTRO,312277,Publicars,Strategic,Fleet agreement
+Malaga Fleet Dilan Heredia Martin,317740,Publicars,Strategic,Fleet agreement
+Malaga Fleet Sheila Pineda Perez,325301,Publicars,Strategic,Fleet agreement
+Malaga Fleet Miriam Corcia Vizcaino,349175,Publicars,Strategic,Fleet agreement
+Malaga Fleet Roksolana Ishchenko Petrushak,359559,Publicars,Strategic,Fleet agreement
+Malaga Fleet RODRIGUEZ MOBILITY,57489,Servicios Mobility,Strategic,Fleet Agreement
+"Malaga Fleet COLORADO STEEL, S.L.",326930,Colorado Steel,Strategic,Locked Supply
+Murcia Fleet COLORADO STEEL SLU,194679,Colorado Steel,Strategic,Locked Supply
+OLD Madrid Fleet ROAD TRAVELLERS MOBILITY SL,195075,Doublecab,Strategic,Locked Supply
+Murcia Fleet ROAD TRAVELLERS MOBILITY SL,195107,Doublecab,Strategic,Locked Supply
+Murcia Fleet BEST MOBILITY EXPERIENCE SL,195182,Doublecab,Strategic,Locked Supply
+Pamplona Fleet BEST MOBILITY EXPERIENCE S.L,231848,Doublecab,Strategic,Locked Supply
+"Sevilla Fleet TRANSPORTES LOGISTIC MALAGA 2016, S.L.",54764,Blun,Strategic,Fleet agreement
+Sevilla Fleet AUTOS CITYSOL S.L.,55216,Blun,Strategic,Fleet agreement
+Sevilla Fleet WE TAKE U S.L.U.,55679,Blun,Strategic,Fleet agreement
+Sevilla Fleet LINE BINARY S.L.,55681,Blun,Strategic,Fleet agreement
+Sevilla Fleet WAY LINE S.L.,63349,Blun,Strategic,Fleet agreement
+Sevilla Fleet Adrián Blanco,88538,Blun,Strategic,Fleet agreement
+Toledo Fleet COLORADO STEEL S.L,208276,Colorado Steel,Strategic,Locked Supply
+Toledo Fleet BLAI LIMUSINES S.L,254296,Doublecab,Strategic,Locked Supply
+Toledo Fleet OSCAR MANUEL ANGULO CORRAL,254567,Doublecab,Strategic,Locked Supply
+Toledo Fleet ADONAI CORRAL CRIADO,255512,Doublecab,Strategic,Locked Supply
+Toledo Fleet Luis Augusto Baena Reig,300320,Doublecab,Strategic,Locked Supply
+Toledo Fleet IRENE MORA CUENCA,314759,Doublecab,Strategic,Locked Supply
+Toledo Fleet ALEJANDRO SERRANO GARCIA,325951,Doublecab,Strategic,Locked Supply
+Valencia Fleet Greydi Johana Sulbaran Lobo,283315,GVTM,Strategic,Fleet agreement
+Valencia Fleet Rafael Gustavo Benítez Valera (Valencia),284322,GVTM,Strategic,Fleet agreement
+Valencia Fleet Abdelkrim Bouzid Valiente,284759,GVTM,Strategic,Fleet agreement
+Valencia Fleet Zaka Ullah Bajwa Baigam,284888,GVTM,Strategic,Fleet agreement
+Valencia Fleet Abderrafya El Mensouri,286063,GVTM,Strategic,Fleet agreement
+Valencia Fleet German Ovidio Vera Duran,286623,GVTM,Strategic,Fleet agreement
+Valencia Fleet Mohamed Acachar,286927,GVTM,Strategic,Fleet agreement
+Valencia Fleet Fethi Baghdadi Matmour,287016,GVTM,Strategic,Fleet agreement
+Valencia Fleet Javier Leonardo Tejeda Reyes,289531,GVTM,Strategic,Fleet agreement
+Valencia Fleet Lorenzo Antonio Bastidas Bastidas,295751,GVTM,Strategic,Fleet agreement
+Valencia Fleet Daniel Bimbatti,304715,GVTM,Strategic,Fleet agreement
+Valencia Fleet EGLEE KATHERINE ARANA VILLARREAL,314984,GVTM,Strategic,Fleet agreement
+Valencia Fleet BIL PROFITS SL,317592,GVTM,Strategic,Fleet agreement
+Valencia Fleet MELMONT CAPITAL SL,317642,GVTM,Strategic,Fleet agreement
+Valencia Fleet VICTOR GABRIEL MOROCHO CHOTO,320269,GVTM,Strategic,Fleet agreement
+Valencia Fleet Anderson Lucien Capelo Mazzarella,324901,GVTM,Strategic,Fleet agreement
+Valencia Fleet ALMA DE ACERO SL,326293,GVTM,Strategic,Fleet agreement
+Valencia Fleet GRANA SP SL,281631,Publicars,Strategic,Fleet agreement
+Valencia Fleet Concepción Reyes Soto,284473,Publicars,Strategic,Fleet agreement
+Valencia Fleet RASIMO VTC SL,284513,Publicars,Strategic,Fleet agreement
+Valencia Fleet Abdelkrim Bouzid Valiente,284759,Publicars,Strategic,Fleet agreement
+Valencia Fleet Mouhssine Nghaya Rachidy,285875,Publicars,Strategic,Fleet agreement
+Valencia Fleet STEFANO MARTELLA,285950,Publicars,Strategic,Fleet agreement
+Valencia Fleet FRANCISCO JOSÉ VILLARIAS MENDOZA,285959,Publicars,Strategic,Fleet agreement
+Valencia Fleet Abderrafya El Mensouri,286063,Publicars,Strategic,Fleet agreement
+Valencia Fleet Soraya Alarcon Santiago,286817,Publicars,Strategic,Fleet agreement
+Valencia Fleet KARAM SAKSAK EL BOUZIDI,286947,Publicars,Strategic,Fleet agreement
+Valencia Fleet EL KHALIL SENOUNI,286974,Publicars,Strategic,Fleet agreement
+Valencia Fleet CARLY ALEJANDRA HARPER SCHOFIELD,287215,Publicars,Strategic,Fleet agreement
+Valencia Fleet hicham bousseta idrissi,287749,Publicars,Strategic,Fleet agreement
+Valencia Fleet DIEGO ZAMORANO LUQUE,288673,Publicars,Strategic,Fleet agreement
+Valencia Fleet AMALIA ESCOBEDO CORTES,292438,Publicars,Strategic,Fleet agreement
+Valencia Fleet  Maria Carmen Carrillo Gomez,292880,Publicars,Strategic,Fleet agreement
+Valencia Fleet CARMEN CORTES TEJON,293296,Publicars,Strategic,Fleet agreement
+Valencia Fleet JAVIER GALLEGO MERIDA,294957,Publicars,Strategic,Fleet agreement
+Valencia Fleet ANATOLIY VEREZHAN CHEKUSHEN,295024,Publicars,Strategic,Fleet agreement
+Valencia Fleet IRENE FERNANDEZ CORBACHO,297600,Publicars,Strategic,Fleet agreement
+Valencia Fleet SUSANA MEJIAS MARTIN,297731,Publicars,Strategic,Fleet agreement
+Valencia Fleet OSCAR ALEJANDRO BEDOYA MONSALVE,309866,Publicars,Strategic,Fleet agreement
+Valencia Fleet JORGE MANUEL GAITAN FUKUSHIMA,309919,Publicars,Strategic,Fleet agreement
+Valencia Fleet CARLOS RUIZ PALOMO,311989,Publicars,Strategic,Fleet agreement
+Valencia Fleet JOAQUIN ENRIQUE CORTES CARRILLO,314548,Publicars,Strategic,Fleet agreement
+Valencia Fleet EGLEE KATHERINE ARANA VILLARREAL,314984,Publicars,Strategic,Fleet agreement
+Valencia Fleet ACHRAF GUIRA TAMAMA,315033,Publicars,Strategic,Fleet agreement
+Valencia Fleet Daniel Boza Jimenez,316872,Publicars,Strategic,Fleet agreement
+Valencia Fleet Asdrubal Cervan Delgado,317377,Publicars,Strategic,Fleet agreement
+Valencia Fleet Mohamed Maroun Agzennai,317914,Publicars,Strategic,Fleet agreement
+Valencia Fleet Kevin Van Krimpen Barredo,320249,Publicars,Strategic,Fleet agreement
+Valencia Fleet Francisco Rodriguez Lopez,335891,Publicars,Strategic,Fleet agreement
+"Zaragoza Fleet COLORADO STEEL, S.L.",292273,Colorado Steel,Strategic,Locked Supply
+Zaragoza Fleet CAMPILLO MOBILITY SL,292375,Doublecab,Strategic,Locked Supply
+Zaragoza Fleet AUTOBUSES J. AGUILAR SL,306318,Doublecab,Strategic,Locked Supply
