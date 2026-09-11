@@ -86,15 +86,22 @@ VALID_COHORTS = list(COHORT_STRATEGIC.values()) + [FF_BRANDED, FF_NOT_BRANDED]
 FLEET_TARGETS = [60, 70, 80, 90, 100]
 
 # ── COLORADO "Core 38" ───────────────────────────────────────────────────────
-# Colorado (Bolt's 100%-captive fleet) = FO "DOUBLECAB (SPV)". Within it, 38
-# "first historical" licences are tracked apart. Tracking is by LICENCE (Card
-# Transport Licence Number), NOT plate/car — a crashed car re-plated under the
-# same licence keeps counting. These were resolved once from the 38 plates and
-# are a FIXED set. Matching is normalised (upper-case, alphanumeric only) because
-# dim_car licence values carry stray dashes / tabs (e.g. "5457-NGX\t").
-COLORADO_FO = "DOUBLECAB (SPV)"
-CORE38_FO   = "Colorado – Core 38"
-RESTO_FO    = "Colorado – Resto"
+# Colorado (Bolt's 100%-captive fleet) = FO "Colorado Steel" (renamed from the
+# Sheet's old "DOUBLECAB (SPV)" label at some point — Fleet Type/Cohort column
+# names have drifted before too, see sync_grouping_from_sheet()). Colorado Steel
+# now also operates in other cities (Alicante, Bilbao, Malaga, Murcia, Toledo,
+# Zaragoza) under the same FO name, but the Core-38 split is specifically
+# MADRID's original 38 "first historical" licences — restricted to Madrid so it
+# doesn't relabel Colorado Steel's fleet in other cities as "Colorado – Resto".
+# Tracking is by LICENCE (Card Transport Licence Number), NOT plate/car — a
+# crashed car re-plated under the same licence keeps counting. These were
+# resolved once from the 38 plates and are a FIXED set. Matching is normalised
+# (upper-case, alphanumeric only) because dim_car licence values carry stray
+# dashes / tabs (e.g. "5457-NGX\t").
+COLORADO_FO   = "Colorado Steel"
+COLORADO_CITY = "Madrid"
+CORE38_FO     = "Colorado – Core 38"
+RESTO_FO      = "Colorado – Resto"
 _CORE38_LICENCES_RAW = [
     "12243789","12252139","12243798","5375-NGX","11935647","11956810","5453-NGX",
     "5457-NGX","12297189","12297108","12134650","2577-NGY","12252140","12253189",
@@ -657,8 +664,9 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict,
         ag  = agreements.get(cid, {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL})
         fo = ag.get("g") or ""
         is_core38 = int(row.get("is_core38", 0) or 0)
-        # Colorado split for the Day view (is_core38 comes from m30's car-level flag).
-        if fo == COLORADO_FO:
+        # Colorado split for the Day view (is_core38 comes from m30's car-level
+        # flag) — Madrid only, see _split_colorado_fo().
+        if fo == COLORADO_FO and ag.get("city") == COLORADO_CITY:
             fo = CORE38_FO if is_core38 == 1 else RESTO_FO
         real_gmv, real_finished = real_rides_daily_lookup.get((str(row["date"])[:10], cid, is_core38), (0.0, 0.0))
         rows.append({
@@ -820,12 +828,14 @@ def build_embedded_agreements(car_df: pd.DataFrame, cohort_map: dict, fo_map: di
 # AGGREGATE WEEKLY OH PER COMPANY+COHORT  (for the charts)
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _split_colorado_fo(fo, car_id, core38_ids):
-    """Within Colorado (FO 'DOUBLECAB (SPV)'), route each car to 'Colorado – Core
-    38' vs 'Colorado – Resto' by whether the car's licence is one of the fixed 38
-    (core38_ids). Every other FO passes through unchanged — Core 38 is only counted
-    inside Colorado (decision 2a)."""
-    if fo != COLORADO_FO:
+def _split_colorado_fo(fo, car_id, core38_ids, city=None):
+    """Within Madrid's Colorado (FO 'Colorado Steel'), route each car to
+    'Colorado – Core 38' vs 'Colorado – Resto' by whether the car's licence is
+    one of the fixed 38 (core38_ids). Every other FO/city passes through
+    unchanged — Core 38 is only counted inside Madrid's Colorado fleet
+    (decision 2a); Colorado Steel's fleet in other cities keeps showing as
+    plain 'Colorado Steel'."""
+    if fo != COLORADO_FO or city != COLORADO_CITY:
         return fo
     try:
         cid = int(car_id)
@@ -881,7 +891,7 @@ def aggregate_weekly_by_cohort(car_df: pd.DataFrame,
             # Free floating → split by the car's admin branded tag
             cohort = FF_BRANDED if car_id in branded_cars else FF_NOT_BRANDED
         city = ag.get("city") or (row["city_name"] if has_city_col else None)
-        fo   = _split_colorado_fo(ag.get("g") or "", car_id, core38_ids)
+        fo   = _split_colorado_fo(ag.get("g") or "", car_id, core38_ids, city)
         real_gmv, real_finished = real_rides_lookup.get((str(row["week_start"])[:10], cid, car_id), (0.0, 0.0))
         rows.append({
             "week_date":          row["week_start"],
@@ -959,7 +969,7 @@ def compute_car_headroom(car_df: pd.DataFrame, agreements: dict, branded_cars: s
                  (FF_BRANDED if carid in branded_cars else FF_NOT_BRANDED)
         ccity = getattr(row, "city_name", None)
         city  = ag.get("city") or ccity
-        fo = _split_colorado_fo("" if ag.get("g") is None else str(ag.get("g") or ""), carid, core38_ids)
+        fo = _split_colorado_fo("" if ag.get("g") is None else str(ag.get("g") or ""), carid, core38_ids, city)
         gk = (w, "" if city is None or (isinstance(city, float) and pd.isna(city)) else str(city),
               fo, cohort, ag["f"])
         car_active[(gk, carid)] = car_active.get((gk, carid), 0.0) + o
