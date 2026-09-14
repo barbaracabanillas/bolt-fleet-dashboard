@@ -2,7 +2,13 @@ name: 🔄 Generar Dashboard
 
 on:
   schedule:
-    - cron: '0 4 * * 1'   # Lunes 4:00 UTC = 6:00 hora peninsular (verano)
+        # Domingo 23:41 UTC ("noche del domingo al lunes" en toda España) — hora y
+    # minuto poco comunes a propósito: GitHub retrasa (a veces varias horas)
+    # los cron en horas "redondas" como 0:00/4:00 por congestión — ya nos pasó
+    # (ejecuciones reales entre las 4:28 y las 10:08 UTC en vez de a las 4:00).
+    # Aun así GitHub no garantiza el minuto exacto; si hace falta con certeza
+    # antes de una hora concreta, lánzalo a mano (workflow_dispatch).
+    - cron: '41 23 * * 0'
   workflow_dispatch:        # permite lanzarlo manualmente desde GitHub
 
 permissions:
