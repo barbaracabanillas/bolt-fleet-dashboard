@@ -102,7 +102,7 @@
      table gets a self-contained scroll area instead — same pattern as a
      frozen-header spreadsheet. */
   .table-scroll { max-height: 65vh; overflow: auto; }
-  #perf-detail-thead th, #fr-t1-thead th, #cmp-snapshot-thead th {
+  #perf-detail-thead th, #fr-t1-thead th, #cmp-snapshot-thead th, #frh-thead th {
     position: sticky; top: 0; z-index: 45;
   }
   tbody tr { border-bottom: 1px solid #f0f0ec; }
@@ -465,6 +465,25 @@
               </tr>
             </thead>
             <tbody id="company-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- History table: ONE metric at a time, every fleet × every period —
+           full WoW/MoM/etc. trail, not just the selected period + its delta. -->
+      <div class="table-card" style="margin-top:20px;">
+        <div class="table-header">
+          <div>
+            <span class="table-title">Fleet history</span>
+            <span style="font-size:10px;color:var(--muted);font-weight:500;margin-left:8px;" id="frh-sub"></span>
+          </div>
+          <button class="home-export-action" onclick="exportTableToCSV(document.getElementById('frh-thead'), document.getElementById('frh-tbody'), 'fleets_review_history.csv')">⤓ CSV</button>
+        </div>
+        <div id="frh-metric-chips" style="display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 0;"></div>
+        <div class="table-scroll">
+          <table id="frh-table">
+            <thead id="frh-thead"></thead>
+            <tbody id="frh-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -997,6 +1016,101 @@ function renderFleetsReviewTab() {
   const periods  = sortPeriods([...new Set(enriched.map(r => r.period))]);
   populatePeriodSelector(periods);
   renderTable(enriched, periods);
+  renderFleetsHistoryTable(enriched, periods);
+}
+
+// ── Fleet history: ONE metric (chips), every fleet as a row, every period as
+//    a column — the full WoW/MoM/etc. trail per fleet, not just the selected
+//    period. Same metric catalogue (FR_METRICS) and per-slice math
+//    (frComputeCols) as Fleet Deep Dive / Fleets Comparison. ──
+let frHistMetric = 'oh';
+function toggleFRHistMetric(k) {
+  frHistMetric = k;
+  renderFleetsReviewTab();
+}
+
+function renderFleetsHistoryTable(enriched, periods) {
+  const thead = document.getElementById('frh-thead');
+  const tbody = document.getElementById('frh-tbody');
+  const sub   = document.getElementById('frh-sub');
+  const chips = document.getElementById('frh-metric-chips');
+
+  if (!periods.length) {
+    thead.innerHTML = ''; chips.innerHTML = '';
+    tbody.innerHTML = '<tr><td class="no-data" style="font-size:11px;padding:20px">No data.</td></tr>';
+    return;
+  }
+
+  const cityScope = (selectedCity === '__all') ? 'Spain' : selectedCity;
+  FR_METRICS.find(m => m.k === 'share').label = `% of ${cityScope} OH`;
+  const metric = FR_METRICS.find(m => m.k === frHistMetric) || FR_METRICS[0];
+
+  chips.innerHTML = FR_METRICS.map(m => {
+    const on = m.k === frHistMetric;
+    return `<button onclick="toggleFRHistMetric('${m.k}')" style="display:inline-flex;align-items:center;gap:6px;
+      font-family:inherit;font-size:11px;font-weight:600;border-radius:14px;padding:4px 11px;cursor:pointer;
+      border:1px solid ${on ? m.color : 'var(--border)'};background:${on ? m.color + '18' : '#fff'};color:${on ? '#111' : '#9aa0a6'};">
+      <span style="width:9px;height:9px;border-radius:50%;background:${on ? m.color : '#ccc'};"></span>${m.label}</button>`;
+  }).join('');
+
+  const deltaLbl = granularity === 'day' ? 'DoD' : granularity === 'month' ? 'MoM' : granularity === 'quarter' ? 'QoQ' : 'WoW';
+  sub.textContent = `${metric.label} · one row per fleet · small figure = change vs previous period (${deltaLbl})`;
+
+  // City OH per period (denominator for the 'share' metric) — from the SAME
+  // (City/FO/date-range-filtered) rows as the rest of this tab.
+  const cityOHByPeriod = {};
+  for (const r of enriched) cityOHByPeriod[r.period] = (cityOHByPeriod[r.period] || 0) + (r.onlineHours || 0);
+
+  // Bucket rows by (fleet-key, period) in ONE pass — frComputeCols then runs on
+  // small per-cell slices instead of re-scanning the whole `enriched` array
+  // for every (fleet, period) combo (fleets × periods can both be dozens).
+  const buckets = {};
+  const names = {};
+  for (const r of enriched) {
+    const key = r.foGroup || ('__' + r.cohort);
+    names[key] = r.foGroup || r.cohort;
+    const bk = key + ' ' + r.period;
+    (buckets[bk] || (buckets[bk] = [])).push(r);
+  }
+  const fleetKeys = Object.keys(names);
+
+  const colsByFleet = {};
+  for (const key of fleetKeys) {
+    colsByFleet[key] = {};
+    for (const p of periods) {
+      colsByFleet[key][p] = frComputeCols(buckets[key + ' ' + p] || [], cityOHByPeriod[p]);
+    }
+  }
+  // Default sort: biggest fleet (by this metric, latest period) first.
+  const lastP = periods[periods.length - 1];
+  fleetKeys.sort((a, b) => (metric.val(colsByFleet[b][lastP]) || 0) - (metric.val(colsByFleet[a][lastP]) || 0));
+
+  const fmtPeriodCol = p => {
+    if (granularity === 'month' || granularity === 'quarter') return p;
+    const d = new Date(p);
+    return isNaN(d) ? p : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  };
+
+  const STK_H = 'position:sticky;left:0;z-index:50;';
+  const STK_C = 'position:sticky;left:0;z-index:2;';
+  thead.innerHTML = `<tr>
+    <th style="text-align:left;min-width:170px;padding:9px 14px;font-size:11px;background:var(--dark);color:#fff;${STK_H}">Fleet</th>
+    ${periods.map(p => `<th style="text-align:right;padding:9px 14px;font-size:11px;font-weight:700;background:var(--dark);color:#fff;white-space:nowrap;">${fmtPeriodCol(p)}</th>`).join('')}
+  </tr>`;
+
+  tbody.innerHTML = fleetKeys.map((key, i) => {
+    const rowBg = i % 2 === 0 ? '#fff' : '#f9fafb';
+    const cells = periods.map((p, j) => {
+      const cur  = metric.val(colsByFleet[key][p]);
+      const prev = j > 0 ? metric.val(colsByFleet[key][periods[j - 1]]) : null;
+      return `<td style="text-align:right;font-size:12px;padding:8px 14px;white-space:nowrap;">
+        ${cur == null ? '—' : metric.fmt(cur)}${frDeltaHTML(metric, cur, prev)}</td>`;
+    }).join('');
+    return `<tr style="background:${rowBg};">
+      <td style="font-weight:700;font-size:11px;padding:8px 14px;color:#333;white-space:nowrap;background:${rowBg};${STK_C}">${names[key]}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
 }
 
 // ══ KPIs ══
