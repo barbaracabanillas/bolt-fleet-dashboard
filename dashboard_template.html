@@ -875,6 +875,8 @@ function loadPreloadedData() {
       bonus:         bonus,
       activeDrivers: Number(r.d) || 0,
       activeCars:    Number(r.c) || 0,
+      totalCars:     Number(r.tc) || 0,
+      totalDrivers:  Number(r.td) || 0,
       companies:     Number(r.n) || 0,
       headroom:      Array.isArray(r.hr) ? r.hr.map(Number) : null,  // per-car OH upside by target
     };
@@ -1927,6 +1929,8 @@ const FR_METRICS = [
   { k:'asp',   label:'ASP · €/ride',       color:'#E0A63B', type:'line', val:c=>c.asp>0?c.asp:null,                   fmt:v=>'€'+v.toFixed(2) },
   { k:'drv',   label:'Active drivers',     color:'#2C8C8C', type:'bar',  val:c=>c.avgDrivers!=null?c.avgDrivers:null, fmt:v=>_frN(v) },
   { k:'cars',  label:'Active cars',        color:'#1F6F6F', type:'bar',  val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
+  { k:'tcars', label:'Total cars',         color:'#8C5E1F', type:'bar',  val:c=>c.avgTotalCars!=null?c.avgTotalCars:null, fmt:v=>_frN(v) },
+  { k:'tdrv',  label:'Total drivers',      color:'#8C1F5E', type:'bar',  val:c=>c.avgTotalDrivers!=null?c.avgTotalDrivers:null, fmt:v=>_frN(v) },
   { k:'ohpd',  label:'OH / driver',        color:'#6E7BA6', type:'line', val:c=>c.ohPerDriver!=null?c.ohPerDriver:null, fmt:v=>_frN(v)+'h' },
   { k:'ohcar', label:'OH / car',           color:'#454E86', type:'line', val:c=>c.ohPerCar!=null?c.ohPerCar:null,     fmt:v=>_frN(v)+'h' },
   { k:'gmvcar',label:'GMV / car',          color:'#3E8E63', type:'line', val:c=>c.gmvPerCar!=null?c.gmvPerCar:null,   fmt:v=>'€'+_frN(v) },
@@ -1967,6 +1971,13 @@ function frComputeCols(rows, spainTotalOH) {
   const avgDrivers = drvByWeek.length ? drvByWeek.reduce((a, b) => a + b, 0) / drvByWeek.length : null;
   const carByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.activeCars || 0), 0));
   const avgCars = carByWeek.length ? carByWeek.reduce((a, b) => a + b, 0) / carByWeek.length : null;
+  // Total cars/drivers: current roster snapshot (same value on every row of a
+  // given fleet), so summing per sub-period then averaging just returns it —
+  // safe with the same math as active cars/drivers above.
+  const tCarByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.totalCars || 0), 0));
+  const avgTotalCars = tCarByWeek.length ? tCarByWeek.reduce((a, b) => a + b, 0) / tCarByWeek.length : null;
+  const tDrvByWeek = weeks.map(w => rows.filter(r => r.week === w).reduce((s, r) => s + (r.totalDrivers || 0), 0));
+  const avgTotalDrivers = tDrvByWeek.length ? tDrvByWeek.reduce((a, b) => a + b, 0) / tDrvByWeek.length : null;
   // Real (non-allocated) finished orders/GMV — this function is ALWAYS a
   // per-fleet/per-entity breakdown (Fleet Deep Dive, Fleets Comparison, Fleets
   // Review), exactly where the city-allocated r.rides/r.gmv would be meaningless
@@ -1985,7 +1996,7 @@ function frComputeCols(rows, spainTotalOH) {
   const rph = totalOH > 0 ? rides / totalOH : null;   // rides per online hour
   const asp = rides > 0 ? gmv / rides : null;          // avg selling price / ride
   const gmvPerCar = (avgCars > 0) ? gmv / avgCars : null;
-  return { totalOH, shareOH, avgDrivers, avgCars, rides, ohPerDriver, ohPerCar, netEph, netEphNet, gmv, rph, asp, gmvPerCar };
+  return { totalOH, shareOH, avgDrivers, avgCars, avgTotalCars, avgTotalDrivers, rides, ohPerDriver, ohPerCar, netEph, netEphNet, gmv, rph, asp, gmvPerCar };
 }
 
 // ── TABLE 1: Fleet Performance — KPIs over time (metrics = rows, periods = columns).

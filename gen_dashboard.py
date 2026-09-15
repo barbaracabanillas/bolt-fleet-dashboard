@@ -479,6 +479,95 @@ def fetch_drivers_weekly() -> pd.DataFrame:
     return df
 
 
+def fetch_total_cars() -> pd.DataFrame:
+    """Every car currently registered ('active' in admin) per company — the
+    'Total cars' figure, as opposed to active_cars which requires online hours
+    in the period. Per-car rows (not pre-aggregated) so main() can classify
+    each car through the same Colorado Core-38/Resto + branded-FF split used
+    for active cars."""
+    sql = """
+        SELECT car_id,
+               CAST(car_company_id AS STRING) AS company_id
+        FROM main.core_models.dim_car
+        WHERE car_country_id = 67 AND car_status = 'active'
+    """
+    df = run_query(sql)
+    print(f"[total_cars] {len(df):,} active cars registered (Spain)")
+    return df
+
+
+def fetch_total_drivers() -> pd.DataFrame:
+    """Every driver currently registered ('active' in admin) per company — the
+    'Total drivers' figure, as opposed to active_drivers which requires online
+    hours in the period. Carries the driver's currently-selected car_id so a
+    Colorado Steel (Madrid) driver can be routed to Core-38/Resto the same way
+    as total cars — best-effort only: a driver with no selected car (or one not
+    in dim_car) falls into 'Resto' via the same default _split_colorado_fo
+    uses for any unresolved car_id."""
+    sql = """
+        SELECT dr.driver_id,
+               CAST(dr.driver_company_id AS STRING) AS company_id,
+               dr.driver_selected_car_id            AS car_id
+        FROM main.core_models.dim_driver dr
+        WHERE dr.driver_status = 'active'
+          AND dr.driver_company_id IN (
+              SELECT DISTINCT car_company_id FROM main.core_models.dim_car WHERE car_country_id = 67
+          )
+    """
+    df = run_query(sql)
+    print(f"[total_drivers] {len(df):,} active drivers registered (Spain)")
+    return df
+
+
+def build_total_cars_drivers_lookup(total_cars_df: pd.DataFrame, total_drivers_df: pd.DataFrame,
+                                     agreements: dict, branded_cars: set, branded_companies: set,
+                                     core38_ids: set) -> dict:
+    """Classify every registered car/driver through the SAME (city, fo, cohort,
+    strategy) logic as the active-cars pipeline (see aggregate_weekly_by_cohort),
+    then count distinct cars/drivers per group. Returns
+    {(city, fo, cohort, strategy): {"total_cars": n, "total_drivers": n}} — a
+    single current snapshot (no week dimension), attached to every period row
+    for a given group in main()."""
+    core38_ids = core38_ids or set()
+    groups: dict = {}
+
+    def _group_key(company_id: str, car_id):
+        ag = agreements.get(company_id) or {"c": FF_NOT_BRANDED, "f": NONSTRATEGIC_LABEL}
+        if ag["f"] == STRATEGIC_LABEL:
+            cohort = ag["c"]
+        else:
+            cohort = FF_BRANDED if company_id in branded_companies and car_id in branded_cars else FF_NOT_BRANDED
+        city = ag.get("city")
+        fo = _split_colorado_fo(ag.get("g") or "", car_id, core38_ids, city)
+        return ("" if city is None else str(city), fo, cohort, ag["f"])
+
+    for row in total_cars_df.itertuples(index=False):
+        cid = str(row.company_id)
+        try:
+            car_id = int(row.car_id)
+        except (ValueError, TypeError):
+            car_id = None
+        key = _group_key(cid, car_id)
+        g = groups.setdefault(key, {"cars": set(), "drivers": set()})
+        g["cars"].add(car_id if car_id is not None else row.car_id)
+
+    for row in total_drivers_df.itertuples(index=False):
+        cid = str(row.company_id)
+        try:
+            car_id = int(row.car_id)
+        except (ValueError, TypeError):
+            car_id = None
+        key = _group_key(cid, car_id)
+        g = groups.setdefault(key, {"cars": set(), "drivers": set()})
+        g["drivers"].add(row.driver_id)
+
+    result = {k: {"total_cars": len(v["cars"]), "total_drivers": len(v["drivers"])} for k, v in groups.items()}
+    print(f"[total_cars_drivers] {len(result):,} (city, fo, cohort, strategy) groups | "
+          f"total_cars={sum(v['total_cars'] for v in result.values()):,} "
+          f"total_drivers={sum(v['total_drivers'] for v in result.values()):,}")
+    return result
+
+
 # Driver INCENTIVE BONUS per company (from the supply-spend mart). This is the
 # add-on to driver earnings that turns "net EPH" into the official Growth
 # Dashboard "Net EpH w/ Bonus" metric. `total_driver_bonus_with_vat_eur` matches
@@ -1063,6 +1152,25 @@ def _distribute_city(df: pd.DataFrame, date_col: str, lookup: dict,
     return df
 
 
+def _attach_totals(df: pd.DataFrame, totals_lookup: dict) -> pd.DataFrame:
+    """Attach the current total_cars/total_drivers snapshot (see
+    build_total_cars_drivers_lookup) onto every row of df, keyed by its
+    (city, fo, cohort, invoicing_strategy) group — same value repeated across
+    every period, since it's a roster snapshot, not a time series."""
+    if df is None or df.empty:
+        return df
+    tc, td = [], []
+    for city, fo, cohort, strat in zip(df["city"], df["fo"], df["cohort"], df["invoicing_strategy"]):
+        key = ("" if pd.isna(city) else str(city), "" if pd.isna(fo) else str(fo), cohort, strat)
+        g = totals_lookup.get(key, {})
+        tc.append(g.get("total_cars", 0))
+        td.append(g.get("total_drivers", 0))
+    df = df.copy()
+    df["total_cars"] = tc
+    df["total_drivers"] = td
+    return df
+
+
 def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
     """
     Compact an aggregated performance DataFrame into the minimal rows the
@@ -1094,6 +1202,8 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "g":    round(float(d.get("gmv_eur") or 0)),
             "d":    int(d.get("active_drivers") or 0),
             "c":    int(d.get("active_cars") or 0),
+            "tc":   int(d.get("total_cars") or 0),
+            "td":   int(d.get("total_drivers") or 0),
             "r":    round(float(d.get("rides") or 0)),
             "n":    int(d.get("n") or 0),
             # Real (non-allocated) GMV/finished-orders — for EPH bruto/RPH/ASP at
@@ -1213,6 +1323,13 @@ def main():
     print(f"[branded] {len(branded_companies):,} companies with >=1 branded car")
     agreements = build_embedded_agreements(car_df, cohort_map, fo_map, branded_companies)
 
+    # Total cars/drivers (current roster, active in admin regardless of activity)
+    # — a single snapshot, attached to every period row for its (city, fo,
+    # cohort, strategy) group further down.
+    totals_lookup = build_total_cars_drivers_lookup(
+        fetch_total_cars(), fetch_total_drivers(), agreements, branded_cars, branded_companies, core38_ids
+    )
+
     # 4. Aggregate weekly OH by company+cohort (per-car cohort split for free floating)
     weekly_df = aggregate_weekly_by_cohort(car_df, agreements, branded_cars, core38_ids, real_rides_lookup)
 
@@ -1291,6 +1408,8 @@ def main():
               f"| Real GMV: {weekly_df['real_gmv_eur'].sum():,.0f} (canonical GMV: {weekly_df['gmv_eur'].sum():,.0f}) "
               f"| Real finished: {weekly_df['real_finished'].sum():,.0f}")
 
+        weekly_df = _attach_totals(weekly_df, totals_lookup)
+
         # Safety net: if the real-rides fetch failed or came back empty (0 total),
         # fall back to the canonical (city-allocated) figures so EPH bruto/RPH/ASP
         # degrade to the pre-fix behaviour instead of showing €0 / blank everywhere.
@@ -1349,6 +1468,8 @@ def main():
                   "the canonical (city-allocated) values for the Day view's EPH bruto/RPH/ASP.")
             daily_df["real_gmv_eur"] = daily_df["gmv_eur"]
             daily_df["real_finished"] = daily_df["rides"]
+
+        daily_df = _attach_totals(daily_df, totals_lookup)
 
     # 4c. Taxi vs VTC GMV per week+city (for the Taxi vs VTC widget)
     taxi_df = fetch_taxi_vtc_weekly()
