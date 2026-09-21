@@ -960,8 +960,16 @@ function aggregateEPHBy(enriched, dim) {
 
 function getPeriodKey(weekStr) {
   if (granularity === 'day')     return weekStr;
-  const d = new Date(weekStr);
   if (granularity === 'week')    return weekStr;
+  // Month/Quarter: a week (Mon–Sun) that straddles a month/quarter boundary must
+  // land in whichever one holds the MAJORITY of its 7 days, not whichever one
+  // holds its Monday — anchoring on the Monday silently drops boundary weeks
+  // from the month they mostly belong to (e.g. week of Jun 29 is 5/7 July, but
+  // "new Date(weekStr).getMonth()" put it entirely under June). The ISO
+  // Thursday-of-the-week rule ('add 3 days to Monday') always picks the
+  // majority month/quarter for a 7-day week.
+  const d = new Date(weekStr);
+  d.setDate(d.getDate() + 3);
   if (granularity === 'month')   { const m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return `${m[d.getMonth()]} ${d.getFullYear()}`; }
   return `${d.getFullYear()} Q${Math.ceil((d.getMonth()+1)/3)}`;
 }
@@ -1785,7 +1793,11 @@ function periodForGranularity(weekDate, gran) {
     return `${y}-${m}-${dd}`;
   }
   if (gran === 'month') {
-    return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    // Same Thursday-of-the-week rule as getPeriodKey() — a boundary week must
+    // land in the month holding its majority of days, not the Monday's month.
+    const m = new Date(d);
+    m.setDate(m.getDate() + 3);
+    return m.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
   }
   return weekDate;
 }
