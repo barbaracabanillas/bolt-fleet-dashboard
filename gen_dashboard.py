@@ -36,6 +36,13 @@ LOOKBACK_DAYS_M30    = 30    # for M30 section
 COHORTS_CSV          = "fo_groups.csv"       # single source of truth (Company, Company ID, FO, Fleet Type, Cohort)
 FO_GROUPS_CSV        = "fo_groups.csv"       # same file — Company ID → FO group name
 
+# Frozen snapshot of past weeks' fleet_performance rows — see freeze_weekly_history().
+# Committed to the repo so a grouping change in the Sheet (e.g. a fleet moving from
+# Branded to Fleet Agreement) only affects the CURRENT week going forward; every
+# week that has already closed keeps whatever classification was live when it
+# closed, automatically, with no manual dating needed in the Sheet.
+FLEET_HISTORY_FREEZE_FILE = "fleet_history_frozen.json"
+
 # Optional data cut-off date (YYYY-MM-DD). When set, only data up to and
 # including this date is fetched — useful to lock the dashboard to the last
 # complete week. If empty, data goes up to today (original behaviour).
@@ -612,6 +619,47 @@ def fetch_bonus_daily() -> pd.DataFrame:
     return df
 
 
+# Total Supply Spend per company — SAME table/grain as the incentive bonus above
+# (_BONUS_TABLE already has a `total_supply_spend_with_vat_eur` column covering
+# every spend category: bonuses, branding, referrals, compensations, campaigns...).
+# This matches the Growth org's "Supply Spend per Fleet" Looker dashboard, which
+# is built on this same mart.
+def fetch_supply_spend_weekly() -> pd.DataFrame:
+    """Total supply spend per (week, company) — Spain."""
+    sql = f"""
+    SELECT DATE_TRUNC('week', calendar_date_local)  AS week_start,
+           COALESCE(company_id, -1)                 AS company_id,
+           SUM(total_supply_spend_with_vat_eur)     AS spend_eur
+    FROM {_BONUS_TABLE}
+    WHERE country_id = 67   -- Spain (all cities)
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_WEEKLY} DAYS
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    df["spend_eur"] = df["spend_eur"].astype(float)   # Databricks returns Decimal
+    print(f"[supply_spend_weekly] Fetched {len(df):,} company-week rows | spend={df['spend_eur'].sum():,.0f}")
+    return df
+
+
+def fetch_supply_spend_daily() -> pd.DataFrame:
+    """Total supply spend per (day, company) — Spain, last M30 days."""
+    sql = f"""
+    SELECT calendar_date_local                      AS date,
+           COALESCE(company_id, -1)                 AS company_id,
+           SUM(total_supply_spend_with_vat_eur)     AS spend_eur
+    FROM {_BONUS_TABLE}
+    WHERE country_id = 67   -- Spain (all cities)
+      AND calendar_date_local >= CURRENT_DATE - INTERVAL {LOOKBACK_DAYS_M30} DAYS
+      {_CUTOFF_CLAUSE}
+    GROUP BY 1, 2
+    """
+    df = run_query(sql)
+    df["spend_eur"] = df["spend_eur"].astype(float)   # Databricks returns Decimal
+    print(f"[supply_spend_daily] Fetched {len(df):,} company-day rows")
+    return df
+
+
 def fetch_core38_car_ids() -> set:
     """Resolve the 38 Colorado 'Core' licences → the set of car_ids currently
     carrying them (dim_car). A licence can map to several car_ids over time
@@ -770,6 +818,7 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict,
             "earnings_eur":       row.get("earnings_eur", 0),
             "gross_earnings_eur": row.get("gross_earnings_eur", 0),
             "bonus_eur":          row.get("bonus_eur", 0),
+            "spend_eur":          row.get("spend_eur", 0),
             "active_drivers":     row.get("active_drivers", 0),
             "active_cars":        row.get("active_cars", 0),
             # Real (non-allocated) GMV/finished — see fetch_real_rides_daily().
@@ -786,6 +835,7 @@ def aggregate_daily_by_cohort(m30_df: pd.DataFrame, agreements: dict,
              earnings_eur=("earnings_eur", "sum"),
              gross_earnings_eur=("gross_earnings_eur", "sum"),
              bonus_eur=("bonus_eur", "sum"),
+             spend_eur=("spend_eur", "sum"),
              active_drivers=("active_drivers", "sum"),
              active_cars=("active_cars", "sum"),
              real_gmv_eur=("real_gmv_eur", "sum"),
@@ -1199,6 +1249,7 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             "e":    round(float(d.get("earnings_eur") or 0)),
             "eg":   round(float(d.get("gross_earnings_eur") or 0)),
             "b":    round(float(d.get("bonus_eur") or 0)),
+            "sp":   round(float(d.get("spend_eur") or 0)),
             "g":    round(float(d.get("gmv_eur") or 0)),
             "d":    int(d.get("active_drivers") or 0),
             "c":    int(d.get("active_cars") or 0),
@@ -1217,6 +1268,71 @@ def _compact_perf(df: pd.DataFrame, date_col: str) -> list:
             rec["hr"] = [round(float(d.get("hr%d" % T) or 0)) for T in FLEET_TARGETS]
         out.append(rec)
     return out
+
+
+def freeze_weekly_history(fresh_rows: list) -> list:
+    """Make grouping/cohort changes in the Sheet apply only going forward, never
+    retroactively — automatically, with no manual "effective from" dating needed.
+
+    Every week except the CURRENT one (the most recent week present in
+    `fresh_rows`) is "closed": once a week has closed at least once, its rows are
+    locked in FLEET_HISTORY_FREEZE_FILE forever, and every later run returns the
+    frozen rows for that week untouched instead of recomputing them against
+    whatever the Sheet says today. The current week always uses today's Sheet
+    (so a grouping change you make now is reflected immediately), and freezes
+    the instant a newer week supersedes it as "current".
+
+    First run ever (no freeze file yet): every week except the current one
+    freezes immediately using today's classification — there's no way to know
+    what the Sheet said in the past, so this is the best available baseline;
+    from then on each week locks in independently as it closes.
+    """
+    if not fresh_rows:
+        return fresh_rows
+
+    try:
+        with open(FLEET_HISTORY_FREEZE_FILE, "r", encoding="utf-8") as f:
+            frozen_rows = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        frozen_rows = []
+
+    frozen_weeks = {r["w"] for r in frozen_rows}
+    current_week = max(r["w"] for r in fresh_rows)
+
+    by_week_fresh = {}
+    for r in fresh_rows:
+        by_week_fresh.setdefault(r["w"], []).append(r)
+    by_week_frozen = {}
+    for r in frozen_rows:
+        by_week_frozen.setdefault(r["w"], []).append(r)
+
+    final_rows = []
+    newly_frozen_weeks = []
+    for week, rows in by_week_fresh.items():
+        if week == current_week:
+            final_rows.extend(rows)                         # always fresh
+        elif week in frozen_weeks:
+            final_rows.extend(by_week_frozen[week])          # locked — ignore fresh
+        else:
+            final_rows.extend(rows)                          # closing for the first time
+            newly_frozen_weeks.append(week)
+
+    # Weeks only present in the old freeze file (e.g. outside today's lookback
+    # window) stay in the output too — never silently drop frozen history.
+    for week, rows in by_week_frozen.items():
+        if week not in by_week_fresh:
+            final_rows.extend(rows)
+
+    if newly_frozen_weeks:
+        updated_frozen = frozen_rows + [r for w in newly_frozen_weeks for r in by_week_fresh[w]]
+        with open(FLEET_HISTORY_FREEZE_FILE, "w", encoding="utf-8") as f:
+            json.dump(updated_frozen, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"[freeze] Froze {len(newly_frozen_weeks)} newly-closed week(s): "
+              f"{sorted(newly_frozen_weeks)} | {len(updated_frozen):,} total frozen rows")
+    else:
+        print(f"[freeze] No newly-closed weeks | {len(frozen_rows):,} rows already frozen")
+
+    return final_rows
 
 
 def refine_cutoff_to_complete_week():
@@ -1305,6 +1421,17 @@ def main():
         _grp_oh = m30_df.groupby(["date", "company_id"])["online_hours"].transform("sum")
         m30_df["bonus_eur"] = m30_df["bonus_eur"] * (m30_df["online_hours"] / _grp_oh.where(_grp_oh > 0, 1))
 
+        # Same spread-by-OH-share treatment for total supply spend.
+        _spend_d = fetch_supply_spend_daily()
+        if not _spend_d.empty:
+            _spend_d["company_id"] = _spend_d["company_id"].astype("int64")
+            _spend_d["date"] = _spend_d["date"].astype(str)
+            m30_df = m30_df.merge(_spend_d, on=["date", "company_id"], how="left")
+        if "spend_eur" not in m30_df.columns:
+            m30_df["spend_eur"] = 0.0
+        m30_df["spend_eur"] = m30_df["spend_eur"].fillna(0.0)
+        m30_df["spend_eur"] = m30_df["spend_eur"] * (m30_df["online_hours"] / _grp_oh.where(_grp_oh > 0, 1))
+
         for r in fetch_real_rides_daily(core38_ids).itertuples(index=False):
             try:
                 key = (str(r.date)[:10], str(int(r.company_id)), int(r.is_core38))
@@ -1357,6 +1484,11 @@ def main():
         (str(r.week_start)[:10], str(r.company_id)): float(r.bonus_eur or 0)
         for r in fetch_bonus_weekly().itertuples(index=False)
     }
+    # Total supply spend per (week, company) — same mart as the bonus above.
+    spend_lookup = {
+        (str(r.week_start)[:10], str(r.company_id)): float(r.spend_eur or 0)
+        for r in fetch_supply_spend_weekly().itertuples(index=False)
+    }
 
     company_weekly = pd.DataFrame(columns=["week_date", "city", "fo", "invoicing_strategy", "n"])
 
@@ -1369,6 +1501,9 @@ def main():
         # Driver bonus ← per-company total, split across its rows by active share.
         weekly_df["bonus_eur"] = 0.0
         weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", bonus_lookup, "bonus_eur", "_w")
+        # Total supply spend ← per-company total, same treatment as bonus.
+        weekly_df["spend_eur"] = 0.0
+        weekly_df = _scale_metric_to_canonical(weekly_df, "week_date", spend_lookup, "spend_eur", "_w")
         # OH / GMV / Finished ← city-hour mart, distributed by (week, city).
         weekly_df = _distribute_city(weekly_df, "week_date", city_oh,  "_w", "online_hours")
         weekly_df = _distribute_city(weekly_df, "week_date", city_gmv, "_w", "gmv_eur")
@@ -1395,6 +1530,7 @@ def main():
                  gross_earnings_eur=("gross_earnings_eur", "sum"),
                  gmv_eur=("gmv_eur", "sum"),
                  bonus_eur=("bonus_eur", "sum"),
+                 spend_eur=("spend_eur", "sum"),
                  rides=("finished_rides", "sum"),
                  active_cars=("active_cars", "sum"),
                  active_drivers=("active_drivers", "sum"),
@@ -1477,7 +1613,7 @@ def main():
     # 5. Convert dataframes to JSON-serialisable dicts
     data = {
         "generated_at":      datetime.datetime.utcnow().isoformat() + "Z",
-        "fleet_performance": _compact_perf(weekly_df, "week_date"),
+        "fleet_performance": freeze_weekly_history(_compact_perf(weekly_df, "week_date")),
         "daily_performance": _compact_perf(daily_df,  "day_date"),
         "taxi_vtc": [
             {"w": str(r.week_start)[:10], "city": r.city_name,

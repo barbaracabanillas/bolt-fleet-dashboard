@@ -874,6 +874,7 @@ function loadPreloadedData() {
       rides:         rides,         // city-allocated — use for city/aggregate TOTALS
       realFinished:  realFinished,  // real — use for per-fleet RPH/ASP
       bonus:         bonus,
+      supplySpend:   Number(r.sp) || 0,
       activeDrivers: Number(r.d) || 0,
       activeCars:    Number(r.c) || 0,
       totalCars:     Number(r.tc) || 0,
@@ -1947,6 +1948,7 @@ const FR_METRICS = [
   { k:'eph',   label:'EPH bruto',          color:'#C79A00', type:'line', val:c=>c.netEph>0?c.netEph:null,             fmt:v=>'€'+v.toFixed(2) },
   { k:'ephnet',label:'EPH neto (c/bonus)', color:'#8A6D00', type:'line', val:c=>c.netEphNet>0?c.netEphNet:null,       fmt:v=>'€'+v.toFixed(2) },
   { k:'asp',   label:'ASP · €/ride',       color:'#E0A63B', type:'line', val:c=>c.asp>0?c.asp:null,                   fmt:v=>'€'+v.toFixed(2) },
+  { k:'spend', label:'Supply spend',       color:'#A63B6B', type:'bar',  val:c=>c.supplySpend>0?c.supplySpend:null,   fmt:v=>'€'+_frN(v) },
   { k:'drv',   label:'Active drivers',     color:'#2C8C8C', type:'bar',  val:c=>c.avgDrivers!=null?c.avgDrivers:null, fmt:v=>_frN(v) },
   { k:'cars',  label:'Active cars',        color:'#1F6F6F', type:'bar',  val:c=>c.avgCars!=null?c.avgCars:null,       fmt:v=>_frN(v) },
   { k:'tcars', label:'Total cars',         color:'#8C5E1F', type:'bar',  val:c=>c.avgTotalCars!=null?c.avgTotalCars:null, fmt:v=>_frN(v) },
@@ -2016,7 +2018,8 @@ function frComputeCols(rows, spainTotalOH) {
   const rph = totalOH > 0 ? rides / totalOH : null;   // rides per online hour
   const asp = rides > 0 ? gmv / rides : null;          // avg selling price / ride
   const gmvPerCar = (avgCars > 0) ? gmv / avgCars : null;
-  return { totalOH, shareOH, avgDrivers, avgCars, avgTotalCars, avgTotalDrivers, rides, ohPerDriver, ohPerCar, netEph, netEphNet, gmv, rph, asp, gmvPerCar };
+  const supplySpend = rows.reduce((s, r) => s + (r.supplySpend || 0), 0);
+  return { totalOH, shareOH, avgDrivers, avgCars, avgTotalCars, avgTotalDrivers, rides, ohPerDriver, ohPerCar, netEph, netEphNet, gmv, rph, asp, gmvPerCar, supplySpend };
 }
 
 // ── TABLE 1: Fleet Performance — KPIs over time (metrics = rows, periods = columns).

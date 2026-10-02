@@ -12,7 +12,7 @@ on:
   workflow_dispatch:        # permite lanzarlo manualmente desde GitHub
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -46,6 +46,23 @@ jobs:
           DATABRICKS_HTTP_PATH:   ${{ secrets.DATABRICKS_HTTP_PATH }}
           DATABRICKS_TOKEN:       ${{ secrets.DATABRICKS_TOKEN }}
         run: python gen_dashboard.py
+
+      # fleet_history_frozen.json is gen_dashboard.py's own output (freeze_weekly_
+      # history()) — a week's rows only land here once, the first time that week is
+      # no longer "current". Committing it back keeps every future run's history
+      # stable even if the grouping Sheet changes later. No PAT needed: this is the
+      # repo's own default token pushing to itself.
+      - name: Commit frozen fleet history (if changed)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add fleet_history_frozen.json
+          if git diff --cached --quiet; then
+            echo "No newly-closed weeks to freeze."
+          else
+            git commit -m "Freeze newly-closed week(s) in fleet history"
+            git push
+          fi
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
