@@ -460,6 +460,9 @@
                 <th class="r sortable" id="th-oh" onclick="sortTable('oh')">Online Hours</th>
                 <th class="r sortable" id="th-period-change" onclick="sortTable('wowAbs')">WoW</th>
                 <th class="r sortable" id="th-period-change-pct" onclick="sortTable('wowPct')">WoW %</th>
+                <th class="r sortable" id="th-vs-avg3" onclick="sortTable('vsAvg3')">vs avg 3</th>
+                <th class="r sortable" id="th-vs-avg6" onclick="sortTable('vsAvg6')">vs avg 6</th>
+                <th class="r sortable" id="th-vs-avg12" onclick="sortTable('vsAvg12')">vs avg 12</th>
                 <th class="r sortable" id="th-eph" onclick="sortTable('eph')">EPH bruto</th>
                 <th class="r sortable" id="th-drivers" onclick="sortTable('partners')">Drivers</th>
                 <th class="r sortable" id="th-gmv" onclick="sortTable('gmv')">GMV</th>
@@ -1566,6 +1569,12 @@ function periodChangeLabel() {
   if (granularity === 'month') return 'MoM';
   return 'QoQ';
 }
+function periodUnitLabel() {
+  if (granularity === 'day')   return 'days';
+  if (granularity === 'week')  return 'weeks';
+  if (granularity === 'month') return 'months';
+  return 'quarters';
+}
 function fmtChange(delta) {
   if (delta === null || delta === undefined || isNaN(delta)) return '<span style="color:#ccc">—</span>';
   const sign = delta >= 0 ? '+' : '';
@@ -1598,7 +1607,7 @@ function renderTable(enriched, periods) {
   const rows = enriched.filter(r => r.period === selPeriod);
 
   const tbody = document.getElementById('company-tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="12" class="no-data">No data</td></tr>'; return; }
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="15" class="no-data">No data</td></tr>'; return; }
 
   // Update column header label
   const thPc = document.getElementById('th-period-change');
@@ -1627,6 +1636,28 @@ function renderTable(enriched, periods) {
     }
   }
 
+  // Trailing-average OH per FO, like a stock's "vs its own N-period average" —
+  // the mean of the N periods BEFORE the selected one (missing periods count as
+  // 0 OH, same "fleet wasn't active" semantics as everywhere else). One pass
+  // over `enriched` builds OH-per-(period,FO) once; each window just sums the
+  // slice of periods it needs out of that, instead of re-filtering `enriched`
+  // per window.
+  const ohByPeriodFo = {};
+  for (const r of enriched) {
+    const key = r.foGroup || ('__'+r.cohort);
+    const p = r.period;
+    (ohByPeriodFo[p] || (ohByPeriodFo[p] = {}));
+    ohByPeriodFo[p][key] = (ohByPeriodFo[p][key] || 0) + r.onlineHours;
+  }
+  const TRAILING_WINDOWS = [3, 6, 12];
+  function trailingAvgOH(key, n) {
+    const windowPeriods = periods.slice(Math.max(0, periodIdx - n), periodIdx);
+    if (!windowPeriods.length) return null;
+    let sum = 0;
+    for (const p of windowPeriods) sum += (ohByPeriodFo[p] && ohByPeriodFo[p][key]) || 0;
+    return sum / windowPeriods.length;
+  }
+
   // Build rows with all metrics. Every group shows — real FO groups (Strategic,
   // named in Admin_Madrid/fo_groups.csv) AND Free Floating, which has no FO name
   // there so it's bucketed by cohort instead (g.name falls back to r.cohort).
@@ -1635,7 +1666,12 @@ function renderTable(enriched, periods) {
     const wowAbs = prevG ? (g.oh - prevG.oh) : null;
     const wowPct = (prevG && prevG.oh > 0) ? ((g.oh - prevG.oh) / prevG.oh * 100) : null;
     const eph    = g.sumOH > 0 ? g.sumWt / g.sumOH : 0;
-    return { ...g, wowAbs, wowPct, eph };
+    const vsAvg = {};
+    for (const n of TRAILING_WINDOWS) {
+      const avg = trailingAvgOH(g.key, n);
+      vsAvg[n] = (avg != null && avg > 0) ? ((g.oh - avg) / avg * 100) : null;
+    }
+    return { ...g, wowAbs, wowPct, eph, vsAvg3: vsAvg[3], vsAvg6: vsAvg[6], vsAvg12: vsAvg[12] };
   });
 
   // Sort by the clicked column
@@ -1656,6 +1692,9 @@ function renderTable(enriched, periods) {
   setHdr('th-oh',               'Online Hours' + arr('oh'));
   setHdr('th-period-change',     pcl           + arr('wowAbs'));
   setHdr('th-period-change-pct', pcl + ' %'    + arr('wowPct'));
+  setHdr('th-vs-avg3',          `vs avg 3 ${periodUnitLabel()}` + arr('vsAvg3'));
+  setHdr('th-vs-avg6',          `vs avg 6 ${periodUnitLabel()}` + arr('vsAvg6'));
+  setHdr('th-vs-avg12',         `vs avg 12 ${periodUnitLabel()}` + arr('vsAvg12'));
   setHdr('th-eph',              'EPH bruto'     + arr('eph'));
   setHdr('th-drivers',          'Drivers'      + arr('partners'));
   // th-gmv uses innerHTML (not setHdr's textContent) so the info-badge survives re-render.
@@ -1675,6 +1714,9 @@ function renderTable(enriched, periods) {
       <td class="r">${g.oh.toLocaleString('es',{maximumFractionDigits:1})}h</td>
       <td class="r">${fmtChange(g.wowAbs)}</td>
       <td class="r">${fmtPct(g.wowPct)}</td>
+      <td class="r">${fmtPct(g.vsAvg3)}</td>
+      <td class="r">${fmtPct(g.vsAvg6)}</td>
+      <td class="r">${fmtPct(g.vsAvg12)}</td>
       <td class="r">${g.eph>0?'€'+g.eph.toFixed(2):'—'}</td>
       <td class="r">${Math.round(g.partners).toLocaleString('es')}</td>
       <td class="r">€${g.gmv.toLocaleString('es',{maximumFractionDigits:0})}</td>
