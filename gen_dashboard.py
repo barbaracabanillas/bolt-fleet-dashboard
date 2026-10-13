@@ -170,19 +170,23 @@ def sync_grouping_from_sheet() -> None:
         # Read Company ID as text so it stays "59137" (not float "59137.0"),
         # otherwise it won't match the Databricks company_id.
         df = pd.read_csv(url, dtype={"Company ID": str})
-        # The Sheet's own column names have drifted from what this pipeline
-        # expects (e.g. a reorg that added a "City" column) — "FO" is now
-        # "Fleet Owner" and "Cohort" is now "Fleet Cohort". Map whichever of
-        # these are present to our canonical fo_groups.csv header names before
-        # the format check, so edits to the Sheet keep flowing through even if
-        # its headers get renamed again later (this silently no-op'd for a
-        # while otherwise — every column found here can be added to this map).
-        rename_map = {"Fleet Owner": "FO", "Fleet Cohort": "Cohort"}
+        # The Sheet's own column names keep drifting from what this pipeline
+        # expects (reorgs have added "City"/"Tier" columns and renamed "FO" →
+        # "Fleet Owner", "Cohort" → "Fleet Cohort", "Company" → "Company Name").
+        # Map whichever of these are present to our canonical fo_groups.csv
+        # header names before the format check, so edits to the Sheet keep
+        # flowing through even if its headers get renamed again later (this
+        # silently no-op'd — twice now — otherwise; every column renamed here
+        # can be added to this map the next time it happens).
+        rename_map = {"Fleet Owner": "FO", "Fleet Cohort": "Cohort", "Company Name": "Company"}
         df = df.rename(columns={old: new for old, new in rename_map.items()
                                  if old in df.columns and new not in df.columns})
         expected_cols = ["Company", "Company ID", "FO", "Fleet Type", "Cohort"]
         if not set(expected_cols).issubset(set(df.columns)):
-            print(f"[sheet] ⚠️  URL columns {list(df.columns)} != expected — keeping committed CSV")
+            missing = set(expected_cols) - set(df.columns)
+            print(f"[sheet] ⚠️  URL columns {list(df.columns)} missing {sorted(missing)} "
+                  f"— keeping committed CSV (this means the dashboard is using "
+                  f"POSSIBLY STALE grouping data — check the Sheet's column headers)")
             return
         df = df[expected_cols]  # drop extras (e.g. "City"), keep our 5 canonical columns in order
         df.to_csv(FO_GROUPS_CSV, index=False)
