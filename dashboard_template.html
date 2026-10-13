@@ -917,8 +917,9 @@ function loadPreloadedData() {
 }
 
 // ── Page init: load embedded data (Performance is opened at the end of the script,
-//    once every const/function (e.g. AGREEMENT_TYPES) has been defined) ──
-loadPreloadedData();        // ← Databricks data (no-op when no PRELOADED_DATA)
+//    once every const/function (e.g. AGREEMENT_TYPES) has been defined) — the
+//    actual call happens at the bottom of this script, in the PRELOADED_DATA /
+//    fetch('/api/data') branch, once initDashboard() is also defined. ──
 
 // Default date range: from 2026-01-01 (no upper bound)
 rangeFrom = '2026-01-01';
@@ -2411,11 +2412,32 @@ window.addEventListener('resize', updateStickyOffsets);
 
 // ── Skip the landing page — open the dashboard on Performance directly.
 //    Runs last, so all consts (AGREEMENT_TYPES, colours…) and render helpers exist.
-populateFilters();
-goToTab('performance');
-updateStickyOffsets();
-// Re-measure after fonts/layout settle.
-setTimeout(updateStickyOffsets, 300);
+function initDashboard() {
+  populateFilters();
+  goToTab('performance');
+  updateStickyOffsets();
+  // Re-measure after fonts/layout settle.
+  setTimeout(updateStickyOffsets, 300);
+}
+
+if (window.PRELOADED_DATA) {
+  // GitHub Pages build: gen_dashboard.py already embedded the data above.
+  loadPreloadedData();
+  initDashboard();
+} else {
+  // Boltable backend build: no data embedded at build time — the server
+  // computes it on its own schedule and serves it from /api/data instead.
+  fetch('/api/data')
+    .then(r => r.json())
+    .then(d => { window.PRELOADED_DATA = d; loadPreloadedData(); initDashboard(); })
+    .catch(e => {
+      console.error('[PreloadedData] /api/data fetch failed', e);
+      document.body.insertAdjacentHTML('afterbegin',
+        '<div style="background:#c0392b;color:#fff;padding:10px 16px;font:600 13px/1.4 system-ui">' +
+        'No se pudieron cargar los datos (/api/data). Reintenta en unos minutos.</div>');
+      initDashboard();
+    });
+}
 
 </script>
 </body>
